@@ -1,0 +1,36 @@
+"use client";
+
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import { useSession } from "next-auth/react";
+import { AdminProjectsService } from "@/services/AdminProjectsService";
+
+export default function useDashboardAdminData(
+  page?: number,
+  limit?: number,
+  search?: string,
+) {
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken;
+
+  const allProjectsData = useQuery({
+    queryKey: ["allProjects"],
+    queryFn: () => AdminProjectsService.getProjects(),
+    retry: false,
+    enabled: !!token,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const paginatedProjectsData = useQuery({
+    queryKey: ["projects", page, limit, search],
+    queryFn: () => AdminProjectsService.getProjectsPaginated(page!, limit!, search),
+    retry: false,
+    enabled: !!token,
+    staleTime: 5 * 60 * 1000,
+    placeholderData: keepPreviousData,
+  });
+
+  return {
+    allProjectsData,
+    paginatedProjectsData,
+  };
+}

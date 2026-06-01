@@ -1,0 +1,68 @@
+"use client";
+
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
+import { useSession } from "next-auth/react";
+import { AdminDevelopersService } from "@/services/AdminDevelopersService";
+
+export default function useDashboardAdminDevelopersData(
+  page: number = 1,
+  perPage: number = 10,
+  search?: string,
+  status?: string,
+) {
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken;
+  const queryClient = useQueryClient();
+
+  const developersData = useQuery({
+    queryKey: ["developers", page, perPage, search, status],
+    queryFn: () =>
+      AdminDevelopersService.getDevelopersPaginated(
+        page,
+        perPage,
+        search,
+        status,
+      ),
+    retry: false,
+    enabled: !!token,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    placeholderData: keepPreviousData,
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => AdminDevelopersService.deleteDeveloper(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["developers"] });
+    },
+  });
+
+  const addMutation = useMutation({
+    mutationFn: (data: FormData) => AdminDevelopersService.createDeveloper(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["developers"] });
+    },
+  });
+
+  const bulkImportMutation = useMutation({
+    mutationFn: (file: File) => AdminDevelopersService.bulkImportDevelopers(file),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["developers"] });
+    },
+  });
+
+  const toggleStatusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: number; status: string }) =>
+      AdminDevelopersService.toggleStatus(id, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["developers"] });
+    },
+  });
+
+  return {
+    developersData,
+    deleteMutation,
+    addMutation,
+    bulkImportMutation,
+    toggleStatusMutation,
+  };
+}

@@ -1,0 +1,37 @@
+import { execSync } from "child_process";
+
+process.env.NEXTAUTH_URL = "http://localhost:3000";
+process.env.NEXTAUTH_SECRET = "your-secret-key-here";
+process.env.NEXT_PUBLIC_API_URL = "https://demoapi.p-adviser.com/api/dashboard";
+process.env.NEXT_PUBLIC_API_URL_WITHOUT_DASHBOARD = "https://demoapi.p-adviser.com/api";
+process.env.NEXT_PUBLIC_API_URL_IMPORTS = "https://demoapi.p-adviser.com/api/imports";
+
+let port = 3000;
+const portMatch = process.env.NEXTAUTH_URL.match(/http:\/\/localhost:(\d+)/);
+if (portMatch && portMatch[1]) {
+  port = portMatch[1];
+}
+
+const args = process.argv.slice(2);
+const command = args[0] || "dev";
+
+try {
+  if (command === "dev") {
+    console.log(`📡 Starting dev server on port ${port} with API: ${process.env.NEXT_PUBLIC_API_URL}`);
+    execSync(`next dev -p ${port}`, { stdio: "inherit", env: process.env });
+  } else if (command === "build") {
+    console.log(`🔨 Building app with API: ${process.env.NEXT_PUBLIC_API_URL}`);
+    execSync("next build", { stdio: "inherit", env: process.env });
+    console.log("✅ Build completed successfully!");
+  } else if (command === "start" || command === "prod") {
+    console.log(`🚀 Starting production server on port ${port} with API: ${process.env.NEXT_PUBLIC_API_URL}`);
+    execSync(`next start -p ${port}`, { stdio: "inherit", env: process.env });
+  } else {
+    console.error(`❌ Unknown command: ${command}`);
+    console.error(`Available commands: dev, build, start`);
+    process.exit(1);
+  }
+} catch (error) {
+  console.error(`❌ Command failed`);
+  process.exit(1);
+}

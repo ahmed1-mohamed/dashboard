@@ -1,0 +1,53 @@
+import { apiClient } from "@/lib/apiClient";
+import { GetUserDataType } from "@/types";
+import { CreateNewUserInput } from "@/validators/create-new-user.schema";
+import { EditNewUserInput } from "@/validators/edit-new-user.schema";
+
+export const AdminUsersService = {
+  /**
+   * Get all users with pagination
+   */
+  getUsers: (page: number = 1, perPage: number = 15, search?: string, status?: string) => {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      per_page: perPage.toString(),
+    });
+    if (search && search.trim() !== "") {
+      params.append("search", search.trim());
+    }
+    if (status && status !== "all") {
+      params.append("status", status);
+    }
+    return apiClient.get<{ data: GetUserDataType[]; total: number }>(
+      `/dashboard/users?${params.toString()}`,
+    );
+  },
+
+  /**
+   * Get user by ID
+   */
+  getUser: (userId: number) => {
+    return apiClient.get<GetUserDataType>(`/users/${userId}`);
+  },
+
+  /**
+   * Create a new user
+   */
+  createUser: (data: CreateNewUserInput) => {
+    return apiClient.post<GetUserDataType>("/dashboard/users", data);
+  },
+
+  /**
+   * Update a user
+   */
+  updateUser: (userId: number, data: any) => {
+    return apiClient.put<GetUserDataType>(`/dashboard/users/${userId}`, data);
+  },
+
+  /**
+   * Delete a user
+   */
+  deleteUser: (userId: number) => {
+    return apiClient.delete(`/dashboard/users/${userId}`);
+  },
+};
