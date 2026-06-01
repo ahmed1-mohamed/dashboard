@@ -189,11 +189,7 @@ export default function DevelopersPage({
   const totalPages = Math.ceil(Number(totalDevelopers) / itemsPerPageState);
   const startIndex = (currentPage - 1) * itemsPerPageState;
 
-  const filteredDevelopers = developers.filter((developer) => {
-    const matchesCountry =
-      countryFilter === "all" || developer.countries === countryFilter;
-    return matchesCountry;
-  });
+  const filteredDevelopers = developers;
 
   const handlePageChange = useCallback(
     (page: number) => {

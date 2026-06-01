@@ -157,11 +157,7 @@ export default function UsersPage() {
     },
   );
 
-  const filteredUsers = users.filter((user) => {
-    const matchesCountry = countryFilter === "all";
-
-    return matchesCountry;
-  });
+  const filteredUsers = users;
 
   console.log("Mapped users:", data);
 

@@ -176,7 +176,7 @@ export default function ProjectsPage({
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [debouncedSearch]);
+  }, [debouncedSearch, statusFilter, projectTypeFilter]);
 
   // Fetch projects with pagination using TanStack Query
   // const {
@@ -219,6 +219,8 @@ export default function ProjectsPage({
     currentPage,
     itemsPerPage,
     debouncedSearch,
+    statusFilter,
+    projectTypeFilter
   );
 
   const { data, isLoading, isError, error, isFetching, refetch } =

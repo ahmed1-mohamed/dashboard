@@ -8,6 +8,8 @@ export default function useDashboardAdminData(
   page?: number,
   limit?: number,
   search?: string,
+  status?: string,
+  projectType?: string,
 ) {
   const { data: session } = useSession();
   const token = session?.user?.accessToken;
@@ -21,8 +23,8 @@ export default function useDashboardAdminData(
   });
 
   const paginatedProjectsData = useQuery({
-    queryKey: ["projects", page, limit, search],
-    queryFn: () => AdminProjectsService.getProjectsPaginated(page!, limit!, search),
+    queryKey: ["projects", page, limit, search, status, projectType],
+    queryFn: () => AdminProjectsService.getProjectsPaginated(page!, limit!, search, status, projectType),
     retry: false,
     enabled: !!token,
     staleTime: 5 * 60 * 1000,

@@ -84,7 +84,7 @@ export default function PropertiesPage() {
 
   useEffect(() => {
     setPage(1);
-  }, [debouncedSearch]);
+  }, [debouncedSearch, selectedCountries, selectedDevelopers, selectedProjects]);
 
   // Delete dialog state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -168,17 +168,8 @@ export default function PropertiesPage() {
     status: prop.availability_status === "available" ? "Available" : "Reserved",
   }));
 
-  // Client-side search filter
-  const filteredProperties = properties.filter((property) => {
-    const matchesSearch =
-      debouncedSearch === "" ||
-      property.unitNumber.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-      property.project_name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-      property.type.toLowerCase().includes(debouncedSearch.toLowerCase());
-    return matchesSearch;
-  });
-
-  const paginatedProperties = filteredProperties;
+  const filteredProperties = properties;
+  const paginatedProperties = properties;
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -231,7 +222,7 @@ export default function PropertiesPage() {
   };
 
   const isSearching = debouncedSearch.trim() !== "";
-  const effectiveTotal = isSearching ? filteredProperties.length : (typeof total === "number" ? total : 0);
+  const effectiveTotal = typeof total === "number" ? total : 0;
   const pagesNo = Math.max(1, Math.ceil(effectiveTotal / perPage) || 1);
 
   // const getPageNumbers = () => {

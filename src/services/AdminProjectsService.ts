@@ -58,12 +58,16 @@ export const AdminProjectsService = {
     page: number = 1,
     perPage: number = 10,
     search?: string,
+    status?: string,
+    projectType?: string,
   ) => {
     const params = new URLSearchParams({
       page: page.toString(),
       per_page: perPage.toString(),
     });
     if (search) params.append("search", search);
+    if (status && status !== "all") params.append("status", status);
+    if (projectType && projectType !== "all") params.append("project_type", projectType);
     const response = await apiClient.get(`/dashboard/projects?${params.toString()}`);
     return response.data;
   },
