@@ -55,7 +55,7 @@ export function DevelopersTable({
             <TableHead className="font-semibold text-gray-900 w-[100px] px-2 text-sm">
               Country
             </TableHead>
-            <TableHead className="font-semibold text-gray-900 w-[100px] px-2 text-sm">
+            <TableHead className="font-semibold text-gray-900 w-[80px] px-2 text-sm">
               City
             </TableHead>
             <TableHead className="font-semibold text-gray-900 w-[70px] px-2 text-sm">
@@ -123,7 +123,10 @@ export function DevelopersTable({
                 <TableCell className="text-gray-900 px-2 text-sm">
                   {developer.countries}
                 </TableCell>
-                <TableCell className="text-gray-900 px-2 text-sm">
+                <TableCell 
+                  className="text-gray-900 px-2 text-sm truncate max-w-[80px]"
+                  title={developer.cities}
+                >
                   {developer.cities}
                 </TableCell>
                 <TableCell className="px-2">

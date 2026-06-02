@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
@@ -155,7 +155,13 @@ type TabGroup = {
   items: SidebarItem[];
 };
 
-export function Sidebar() {
+export function Sidebar({ 
+  isOpen, 
+  setIsOpen 
+}: { 
+  isOpen?: boolean; 
+  setIsOpen?: (val: boolean) => void;
+}) {
   const pathname = usePathname();
   const { data: session } = useSession();
   const role_id = session?.user?.role_id as number | undefined;
@@ -189,14 +195,31 @@ export function Sidebar() {
     }));
   };
 
+  // Close sidebar on route change
+  useEffect(() => {
+    if (setIsOpen) {
+      setIsOpen(false);
+    }
+  }, [pathname, setIsOpen]);
+
   return (
-    <aside
-      className={cn(
-        "fixed left-0 top-0 z-40 h-screen transition-transform",
-        "w-64 border-r border-gray-200 bg-white",
+    <>
+      {/* Mobile backdrop */}
+      {isOpen && setIsOpen && (
+        <div 
+          className="fixed inset-0 z-30 bg-black/50 lg:hidden" 
+          onClick={() => setIsOpen(false)}
+        />
       )}
-    >
-      <div className="flex h-full flex-col">
+      
+      <aside
+        className={cn(
+          "fixed left-0 top-0 z-40 h-screen transition-transform duration-300 ease-in-out",
+          "w-64 border-r border-gray-200 bg-white",
+          isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+        )}
+      >
+        <div className="flex h-full flex-col">
         {/* Logo/Brand */}
         <div className="flex h-16 items-center px-6 border-b border-gray-200">
           <div className="flex items-center gap-2">
@@ -451,6 +474,7 @@ export function Sidebar() {
           </button>
         </div>
       </div>
-    </aside>
+      </aside>
+    </>
   );
 }

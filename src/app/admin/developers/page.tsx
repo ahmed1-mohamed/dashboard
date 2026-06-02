@@ -15,7 +15,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-
 import { DeveloperDataType } from "@/types";
 import { Developer, DeveloperApiResponse } from "@/features/developers/types";
 import { useDevelopers } from "@/features/developers/hooks/useDevelopers";

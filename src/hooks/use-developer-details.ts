@@ -87,7 +87,7 @@ export function useDeveloperDetails(developerId: number | null) {
   });
 
   return {
-    developer: developerQuery.data?.data ? developerQuery.data.data : developerQuery.data,
+    developer: (developerQuery.data?.data ? developerQuery.data.data : developerQuery.data) as DeveloperData | undefined,
     isLoading: developerQuery.isLoading,
     isError: developerQuery.isError,
     error: developerQuery.error,

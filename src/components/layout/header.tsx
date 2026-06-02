@@ -25,7 +25,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-export function Header() {
+export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   const [darkMode, setDarkMode] = useState(false);
   const { data: session } = useSession();
 
@@ -44,7 +44,12 @@ export function Header() {
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-gray-200 bg-white px-6">
       {/* Left Section - Hamburger & Search */}
       <div className="flex items-center gap-4 flex-1">
-        <Button variant="ghost" size="icon" className="h-9 w-9 text-gray-600">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="h-9 w-9 text-gray-600 lg:hidden"
+          onClick={onMenuClick}
+        >
           <Menu className="h-5 w-5" />
           <span className="sr-only">Toggle menu</span>
         </Button>
@@ -90,16 +95,16 @@ export function Header() {
         {/* User Profile Dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-2 hover:bg-gray-50 rounded-lg px-2 py-1.5 transition-colors outline-none">
-              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center">
+            <button className="flex items-center gap-2 hover:bg-gray-50 rounded-lg px-2 py-1.5 transition-colors outline-none max-w-[150px] sm:max-w-none">
+              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center flex-shrink-0">
                 <span className="text-white text-sm font-medium">
                   {userInitial}
                 </span>
               </div>
-              <span className="text-sm font-medium text-gray-900">
+              <span className="text-sm font-medium text-gray-900 truncate hidden sm:inline-block">
                 {userName}
               </span>
-              <ChevronDown className="h-4 w-4 text-gray-600" />
+              <ChevronDown className="h-4 w-4 text-gray-600 flex-shrink-0" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-[280px] p-0">
