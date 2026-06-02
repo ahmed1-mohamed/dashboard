@@ -89,7 +89,7 @@ export function DevelopersTable({
             developers.map((developer) => (
               <TableRow
                 key={developer.id}
-                className="hover:bg-gray-50/50 cursor-pointer"
+                className="text-gray-900 text-sm font-medium hover:text-teal-600 active:text-teal-800 transition-colors cursor-pointer text-left focus:outline-none"
                 onClick={() => router.push(`/admin/developers/${developer.id}`)}
               >
                 <TableCell className="px-2" onClick={(e) => e.stopPropagation()}>
@@ -123,7 +123,7 @@ export function DevelopersTable({
                 <TableCell className="text-gray-900 px-2 text-sm">
                   {developer.countries}
                 </TableCell>
-                <TableCell 
+                <TableCell
                   className="text-gray-900 px-2 text-sm truncate max-w-[80px]"
                   title={developer.cities}
                 >

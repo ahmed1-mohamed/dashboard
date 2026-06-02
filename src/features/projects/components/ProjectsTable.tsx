@@ -102,7 +102,7 @@ export function ProjectsTable({
                 <TableCell className="text-teal-600 font-medium px-2 text-sm">
                   <button
                     onClick={() => router.push(`/admin/projects/${project.id}`)}
-                    className="text-teal-600 hover:text-teal-800 active:text-teal-900 transition-colors cursor-pointer text-left focus:outline-none"
+                    className="text-gray-900 text-sm font-medium hover:text-teal-600 active:text-teal-800 transition-colors cursor-pointer text-left focus:outline-none"
                   >
                     {project.name}
                   </button>
@@ -150,10 +150,10 @@ export function ProjectsTable({
                     variant="outline"
                     className={
                       project.status.toLowerCase() === "under construction" ||
-                      project.status.toLowerCase() === "upcoming"
+                        project.status.toLowerCase() === "upcoming"
                         ? "bg-blue-50 text-blue-700 border-blue-200 text-[10px] px-1"
                         : project.status.toLowerCase() === "completed" ||
-                            project.status.toLowerCase() === "ready for handover"
+                          project.status.toLowerCase() === "ready for handover"
                           ? "bg-green-50 text-green-700 border-green-200 text-[10px] px-1"
                           : "bg-gray-50 text-gray-700 border-gray-200 text-[10px] px-1"
                     }

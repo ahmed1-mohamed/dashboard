@@ -63,14 +63,13 @@ export default function PropertyDetailsPage({
     queryKey: ["propertyDetails", id],
     queryFn: () => fetchPropertyDetails(Number(id), token!),
     select: (data) => {
-      // fetchPropertyDetails already returns response.data.data (the property object)
       const property = data;
       if (!property) return null;
       // Transform API response to match UI expectations
       return {
         ...property,
         // Map property_type from object to array format
-        property_type: property.property_type ? [property.property_type] : [],
+        property_type: property?.property_type ? [property.property_type] : [],
         // Map project from object to array format
         project: property.project ? [property.project] : [],
         // Handle floor (not available in API, set to N/A)
