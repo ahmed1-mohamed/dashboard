@@ -119,9 +119,17 @@ export const AdminPropertiesService = {
   },
 
   /**
+   * Get a single property by ID
+   */
+  getProperty: async (propertyId: number) => {
+    const response = await apiClient.get(`/dashboard/properties/${propertyId}`);
+    return response.data;
+  },
+
+  /**
    * Update a property
    */
-  updateProperty: async (propertyId: number, data: any) => {
+  updateProperty: async (propertyId: number, data: Record<string, unknown>) => {
     const response = await apiClient.put(`/dashboard/properties/${propertyId}`, data);
     return response.data;
   },

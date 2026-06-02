@@ -1,4 +1,3 @@
-import React from "react";
 import { DeveloperData } from "@/features/developers/types";
 import { Switch } from "@/components/ui/switch";
 import { ExternalLink } from "lucide-react";

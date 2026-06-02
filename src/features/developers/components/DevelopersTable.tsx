@@ -13,6 +13,7 @@ import {
 import { TableActions } from "@/components/table/table-actions";
 import { useRouter } from "next/navigation";
 import { Developer } from "../types";
+import { CheckCircle2, XCircle } from "lucide-react";
 
 interface DevelopersTableProps {
   developers: Developer[];
@@ -160,17 +161,21 @@ export function DevelopersTable({
                       onCheckedChange={(checked) =>
                         onToggleStatus(developer.id, checked)
                       }
-                      className="data-[state=checked]:bg-teal-600"
+                      className="data-[state=checked]:bg-green-500 transition-colors duration-300 shadow-sm"
                     />
                     <Badge
                       variant={developer.status ? "default" : "secondary"}
-                      className={
+                      className={`transition-all duration-500 flex items-center justify-center w-6 h-6 p-0 rounded-full shadow-sm ${
                         developer.status
-                          ? "bg-teal-50 text-teal-700 border-teal-200"
-                          : "bg-gray-100 text-gray-700 border-gray-200"
-                      }
+                          ? "bg-green-100 border-green-300"
+                          : "bg-gray-100 border-gray-200"
+                      }`}
                     >
-                      {developer.status ? "Active" : "Inactive"}
+                      {developer.status ? (
+                        <CheckCircle2 className="w-4 h-4 text-green-600 animate-in fade-in zoom-in spin-in-12 duration-500" />
+                      ) : (
+                        <XCircle className="w-4 h-4 text-gray-400 animate-in fade-in zoom-in -spin-in-12 duration-500" />
+                      )}
                     </Badge>
                   </div>
                 </TableCell>

@@ -7,28 +7,27 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { usePropertyTypes } from "@/hooks/use-property-data";
 
 interface PropertiesFiltersProps {
   searchQuery: string;
   onSearchChange: (value: string) => void;
-  countryId: string;
-  onCountryChange: (value: string) => void;
-  developerId: string;
-  onDeveloperChange: (value: string) => void;
-  projectId: string;
-  onProjectChange: (value: string) => void;
+  typeFilter: string;
+  onTypeChange: (value: string) => void;
+  statusFilter: string;
+  onStatusChange: (value: string) => void;
 }
 
 export function PropertiesFilters({
   searchQuery,
   onSearchChange,
-  countryId,
-  onCountryChange,
-  developerId,
-  onDeveloperChange,
-  projectId,
-  onProjectChange,
+  typeFilter,
+  onTypeChange,
+  statusFilter,
+  onStatusChange,
 }: PropertiesFiltersProps) {
+  const { data: propertiesType = [] } = usePropertyTypes();
+
   return (
     <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
       <SearchInput
@@ -37,42 +36,29 @@ export function PropertiesFilters({
         placeholder="Search for properties"
       />
 
-      <Select value={countryId} onValueChange={onCountryChange}>
-        <SelectTrigger className="w-[120px] max-sm:w-full">
-          <SelectValue placeholder="Country" />
+      <Select value={typeFilter} onValueChange={onTypeChange}>
+        <SelectTrigger className="w-[150px] max-sm:w-full">
+          <SelectValue placeholder="Property Type" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">All Countries</SelectItem>
-          {/* Add dynamic country options here */}
+          <SelectItem value="all">All Types</SelectItem>
+          {propertiesType.map((type: any) => (
+            <SelectItem key={type.id} value={String(type.id)}>
+              {type.name}
+            </SelectItem>
+          ))}
         </SelectContent>
       </Select>
 
-      <Select value={developerId} onValueChange={onDeveloperChange}>
-        <SelectTrigger className="w-[120px] max-sm:w-full">
-          <SelectValue placeholder="Developer" />
+      <Select value={statusFilter} onValueChange={onStatusChange}>
+        <SelectTrigger className="w-[150px] max-sm:w-full">
+          <SelectValue placeholder="Status" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">All Developers</SelectItem>
-          {/* Add dynamic developer options here */}
-        </SelectContent>
-      </Select>
-
-      <Select value={projectId} onValueChange={onProjectChange}>
-        <SelectTrigger className="w-[120px] max-sm:w-full">
-          <SelectValue placeholder="Project" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Projects</SelectItem>
-          {/* Add dynamic project options here */}
-        </SelectContent>
-      </Select>
-
-      <Select defaultValue="all">
-        <SelectTrigger className="w-[120px] max-sm:w-full">
-          <SelectValue placeholder="All Filters" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Filters</SelectItem>
+          <SelectItem value="all">All Status</SelectItem>
+          <SelectItem value="available">Available</SelectItem>
+          <SelectItem value="reserved">Reserved</SelectItem>
+          <SelectItem value="sold">Sold</SelectItem>
         </SelectContent>
       </Select>
     </div>

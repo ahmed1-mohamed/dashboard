@@ -2,6 +2,7 @@ import React from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+
 import {
   Table,
   TableBody,
@@ -13,13 +14,14 @@ import {
 import { TableActions } from "@/components/table/table-actions";
 import { useRouter } from "next/navigation";
 import { Project } from "../types";
+import { Eye, EyeOff, CheckCircle2, XCircle } from "lucide-react";
 
 interface ProjectsTableProps {
   projects: Project[];
   selectedProjects: number[];
   onSelectAll: (checked: boolean) => void;
   onSelectProject: (id: number, checked: boolean) => void;
-  onVisibilityToggle: (id: number) => void;
+  onVisibilityToggle: (id: number, checked: boolean) => void;
   onEdit: (id: number) => void;
   onDelete: (id: number) => void;
 }
@@ -139,11 +141,28 @@ export function ProjectsTable({
                     </div>
                   </div>
                 </TableCell>
-                <TableCell className="px-2">
-                  <Switch
-                    checked={project.is_visible}
-                    onCheckedChange={() => onVisibilityToggle(project.id)}
-                  />
+                <TableCell className="px-2" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={project.is_visible}
+                      onCheckedChange={(checked) => onVisibilityToggle(project.id, checked)}
+                      className="data-[state=checked]:bg-green-500 transition-colors duration-300 shadow-sm"
+                    />
+                    <Badge
+                      variant={project.is_visible ? "default" : "secondary"}
+                      className={`transition-all duration-500 flex items-center justify-center w-6 h-6 p-0 rounded-full shadow-sm ${
+                        project.is_visible
+                          ? "bg-green-100 border-green-300"
+                          : "bg-gray-100 border-gray-200"
+                      }`}
+                    >
+                      {project.is_visible ? (
+                        <CheckCircle2 className="w-4 h-4 text-green-600 animate-in fade-in zoom-in spin-in-12 duration-500" />
+                      ) : (
+                        <XCircle className="w-4 h-4 text-gray-400 animate-in fade-in zoom-in -spin-in-12 duration-500" />
+                      )}
+                    </Badge>
+                  </div>
                 </TableCell>
                 <TableCell className="px-2">
                   <Badge

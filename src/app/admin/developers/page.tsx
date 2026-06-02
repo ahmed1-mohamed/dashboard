@@ -42,12 +42,22 @@ export default function DevelopersPage() {
     initialFilters: { status: "all", country: "all" },
   });
 
+  const isFiltering = filters.status !== "all" || filters.country !== "all" || debouncedSearch !== "";
+  const fetchPerPage = isFiltering ? 1000 : perPage;
+  const fetchPage = isFiltering ? 1 : page;
+
   const {
     developersData,
     deleteMutation,
     bulkImportMutation,
     toggleStatusMutation,
-  } = useDevelopers(page, perPage, debouncedSearch, filters.status, filters.country);
+  } = useDevelopers(
+    fetchPage, 
+    fetchPerPage, 
+    undefined, 
+    undefined, 
+    undefined
+  );
 
   const { data: devData, isLoading, isError, error, refetch } = developersData as any;
 
@@ -62,13 +72,48 @@ export default function DevelopersPage() {
   const [selectedDeveloperData, setSelectedDeveloperData] = useState<DeveloperDataType>({} as DeveloperDataType);
   const [selectedDevelopers, setSelectedDevelopers] = useState<number[]>([]);
 
+  let itemsArray: any[] = [];
+  let totalDevelopers = 0;
+
+  const rawData = devData?.data;
+  if (Array.isArray(rawData)) {
+    itemsArray = rawData;
+    totalDevelopers = devData?.total || itemsArray.length;
+  } else if (rawData?.developers && Array.isArray(rawData.developers)) {
+    itemsArray = rawData.developers;
+    totalDevelopers = rawData.total || itemsArray.length;
+  }
+
+  // Local filtering
+  if (isFiltering && itemsArray.length > 0) {
+    if (debouncedSearch) {
+      itemsArray = itemsArray.filter((d: any) => 
+        d.developer_name?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+        d.email?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+        d.phone_number?.toLowerCase().includes(debouncedSearch.toLowerCase())
+      );
+    }
+    if (filters.status !== "all") {
+      const isActive = filters.status === "active";
+      itemsArray = itemsArray.filter((d: any) => {
+        const isDevActive = d.status === "active" || Boolean(d.is_active);
+        return isDevActive === isActive;
+      });
+    }
+    if (filters.country !== "all") {
+      itemsArray = itemsArray.filter((d: any) => {
+        const c = d.countries?.toLowerCase() || "";
+        return c.includes(filters.country.toLowerCase());
+      });
+    }
+    
+    totalDevelopers = itemsArray.length;
+    const startIndex = (page - 1) * perPage;
+    itemsArray = itemsArray.slice(startIndex, startIndex + perPage);
+  }
+
   // Parse data
-  const developersArray: DeveloperApiResponse[] = useMemo(() => {
-    const rawData = devData?.data;
-    if (Array.isArray(rawData)) return rawData;
-    if (rawData?.developers && Array.isArray(rawData.developers)) return rawData.developers;
-    return [];
-  }, [devData]);
+  const developersArray: DeveloperApiResponse[] = itemsArray;
 
   const developers: Developer[] = useMemo(() => {
     return developersArray.map((dev) => ({
@@ -80,12 +125,11 @@ export default function DevelopersPage() {
       website: dev.website || "N/A",
       email: dev.email || "N/A",
       contact: dev.phone_number || "N/A",
-      status: dev.is_active || false,
+      status: dev.status === "active" || Boolean(dev.is_active),
       logo: dev.logo,
     }));
   }, [developersArray]);
 
-  const totalDevelopers = devData?.total || 0;
   const totalPages = Math.max(1, Math.ceil(totalDevelopers / perPage));
 
   const handleSelectAll = useCallback((checked: boolean) => {

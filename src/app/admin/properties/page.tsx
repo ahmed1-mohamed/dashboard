@@ -41,9 +41,7 @@ export default function PropertiesPage() {
     initialPage: 1,
     initialPerPage: 15,
     initialFilters: {
-      country_id: "all",
-      developer_id: "all",
-      project_id: "all",
+      type: "all",
       status: "all",
     },
   });
@@ -53,9 +51,7 @@ export default function PropertiesPage() {
     return {
       search: debouncedSearch,
       status: filters.status !== "all" ? filters.status : undefined,
-      country_id: filters.country_id !== "all" ? [Number(filters.country_id)] : undefined,
-      developer_id: filters.developer_id !== "all" ? [Number(filters.developer_id)] : undefined,
-      project_id: filters.project_id !== "all" ? [Number(filters.project_id)] : undefined,
+      property_type_id: filters.type !== "all" ? Number(filters.type) : undefined,
     };
   }, [debouncedSearch, filters]);
 
@@ -158,12 +154,10 @@ export default function PropertiesPage() {
             <PropertiesFilters
               searchQuery={searchQuery}
               onSearchChange={setSearchQuery}
-              countryId={filters.country_id}
-              onCountryChange={(val) => setFilter("country_id", val)}
-              developerId={filters.developer_id}
-              onDeveloperChange={(val) => setFilter("developer_id", val)}
-              projectId={filters.project_id}
-              onProjectChange={(val) => setFilter("project_id", val)}
+              typeFilter={filters.type}
+              onTypeChange={(val) => setFilter("type", val)}
+              statusFilter={filters.status}
+              onStatusChange={(val) => setFilter("status", val)}
             />
             <div className="flex items-center gap-2">
               <Button variant="outline" className="gap-2 border-gray-200">
@@ -195,7 +189,6 @@ export default function PropertiesPage() {
         </>
       )}
 
-      {/* Modals */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>

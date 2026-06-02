@@ -39,9 +39,9 @@ export function ProjectsFilters({
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Status</SelectItem>
-          <SelectItem value="under construction">Under Construction</SelectItem>
+          <SelectItem value="ongoing">Under Construction / Ongoing</SelectItem>
           <SelectItem value="completed">Completed</SelectItem>
-          <SelectItem value="planned">Planned</SelectItem>
+          <SelectItem value="upcoming">Upcoming / Planned</SelectItem>
         </SelectContent>
       </Select>
 
@@ -51,9 +51,9 @@ export function ProjectsFilters({
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Types</SelectItem>
-          <SelectItem value="residential">Residential</SelectItem>
-          <SelectItem value="mixed use">Mixed Use</SelectItem>
-          <SelectItem value="commercial">Commercial</SelectItem>
+          <SelectItem value="Residential">Residential</SelectItem>
+          <SelectItem value="Mixed Use">Mixed Use</SelectItem>
+          <SelectItem value="Commercial">Commercial</SelectItem>
         </SelectContent>
       </Select>
     </div>

@@ -42,18 +42,6 @@ export const AdminProjectsService = {
   /**
    * Get projects with pagination and filters
    */
-  getProjects: async (page: number = 1, perPage: number = 10) => {
-    const params = new URLSearchParams({
-      page: page.toString(),
-      per_page: perPage.toString(),
-    });
-    const response = await apiClient.get(`/projects?${params.toString()}`);
-    return response.data;
-  },
-
-  /**
-   * Get projects with pagination
-   */
   getProjectsPaginated: async (
     page: number = 1,
     perPage: number = 10,
@@ -76,7 +64,7 @@ export const AdminProjectsService = {
    * Get project by ID
    */
   getProject: async (projectId: number) => {
-    const response = await apiClient.get(`/projects/${projectId}`);
+    const response = await apiClient.get(`/dashboard/projects/${projectId}`);
     return response.data;
   },
 
@@ -107,10 +95,8 @@ export const AdminProjectsService = {
   createProjectWithMedia: async (
     params: CreateProjectWithMediaParams,
   ): Promise<CreateProjectResult> => {
-    // Extract location and media, keep rest as projectData
     const { mediaItems, location, ...projectData } = params;
 
-    // Merge location fields into projectData
     const flattenedProjectData = {
       ...projectData,
       latitude: location.latitude,
@@ -136,7 +122,6 @@ export const AdminProjectsService = {
       throw new Error("Project creation failed: no project ID returned");
     }
 
-    // Upload media if provided
     if (mediaItems.length > 0) {
       const formData = new FormData();
       formData.append("project_id", projectId.toString());
@@ -154,7 +139,6 @@ export const AdminProjectsService = {
 
       const orderedItems = [...imageItems, ...videoItems];
 
-      // Append image files
       imageItems.forEach((item) => {
         if (item.file) {
           formData.append("medias[]", item.file);
@@ -171,7 +155,7 @@ export const AdminProjectsService = {
 
       formData.append("media_meta", JSON.stringify(mediaMeta));
 
-      await AdminProjectsService.createProjectMedia(formData as any);
+      await AdminProjectsService.createProjectMedia(formData as FormData);
     }
 
     return { projectId, projectName };
@@ -181,7 +165,7 @@ export const AdminProjectsService = {
    * Update a project
    */
   updateProject: async (projectId: number, data: Record<string, unknown>) => {
-    const response = await apiClient.post(`/projects/${projectId}`, data);
+    const response = await apiClient.put(`/dashboard/projects/${projectId}`, data);
     return response.data;
   },
 
@@ -189,7 +173,18 @@ export const AdminProjectsService = {
    * Delete a project
    */
   deleteProject: async (projectId: number) => {
-    const response = await apiClient.delete(`/projects/${projectId}`);
+    const response = await apiClient.delete(`/dashboard/projects/${projectId}`);
+    return response.data;
+  },
+
+  /**
+   * Toggle project visibility
+   */
+  toggleVisibility: async (projectId: number, isVisible: boolean) => {
+    const response = await apiClient.patch(`/dashboard/projects/${projectId}/toggle-visibility`, {
+      is_visible: isVisible ? 1 : 0,
+      status: isVisible ? 1 : 0,
+    });
     return response.data;
   },
 };

@@ -4,13 +4,14 @@ import { useQuery, keepPreviousData, useMutation, useQueryClient } from "@tansta
 import { useSession } from "next-auth/react";
 import { AdminPropertiesService, PropertiesFilterParams } from "../services/AdminPropertiesService";
 
-export default function useDashboardAdminProperties(
+export default function useProperties(
   page: number = 1,
   perPage: number = 15,
   filters?: PropertiesFilterParams,
 ) {
   const { data: session } = useSession();
   const token = session?.user?.accessToken;
+  const queryClient = useQueryClient();
 
   const propertiesQuery = useQuery({
     queryKey: ["properties", page, perPage, filters],
@@ -24,7 +25,7 @@ export default function useDashboardAdminProperties(
     },
     retry: false,
     enabled: !!token,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
     placeholderData: keepPreviousData,
   });
 
@@ -35,14 +36,27 @@ export default function useDashboardAdminProperties(
     },
   });
 
+  const updatePropertyMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Record<string, unknown> }) =>
+      AdminPropertiesService.updateProperty(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["properties"] });
+    },
+  });
+
+  const rawResponse = propertiesQuery.data as
+    | { data: unknown[]; total: number }
+    | undefined;
+
   return {
-    data: (propertiesQuery.data as any)?.data || [],
-    total: (propertiesQuery.data as any)?.total || 0,
+    data: rawResponse?.data ?? [],
+    total: rawResponse?.total ?? 0,
     isLoading: propertiesQuery.isLoading,
     isError: propertiesQuery.isError,
     error: propertiesQuery.error,
     refetch: propertiesQuery.refetch,
     paginatedPropertiesData: propertiesQuery,
     deletePropertyMutation,
+    updatePropertyMutation,
   };
 }

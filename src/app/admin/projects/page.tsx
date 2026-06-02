@@ -45,15 +45,20 @@ export default function ProjectsPage() {
     },
   });
 
+  const isFiltering = filters.status !== "all" || filters.projectType !== "all" || debouncedSearch !== "";
+  const fetchPerPage = isFiltering ? 1000 : perPage;
+  const fetchPage = isFiltering ? 1 : page;
+
   const {
     paginatedProjectsData,
     deleteProjectMutation,
+    toggleVisibilityMutation,
   } = useProjects(
-    page,
-    perPage,
-    debouncedSearch,
-    filters.status !== "all" ? filters.status : undefined,
-    filters.projectType !== "all" ? filters.projectType : undefined
+    fetchPage,
+    fetchPerPage,
+    undefined, // Handle search locally
+    undefined, // Handle status locally
+    undefined  // Handle projectType locally
   );
 
   const { data: rawData, isLoading, isError, error, refetch } = paginatedProjectsData;
@@ -62,10 +67,9 @@ export default function ProjectsPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<number | null>(null);
 
-  // Map data to components
   let itemsArray: any[] = [];
   let totalProjects = 0;
-  
+
   if (Array.isArray(rawData)) {
     itemsArray = rawData;
     totalProjects = rawData.length;
@@ -77,36 +81,77 @@ export default function ProjectsPage() {
     totalProjects = (rawData as any).data.total || itemsArray.length;
   }
 
+  // Local filtering
+  if (isFiltering && itemsArray.length > 0) {
+    if (debouncedSearch) {
+      itemsArray = itemsArray.filter((p: any) => 
+        p.project_name?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+        p.developer_name?.toLowerCase().includes(debouncedSearch.toLowerCase())
+      );
+    }
+    if (filters.status !== "all") {
+      itemsArray = itemsArray.filter((p: any) => {
+        const pStatus = p.status?.toLowerCase() || "";
+        const fStatus = filters.status.toLowerCase();
+        
+        if (fStatus === "ongoing") {
+          return pStatus === "ongoing" || pStatus === "under construction";
+        } else if (fStatus === "upcoming") {
+          return pStatus === "upcoming" || pStatus === "planned";
+        } else if (fStatus === "completed") {
+          return pStatus === "completed" || pStatus === "ready for handover";
+        }
+        
+        return pStatus === fStatus;
+      });
+    }
+    if (filters.projectType !== "all") {
+      itemsArray = itemsArray.filter((p: any) => 
+        p.project_type?.toLowerCase() === filters.projectType.toLowerCase()
+      );
+    }
+    totalProjects = itemsArray.length;
+    
+    // Local Pagination
+    const startIndex = (page - 1) * perPage;
+    itemsArray = itemsArray.slice(startIndex, startIndex + perPage);
+  }
+
   const projects: Project[] = useMemo(() => {
-    return itemsArray.map((prop: any) => ({
-      id: prop.project_id,
-      name: prop.project_name || "N/A",
-      developer_name: prop.developer_name || "N/A",
-      total_units: Number(prop.total_units) || 0,
-      available_units: Number(prop.available_units) || 0,
-      launch_date: prop.launch_date || "N/A",
-      completion_date: prop.completion_date || "N/A",
-      price_range: prop.price_range || "N/A",
-      slug: prop.slug || "",
-      project_size: prop.project_size || "N/A",
-      area_name: prop.area_name || "N/A",
-      city_name: prop.city_name || "N/A",
-      country_name: prop.country_name || "N/A",
-      whatsapp: prop.whatsapp_no || "N/A",
-      currency: prop.currency || "AED",
-      latitude: Number(prop.latitude) || 0,
-      longitude: Number(prop.longitude) || 0,
-      media_urls: prop.media_urls || "",
-      rating: Number(prop.rating) || 0,
-      rating_count: Number(prop.rating_count) || 0,
-      badge: prop.badge || null,
-      offer: prop.offer || null,
-      is_favourite: Boolean(prop.is_favourite),
-      price_after_discount: prop.price_after_discount || "N/A",
-      status: prop.status || "Upcoming",
-      projectType: prop.project_type || "N/A",
-      is_visible: Boolean(prop.is_visible),
-    }));
+    return itemsArray.map((prop: any) => {
+      if (itemsArray.indexOf(prop) === 0) {
+        console.log("DEBUG FIRST PROJECT API STATUS:", prop.status, prop.project_type);
+      }
+      return {
+        id: prop.project_id,
+        name: prop.project_name || "N/A",
+        developer_name: prop.developer_name || "N/A",
+        total_units: Number(prop.total_units) || 0,
+        available_units: Number(prop.available_units) || 0,
+        launch_date: prop.launch_date || "N/A",
+        completion_date: prop.completion_date || "N/A",
+        price_range: prop.price_range || "N/A",
+        slug: prop.slug || "",
+        project_size: prop.project_size || "N/A",
+        area_name: prop.area_name || "N/A",
+        city_name: prop.city_name || "N/A",
+        country_name: prop.country_name || "N/A",
+        whatsapp: prop.whatsapp_no || "N/A",
+        currency: prop.currency || "AED",
+        latitude: Number(prop.latitude) || 0,
+        longitude: Number(prop.longitude) || 0,
+        media_urls: prop.media_urls || "",
+        rating: Number(prop.rating) || 0,
+        rating_count: Number(prop.rating_count) || 0,
+        badge: prop.badge || null,
+        offer: prop.offer || null,
+        is_favourite: Boolean(prop.is_favourite),
+        price_after_discount: prop.price_after_discount || "N/A",
+        status: prop.status || "Upcoming",
+        projectType: prop.project_type || "N/A",
+        is_visible: Boolean(prop.is_visible),
+      };
+    });
   }, [itemsArray]);
 
   const totalPages = Math.max(1, Math.ceil(totalProjects / perPage));
@@ -121,9 +166,19 @@ export default function ProjectsPage() {
     );
   }, []);
 
-  const handleVisibilityToggle = useCallback((id: number) => {
-    toast.success(`Project visibility updated (mocked)`);
-  }, []);
+  const handleVisibilityToggle = useCallback((id: number, isVisible: boolean) => {
+    toggleVisibilityMutation.mutate(
+      { id, isVisible },
+      {
+        onSuccess: () => {
+          toast.success("Project visibility updated successfully");
+        },
+        onError: (err) => {
+          toast.error(err instanceof Error ? err.message : "Failed to update visibility");
+        }
+      }
+    );
+  }, [toggleVisibilityMutation]);
 
   const handleEditClick = useCallback((id: number) => {
     router.push(`/admin/projects/${id}/edit`);

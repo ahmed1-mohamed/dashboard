@@ -13,8 +13,8 @@ interface UsersFiltersProps {
   onSearchChange: (value: string) => void;
   statusFilter: string;
   onStatusChange: (value: string) => void;
-  countryFilter: string;
-  onCountryChange: (value: string) => void;
+  roleFilter: string;
+  onRoleChange: (value: string) => void;
 }
 
 export function UsersFilters({
@@ -22,8 +22,8 @@ export function UsersFilters({
   onSearchChange,
   statusFilter,
   onStatusChange,
-  countryFilter,
-  onCountryChange,
+  roleFilter,
+  onRoleChange,
 }: UsersFiltersProps) {
   return (
     <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
@@ -33,15 +33,17 @@ export function UsersFilters({
         placeholder="Search for users"
       />
 
-      <Select value={countryFilter} onValueChange={onCountryChange}>
+      <Select value={roleFilter} onValueChange={onRoleChange}>
         <SelectTrigger className="w-[120px] max-sm:w-full">
-          <SelectValue placeholder="Country" />
+          <SelectValue placeholder="User Role" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">All Countries</SelectItem>
-          <SelectItem value="UAE">UAE</SelectItem>
-          <SelectItem value="Egypt">Egypt</SelectItem>
-          <SelectItem value="Oman">Oman</SelectItem>
+          <SelectItem value="all">All Roles</SelectItem>
+          <SelectItem value="Super Admin">Super Admin</SelectItem>
+          <SelectItem value="Admin">Admin</SelectItem>
+          <SelectItem value="Agent">Agent</SelectItem>
+          <SelectItem value="Manager">Manager</SelectItem>
+          <SelectItem value="Viewer">Viewer</SelectItem>
         </SelectContent>
       </Select>
 

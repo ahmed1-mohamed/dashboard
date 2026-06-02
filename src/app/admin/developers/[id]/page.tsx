@@ -2,12 +2,10 @@
 
 import { use, useState } from "react";
 import { useRouter } from "next/navigation";
-// import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
-// import { EditDeveloperModal } from "@/components/modals/edit-developer-modal";
 import { useDeveloperDetails } from "@/hooks/use-developer-details";
 import {
   ChevronLeft,
@@ -130,19 +128,19 @@ export default function DeveloperDetailsPage({
 
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <DeveloperHeader developer={developer} />
-        <DeveloperStats 
-          developer={developer} 
-          totalProjects={projects.length} 
-          totalUnits={totalUnits} 
-          availableUnits={availableUnits} 
+        <DeveloperStats
+          developer={developer}
+          totalProjects={projects.length}
+          totalUnits={totalUnits}
+          availableUnits={availableUnits}
         />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <DeveloperAbout 
-          developer={developer} 
-          handleToggleTopDeveloper={handleToggleTopDeveloper} 
-          isTogglingTop={isTogglingTop} 
+        <DeveloperAbout
+          developer={developer}
+          handleToggleTopDeveloper={handleToggleTopDeveloper}
+          isTogglingTop={isTogglingTop}
         />
         <div className="lg:col-span-2">
           <DeveloperTabs developer={developer} projects={projects} units={units} />

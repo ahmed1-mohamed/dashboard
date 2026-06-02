@@ -42,14 +42,18 @@ export default function UsersPage() {
   } = useServerPagination({
     initialPage: 1,
     initialPerPage: 15,
-    initialFilters: { status: "all", country: "all" },
+    initialFilters: { status: "all", role: "all" },
   });
 
+  const isFiltering = filters.status !== "all" || filters.role !== "all" || debouncedSearch !== "";
+  const fetchPerPage = isFiltering ? 1000 : perPage;
+  const fetchPage = isFiltering ? 1 : page;
+
   const { usersData, deleteUserMutation, addUserMutation } = useUsers(
-    page,
-    perPage,
-    debouncedSearch,
-    filters.status
+    fetchPage,
+    fetchPerPage,
+    undefined,
+    undefined
   );
 
   const { data, isLoading, isError, error, refetch } = usersData;
@@ -63,15 +67,55 @@ export default function UsersPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<number | null>(null);
 
-  const usersArray: GetUserDataType[] = useMemo(() => {
-    const rawData = data?.data;
-    if (Array.isArray(rawData)) return rawData;
-    if (rawData?.data && Array.isArray(rawData.data)) return rawData.data;
-    return [];
-  }, [data]);
+  const usersArrayData: { items: GetUserDataType[]; totalCount: number } = useMemo(() => {
+    let rawData = data?.data;
+    if (!Array.isArray(rawData)) {
+      if (rawData?.data && Array.isArray(rawData.data)) {
+        rawData = rawData.data;
+      } else {
+        rawData = [];
+      }
+    }
+
+    let itemsArray = [...rawData];
+
+    // Local filtering
+    const isFiltering = filters.status !== "all" || filters.role !== "all" || debouncedSearch !== "";
+    if (isFiltering && itemsArray.length > 0) {
+      if (filters.status !== "all") {
+        itemsArray = itemsArray.filter((u: any) => {
+          const uStatus = u.status?.toLowerCase();
+          return uStatus === filters.status.toLowerCase();
+        });
+      }
+      if (filters.role !== "all") {
+        itemsArray = itemsArray.filter((u: any) => {
+          const uRole = u.role_name?.toLowerCase() || "viewer";
+          return uRole === filters.role.toLowerCase();
+        });
+      }
+      // Assuming search is handled locally if we fetch all, or handled by backend.
+      if (debouncedSearch) {
+        const query = debouncedSearch.toLowerCase();
+        itemsArray = itemsArray.filter((u: any) => {
+          const fullName = `${u.first_name || ""} ${u.last_name || ""}`.toLowerCase();
+          return fullName.includes(query) || (u.email || "").toLowerCase().includes(query);
+        });
+      }
+    }
+
+    // Capture total after filtering but before pagination
+    const totalCount = itemsArray.length;
+
+    // Local pagination
+    const startIndex = (page - 1) * perPage;
+    itemsArray = itemsArray.slice(startIndex, startIndex + perPage);
+
+    return { items: itemsArray, totalCount };
+  }, [data, filters.status, filters.role, debouncedSearch, page, perPage]);
 
   const users: User[] = useMemo(() => {
-    return usersArray.map((user) => {
+    return usersArrayData.items.map((user) => {
       const firstName = user.first_name || "";
       const lastName = user.last_name || "";
       const fullName = `${firstName} ${lastName}`.trim() || "N/A";
@@ -86,9 +130,10 @@ export default function UsersPage() {
         status: user.status === "active" ? "Active" : user.status === "inactive" ? "Inactive" : "Suspended",
       };
     });
-  }, [usersArray]);
+  }, [usersArrayData]);
 
-  const total = data?.data?.total || 0;
+  const isFiltering = filters.status !== "all" || filters.role !== "all" || debouncedSearch !== "";
+  const total = isFiltering ? usersArrayData.totalCount : (data?.data?.total || usersArrayData.totalCount || 0);
   const totalPages = Math.max(1, Math.ceil(total / perPage));
 
   const handleAddUser = useCallback((userData: CreateNewUserInput) => {
@@ -164,8 +209,8 @@ export default function UsersPage() {
               onSearchChange={setSearchQuery}
               statusFilter={filters.status}
               onStatusChange={(val) => setFilter("status", val)}
-              countryFilter={filters.country}
-              onCountryChange={(val) => setFilter("country", val)}
+              roleFilter={filters.role}
+              onRoleChange={(val) => setFilter("role", val)}
             />
             <div className="flex items-center gap-2">
               <Button variant="outline" className="gap-2 border-gray-200">
