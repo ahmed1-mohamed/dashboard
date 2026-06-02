@@ -3,7 +3,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
-import { AdminUsersService } from "@/services/AdminUsersService";
+import { AdminUsersService } from "@/features/users/services/AdminUsersService";
 import { apiClient } from "@/lib/apiClient";
 
 export function useUserActions() {

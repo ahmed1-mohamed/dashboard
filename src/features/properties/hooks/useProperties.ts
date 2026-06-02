@@ -1,8 +1,8 @@
 "use client";
 
-import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import { useQuery, keepPreviousData, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
-import { AdminPropertiesService, PropertiesFilterParams } from "@/services/AdminPropertiesService";
+import { AdminPropertiesService, PropertiesFilterParams } from "../services/AdminPropertiesService";
 
 export default function useDashboardAdminProperties(
   page: number = 1,
@@ -28,6 +28,13 @@ export default function useDashboardAdminProperties(
     placeholderData: keepPreviousData,
   });
 
+  const deletePropertyMutation = useMutation({
+    mutationFn: (id: number) => AdminPropertiesService.deleteProperty(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["properties"] });
+    },
+  });
+
   return {
     data: (propertiesQuery.data as any)?.data || [],
     total: (propertiesQuery.data as any)?.total || 0,
@@ -36,5 +43,6 @@ export default function useDashboardAdminProperties(
     error: propertiesQuery.error,
     refetch: propertiesQuery.refetch,
     paginatedPropertiesData: propertiesQuery,
+    deletePropertyMutation,
   };
 }

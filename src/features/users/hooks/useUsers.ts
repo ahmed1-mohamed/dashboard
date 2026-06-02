@@ -2,10 +2,10 @@
 
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
-import { AdminUsersService } from "@/services/AdminUsersService";
+import { AdminUsersService } from "../services/AdminUsersService";
 import { CreateNewUserInput } from "@/validators/create-new-user.schema";
 
-export default function useDashboardAdminUsersData(
+export function useUsers(
   page: number = 1,
   perPage: number = 15,
   search: string = "",

@@ -74,7 +74,7 @@ export default function useBookingDetails({
       const res: any =
         await DashboardAdminService.getBookingDetails(reservationId);
 
-      return res.data;
+      return res;
     },
     enabled: !!reservationId,
     retry: false,
@@ -252,12 +252,12 @@ export default function useBookingDetails({
           : [],
         comments: bookingData.reservation.comments
           ? [
-              {
-                author: `${bookingData.user.first_name} ${bookingData.user.last_name}`,
-                date: bookingData.reservation.reservation_date,
-                text: bookingData.reservation.comments,
-              },
-            ]
+            {
+              author: `${bookingData.user.first_name} ${bookingData.user.last_name}`,
+              date: bookingData.reservation.reservation_date,
+              text: bookingData.reservation.comments,
+            },
+          ]
           : [],
       },
       {
@@ -284,11 +284,11 @@ export default function useBookingDetails({
         step: "Step 3 of 4",
         documents: bookingData.media.down_payment
           ? [
-              {
-                name: "Down Payment Receipt",
-                url: bookingData.media.down_payment,
-              },
-            ]
+            {
+              name: "Down Payment Receipt",
+              url: bookingData.media.down_payment,
+            },
+          ]
           : [],
       },
       {

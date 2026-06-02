@@ -101,7 +101,7 @@ const tabGroups = [
     items: [
       { icon: Activity, label: "Activity", href: "/admin/activity" },
       { icon: MessageSquare, label: "Chat", href: "/admin/chat" },
-      { icon: Calendar, label: "Bookings", href: "/admin/bookings" },
+      { icon: Calendar, label: "Reservations", href: "/admin/bookings" },
       { icon: Video, label: "Meetings", href: "/admin/meetings" },
     ],
   },

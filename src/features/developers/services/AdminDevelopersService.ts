@@ -9,6 +9,7 @@ export const AdminDevelopersService = {
     perPage: number = 10,
     search?: string,
     status?: string,
+    country?: string,
   ) => {
     const params = new URLSearchParams({
       page: page.toString(),
@@ -17,6 +18,7 @@ export const AdminDevelopersService = {
 
     if (search) params.append("search", search);
     if (status && status !== "all") params.append("status", status);
+    if (country && country !== "all") params.append("country", country);
 
     const response = await apiClient.get(
       `/dashboard/developers?${params.toString()}`,

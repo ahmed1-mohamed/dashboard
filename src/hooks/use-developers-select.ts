@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
-import { AdminDevelopersService } from "@/services/AdminDevelopersService";
+import { AdminDevelopersService } from "@/features/developers/services/AdminDevelopersService";
 import type { AxiosResponse } from "axios";
 import type { DeveloperDataType } from "@/types";
 

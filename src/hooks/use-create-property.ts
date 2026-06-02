@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { AdminPropertiesService } from "@/services/AdminPropertiesService";
+import { AdminPropertiesService } from "@/features/properties/services/AdminPropertiesService";
 import { PropertiesInput } from "@/validators/propertiesSchema";
 import { toast } from "sonner";
 

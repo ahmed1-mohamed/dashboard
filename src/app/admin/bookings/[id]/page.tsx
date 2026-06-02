@@ -293,9 +293,9 @@ export default function BookingDetailsPage() {
               <div className="p-5 space-y-4">
                 {/* Documents */}
                 {(stage.documents && stage.documents.length > 0) ||
-                stage.name === "Sales Offer" ||
-                stage.name === "SPA" ||
-                stage.name === "Down Payment" ? (
+                  stage.name === "Sales Offer" ||
+                  stage.name === "SPA" ||
+                  stage.name === "Down Payment" ? (
                   <div>
                     <h4 className="text-sm font-semibold text-gray-900 mb-3">
                       Documents{" "}

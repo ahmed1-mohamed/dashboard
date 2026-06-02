@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
-import { AdminDevelopersService } from "@/services/AdminDevelopersService";
+import { AdminDevelopersService } from "@/features/developers/services/AdminDevelopersService";
 
 export interface DeveloperData {
   developer_id: number;

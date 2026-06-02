@@ -1,8 +1,8 @@
 "use client";
 
-import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import { useQuery, keepPreviousData, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
-import { AdminProjectsService } from "@/services/AdminProjectsService";
+import { AdminProjectsService } from "../services/AdminProjectsService";
 
 export default function useDashboardAdminData(
   page?: number,
@@ -31,8 +31,19 @@ export default function useDashboardAdminData(
     placeholderData: keepPreviousData,
   });
 
+  const queryClient = useQueryClient();
+
+  const deleteProjectMutation = useMutation({
+    mutationFn: (id: number) => AdminProjectsService.deleteProject(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      queryClient.invalidateQueries({ queryKey: ["allProjects"] });
+    },
+  });
+
   return {
     allProjectsData,
     paginatedProjectsData,
+    deleteProjectMutation,
   };
 }

@@ -109,4 +109,20 @@ export const AdminPropertiesService = {
     const response = await apiClient.post("/dashboard/properties", data);
     return response.data;
   },
+
+  /**
+   * Delete a property
+   */
+  deleteProperty: async (propertyId: number) => {
+    const response = await apiClient.delete(`/dashboard/properties/${propertyId}`);
+    return response.data;
+  },
+
+  /**
+   * Update a property
+   */
+  updateProperty: async (propertyId: number, data: any) => {
+    const response = await apiClient.put(`/dashboard/properties/${propertyId}`, data);
+    return response.data;
+  },
 };

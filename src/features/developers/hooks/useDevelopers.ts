@@ -2,26 +2,28 @@
 
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
-import { AdminDevelopersService } from "@/services/AdminDevelopersService";
+import { AdminDevelopersService } from "../services/AdminDevelopersService";
 
-export default function useDashboardAdminDevelopersData(
+export function useDevelopers(
   page: number = 1,
   perPage: number = 10,
   search?: string,
   status?: string,
+  country?: string,
 ) {
   const { data: session } = useSession();
   const token = session?.user?.accessToken;
   const queryClient = useQueryClient();
 
   const developersData = useQuery({
-    queryKey: ["developers", page, perPage, search, status],
+    queryKey: ["developers", page, perPage, search, status, country],
     queryFn: () =>
       AdminDevelopersService.getDevelopersPaginated(
         page,
         perPage,
         search,
         status,
+        country,
       ),
     retry: false,
     enabled: !!token,

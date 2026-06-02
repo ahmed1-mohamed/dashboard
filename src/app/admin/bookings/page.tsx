@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import useDashboardAdminBookingsData from "@/hooks/use-dashboardAdminBookings";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -41,16 +40,17 @@ interface Booking {
   user_name: string;
   project_name: string;
   country: string;
-  createdDate: string;
+  reservation_date: string;
   expiry_date: string;
   types: string;
+  reservation_status_type: string;
   last_status: string;
 }
 
 interface ApiReservation {
   reservation_id: number;
   last_status: string;
-  created_at: string;
+  reservation_date: string;
   expiry_date?: string;
   user_name: string;
   property?: {
@@ -58,6 +58,7 @@ interface ApiReservation {
       property_type_name: string;
     };
   };
+  reservation_status_type: string;
   project_name: string;
   country: string;
 }
@@ -73,8 +74,6 @@ export default function BookingsPage({
 }: BookingsPageProps) {
   const router = useRouter();
   const { data: session } = useSession();
-  const token = session?.user?.accessToken;
-  const queryClient = useQueryClient();
 
   // Filter state
   const [searchQuery, setSearchQuery] = useState("");
@@ -92,32 +91,34 @@ export default function BookingsPage({
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchQuery);
+      setCurrentPage(1); // Reset to page 1 on search
     }, 300);
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Fetch bookings data using custom hook
-  const { bookingsData, handleConfirm, handleDecline, isConfirming, isDeclining } = useDashboardAdminBookingsData();
+  // Fetch bookings data using custom hook with all filters
+  const {
+    bookingsData,
+    handleConfirm,
+    handleDecline,
+    isConfirming,
+    isDeclining,
+  } = useDashboardAdminBookingsData({
+    page: currentPage,
+    perPage: itemsPerPage,
+    search: debouncedSearch,
+    country: countryFilter,
+    status: statusFilter,
+    type: typeFilter,
+    expiryDate: expiryDateFilter,
+  });
 
   const { data, isLoading, isError, error, isFetching, refetch } = bookingsData;
 
-  // Debug: inspect raw response
-  useEffect(() => {
-    if (data) {
-      console.log("Bookings Data type:", typeof data);
-      console.log("Bookings Data keys:", Object.keys(data as object));
-      console.log("Bookings Data value:", data);
-    }
-  }, [data]);
-
-  // Map API data to component interface
-  const rawData = data as any;
-  let itemsArray: any[] = [];
-  if (Array.isArray(rawData)) {
-    itemsArray = rawData;
-  } else if (rawData && Array.isArray(rawData.data)) {
-    itemsArray = rawData.data;
-  }
+  // Extract array and total from response envelope
+  // API returns { data: Booking[], total: number } (or similar)
+  const itemsArray = (data as any)?.data || [];
+  const totalBookings = (data as any)?.total || itemsArray.length;
 
   const bookings: Booking[] = itemsArray.map((booking: ApiReservation) => ({
     id: booking.reservation_id,
@@ -125,51 +126,21 @@ export default function BookingsPage({
     user_name: booking.user_name || "N/A",
     project_name: booking.project_name || "N/A",
     country: booking.country || "N/A",
-    createdDate: booking.created_at
-      ? new Date(booking.created_at).toISOString().split("T")[0]
+    reservation_date: booking.reservation_date
+      ? new Date(booking.reservation_date).toISOString().split("T")[0]
       : "N/A",
     expiry_date: booking.expiry_date
       ? new Date(booking.expiry_date).toISOString().split("T")[0]
       : "N/A",
-    types: booking.property?.property_type?.property_type_name || "N/A",
+    reservation_status_type: booking.reservation_status_type || "N/A",
     last_status: booking.last_status,
   }));
 
-  // Filter bookings
-  const filteredBookings = bookings.filter((booking) => {
-    const matchesSearch =
-      booking.bookingNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      booking.user_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      booking.project_name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCountry =
-      countryFilter === "all" || booking.country === countryFilter;
-    const matchesStatus =
-      statusFilter === "all" || booking.last_status === statusFilter;
-    const matchesType = typeFilter === "all" || booking.types === typeFilter;
-    const matchesExpiryDate =
-      expiryDateFilter === "all" ||
-      (expiryDateFilter === "expired" &&
-        booking.expiry_date !== "N/A" &&
-        new Date(booking.expiry_date) < new Date()) ||
-      (expiryDateFilter === "active" &&
-        booking.expiry_date !== "N/A" &&
-        new Date(booking.expiry_date) >= new Date()) ||
-      (expiryDateFilter === "no_expiry" && booking.expiry_date === "N/A");
-
-    return (
-      matchesSearch &&
-      matchesCountry &&
-      matchesStatus &&
-      matchesType &&
-      matchesExpiryDate
-    );
-  });
-
-  // Pagination
-  const totalPages = Math.ceil(filteredBookings.length / itemsPerPage);
+  // Pagination using server-side total
+  const totalPages = Math.ceil(Number(totalBookings) / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const paginatedBookings = filteredBookings.slice(startIndex, endIndex);
+  const paginatedBookings = bookings; // Already paginated by server
 
   // Handle page changes
   const handlePageChange = useCallback(
@@ -184,12 +155,12 @@ export default function BookingsPage({
   const handleSelectAll = useCallback(
     (checked: boolean) => {
       if (checked) {
-        setSelectedBookings(paginatedBookings.map((b) => b.id));
+        setSelectedBookings(bookings.map((b) => b.id));
       } else {
         setSelectedBookings([]);
       }
     },
-    [paginatedBookings],
+    [bookings],
   );
 
   const handleSelectBooking = useCallback(
@@ -207,6 +178,7 @@ export default function BookingsPage({
     refetch();
   }, [refetch]);
 
+  // Generate page numbers for pagination
   const getPageNumbers = useCallback(() => {
     const pages: (number | string)[] = [];
     const maxVisible = 5;
@@ -236,12 +208,12 @@ export default function BookingsPage({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-bold text-gray-900">Bookings</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Reservations</h1>
           <Badge
             variant="outline"
             className="bg-purple-100 text-purple-700 border-purple-200 rounded-full px-2"
           >
-            {bookings.length}
+            {totalBookings}
           </Badge>
         </div>
       </div>
@@ -293,7 +265,9 @@ export default function BookingsPage({
             <AlertCircle className="h-5 w-5 text-red-500" />
             <p className="text-sm text-red-800">
               <strong>Error:</strong>{" "}
-              {error instanceof Error ? error.message : "Failed to load bookings"}
+              {error instanceof Error
+                ? error.message
+                : "Failed to load reservations"}
             </p>
           </div>
           <Button
@@ -316,7 +290,7 @@ export default function BookingsPage({
               <div className="relative w-full min-w-[200px] max-w-xs">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
-                  placeholder="Search for bookings"
+                  placeholder="Search for reservations"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10 bg-white border-gray-200"
@@ -346,7 +320,9 @@ export default function BookingsPage({
                   <SelectItem value="Under Review">Under Review</SelectItem>
                   <SelectItem value="Sales Offer">Sales Offer</SelectItem>
                   <SelectItem value="Down Payment">Down Payment</SelectItem>
-                  <SelectItem value="Sales Agreement">Sales Agreement</SelectItem>
+                  <SelectItem value="Sales Agreement">
+                    Sales Agreement
+                  </SelectItem>
                   <SelectItem value="Completed">Completed</SelectItem>
                   <SelectItem value="Rejected">Rejected</SelectItem>
                 </SelectContent>
@@ -367,7 +343,10 @@ export default function BookingsPage({
               </Select>
 
               {/* Expiry Date Filter */}
-              <Select value={expiryDateFilter} onValueChange={setExpiryDateFilter}>
+              <Select
+                value={expiryDateFilter}
+                onValueChange={setExpiryDateFilter}
+              >
                 <SelectTrigger className="w-[140px]">
                   <SelectValue placeholder="Expiry Date" />
                 </SelectTrigger>
@@ -401,14 +380,14 @@ export default function BookingsPage({
                   <TableHead className="w-[35px] px-2">
                     <Checkbox
                       checked={
-                        paginatedBookings.length > 0 &&
-                        selectedBookings.length === paginatedBookings.length
+                        bookings.length > 0 &&
+                        selectedBookings.length === bookings.length
                       }
                       onCheckedChange={handleSelectAll}
                     />
                   </TableHead>
                   <TableHead className="font-semibold text-gray-900 w-[100px] px-2 text-sm">
-                    Booking Number
+                    Reservation Number
                   </TableHead>
                   <TableHead className="font-semibold text-gray-900 w-[110px] px-2 text-sm">
                     Client Name
@@ -420,7 +399,7 @@ export default function BookingsPage({
                     Country
                   </TableHead>
                   <TableHead className="font-semibold text-gray-900 w-[100px] px-2 text-sm">
-                    Created Date
+                    reservation date
                   </TableHead>
                   <TableHead className="font-semibold text-gray-900 w-[100px] px-2 text-sm">
                     Expiry Date
@@ -437,19 +416,23 @@ export default function BookingsPage({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {paginatedBookings.length === 0 ? (
+                {bookings.length === 0 ? (
                   <TableRow>
                     <TableCell
                       colSpan={10}
                       className="h-24 text-center text-gray-500"
                     >
-                      No bookings found.
+                      No reservations found.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  paginatedBookings.map((booking) => (
-                    <TableRow key={booking.id}>
-                      <TableCell className="px-2">
+                  bookings.map((booking) => (
+                    <TableRow 
+                      key={booking.id}
+                      className="cursor-pointer hover:bg-gray-50"
+                      onClick={() => router.push(`/admin/bookings/${booking.id}`)}
+                    >
+                      <TableCell className="px-2" onClick={(e) => e.stopPropagation()}>
                         <Checkbox
                           checked={selectedBookings.includes(booking.id)}
                           onCheckedChange={(checked) =>
@@ -470,13 +453,13 @@ export default function BookingsPage({
                         {booking.country}
                       </TableCell>
                       <TableCell className="text-gray-900 px-2 text-sm">
-                        {booking.createdDate}
+                        {booking.reservation_date}
                       </TableCell>
                       <TableCell className="text-gray-900 px-2 text-sm">
                         {booking.expiry_date}
                       </TableCell>
                       <TableCell className="text-gray-900 px-2 text-sm truncate">
-                        {booking.types}
+                        {booking.reservation_status_type}
                       </TableCell>
                       <TableCell className="px-2">
                         <Badge
@@ -486,7 +469,7 @@ export default function BookingsPage({
                           {booking.last_status}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-center px-2">
+                      <TableCell className="text-center px-2" onClick={(e) => e.stopPropagation()}>
                         <TableActions
                           onView={() =>
                             router.push(`/admin/bookings/${booking.id}`)
@@ -508,7 +491,8 @@ export default function BookingsPage({
           {totalPages > 1 && (
             <div className="flex items-center justify-between">
               <div className="text-sm text-gray-500">
-                Showing {startIndex + 1}-{Math.min(endIndex, filteredBookings.length)} of {filteredBookings.length}
+                Showing {startIndex + 1}-{Math.min(endIndex, totalBookings)} of{" "}
+                {totalBookings}
               </div>
               <div className="flex items-center gap-1">
                 <Button

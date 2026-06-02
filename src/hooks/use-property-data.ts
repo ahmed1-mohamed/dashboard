@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { AdminPropertiesService } from "@/services/AdminPropertiesService";
+import { AdminPropertiesService } from "@/features/properties/services/AdminPropertiesService";
 import type {
   PropertyTypeDataType,
   PropertySubtypeDataType,

@@ -3,7 +3,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
-import { AdminDevelopersService } from "@/services/AdminDevelopersService";
+import { AdminDevelopersService } from "@/features/developers/services/AdminDevelopersService";
 import { FormValues as DeveloperFormValues } from "@/validators/developerSchema";
 
 export interface DeveloperData {

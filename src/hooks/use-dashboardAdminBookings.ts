@@ -1,25 +1,151 @@
 "use client";
 
-import { useQuery, keepPreviousData, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  keepPreviousData,
+} from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
-import { AdminBookingsService } from "@/services/AdminBookingsService";
 import { toast } from "sonner";
+import { AdminBookingsService } from "@/services/AdminBookingsService";
 
-export default function useDashboardAdminBookingsData() {
+interface BookingFilters {
+  page?: number;
+  perPage?: number;
+  search?: string;
+  country?: string;
+  status?: string;
+  type?: string;
+  expiryDate?: string;
+}
+
+interface ApiError {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+  message?: string;
+}
+
+// export default function useDashboardAdminBookingsData(
+//   filters: BookingFilters = {},
+// ) {
+//   const { data: session } = useSession();
+//   const token = session?.user?.accessToken;
+//   const queryClient = useQueryClient();
+
+//   const {
+//     page = 1,
+//     perPage = 10,
+//     search,
+//     country,
+//     status,
+//     type,
+//     expiryDate,
+//   } = filters;
+
+//   const bookingsData = useQuery({
+//     queryKey: ["bookings", page, perPage, search, country, status, type, expiryDate],
+//     queryFn: () => AdminBookingsService.getBookings(page, perPage, { search, country, status, type, expiryDate }),
+//     retry: false,
+//     enabled: !!token,
+//     staleTime: 5 * 60 * 1000,
+//     placeholderData: keepPreviousData,
+//   });
+
+//   const confirmMutation = useMutation({
+//     mutationFn: async (bookingId: number) => {
+//       await AdminBookingsService.confirmBooking(bookingId);
+//     },
+//     onSuccess: () => {
+//       queryClient.invalidateQueries({ queryKey: ["bookings"] });
+//       toast.success("Booking confirmed successfully!");
+//     },
+//     onError: (error: unknown) => {
+//       let errorMessage = "Failed to confirm booking.";
+//       if (error instanceof Error) {
+//         errorMessage = error.message;
+//       } else if (typeof error === "object" && error !== null) {
+//         const apiError = error as ApiError;
+//         errorMessage = apiError.response?.data?.message || error.message || errorMessage;
+//       }
+//       toast.error(errorMessage);
+//     },
+//   });
+
+//   const declineMutation = useMutation({
+//     mutationFn: async (bookingId: number) => {
+//       await AdminBookingsService.declineBooking(bookingId);
+//     },
+//     onSuccess: () => {
+//       queryClient.invalidateQueries({ queryKey: ["bookings"] });
+//       toast.success("Booking declined successfully!");
+//     },
+//     onError: (error: unknown) => {
+//       let errorMessage = "Failed to decline booking.";
+//       if (error instanceof Error) {
+//         errorMessage = error.message;
+//       } else if (typeof error === "object" && error !== null) {
+//         const apiError = error as ApiError;
+//         errorMessage = apiError.response?.data?.message || error.message || errorMessage;
+//       }
+//       toast.error(errorMessage);
+//     },
+//   });
+
+//   return {
+//     bookingsData,
+//     handleConfirm: confirmMutation.mutate,
+//     handleDecline: declineMutation.mutate,
+//     isConfirming: confirmMutation.isPending,
+//     isDeclining: declineMutation.isPending,
+//   };
+// }
+
+export default function useDashboardAdminBookingsData(
+  filters: BookingFilters = {},
+) {
   const { data: session } = useSession();
   const token = session?.user?.accessToken;
   const queryClient = useQueryClient();
 
+  const {
+    page = 1,
+    perPage = 10,
+    search,
+    country,
+    status,
+    type,
+    expiryDate,
+  } = filters;
+
   const bookingsData = useQuery({
-    queryKey: ["bookings"],
-    queryFn: () => AdminBookingsService.getBookings(),
+    queryKey: [
+      "bookings",
+      page,
+      perPage,
+      search,
+      country,
+      status,
+      type,
+      expiryDate,
+    ],
+    queryFn: () =>
+      AdminBookingsService.getBookings(page, perPage, {
+        search,
+        country,
+        status,
+        type,
+        expiryDate,
+      }),
     retry: false,
     enabled: !!token,
     staleTime: 5 * 60 * 1000,
     placeholderData: keepPreviousData,
   });
 
-  // Confirm booking mutation
   const confirmMutation = useMutation({
     mutationFn: async (bookingId: number) => {
       await AdminBookingsService.confirmBooking(bookingId);
@@ -34,7 +160,6 @@ export default function useDashboardAdminBookingsData() {
     },
   });
 
-  // Decline booking mutation
   const declineMutation = useMutation({
     mutationFn: async (bookingId: number) => {
       await AdminBookingsService.declineBooking(bookingId);
@@ -49,18 +174,10 @@ export default function useDashboardAdminBookingsData() {
     },
   });
 
-  const handleConfirm = (bookingId: number) => {
-    confirmMutation.mutate(bookingId);
-  };
-
-  const handleDecline = (bookingId: number) => {
-    declineMutation.mutate(bookingId);
-  };
-
   return {
     bookingsData,
-    handleConfirm,
-    handleDecline,
+    handleConfirm: confirmMutation.mutate,
+    handleDecline: declineMutation.mutate,
     isConfirming: confirmMutation.isPending,
     isDeclining: declineMutation.isPending,
   };
