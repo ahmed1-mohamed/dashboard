@@ -26,15 +26,15 @@ export function useServerPagination<TFilters = Record<string, any>>({
   // Debounce search query
   useEffect(() => {
     const handler = setTimeout(() => {
-      setDebouncedSearch(searchQuery);
+      setDebouncedSearch((prev) => {
+        if (prev !== searchQuery) {
+          setPage(1);
+        }
+        return searchQuery;
+      });
     }, searchDebounceMs);
     return () => clearTimeout(handler);
   }, [searchQuery, searchDebounceMs]);
-
-  // Reset to page 1 when search or filters change
-  useEffect(() => {
-    setPage(1);
-  }, [debouncedSearch, filters]);
 
   const handlePerPageChange = useCallback((value: string) => {
     setPerPage(Number(value));
@@ -45,13 +45,20 @@ export function useServerPagination<TFilters = Record<string, any>>({
     setPage(newPage);
   }, []);
 
+  const handleSetFilters = useCallback((value: React.SetStateAction<TFilters>) => {
+    setFilters(value);
+    setPage(1);
+  }, []);
+
   const setFilter = useCallback(<K extends keyof TFilters>(key: K, value: TFilters[K]) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
+    setPage(1);
   }, []);
 
   const resetFilters = useCallback(() => {
     setFilters(initialFilters);
     setSearchQuery("");
+    setPage(1);
   }, [initialFilters]);
 
   return {
@@ -63,7 +70,7 @@ export function useServerPagination<TFilters = Record<string, any>>({
     setPage: handlePageChange,
     setPerPage: handlePerPageChange,
     setSearchQuery,
-    setFilters,
+    setFilters: handleSetFilters,
     setFilter,
     resetFilters,
   };

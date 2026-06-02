@@ -25,5 +25,5 @@ export interface Project {
   price_after_discount: string;
   status: string;
   projectType: "residential" | "mixed use" | "commercial" | string;
-  is_visible: boolean;
+  is_active: boolean;
 }

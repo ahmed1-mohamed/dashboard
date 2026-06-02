@@ -9,6 +9,7 @@ export const AdminUsersService = {
     perPage: number = 15,
     search?: string,
     status?: string,
+    role?: string,
   ) => {
     const params = new URLSearchParams({
       page: page.toString(),
@@ -19,6 +20,9 @@ export const AdminUsersService = {
     }
     if (status && status !== "all") {
       params.append("status", status.toLowerCase());
+    }
+    if (role && role !== "all") {
+      params.append("role", role);
     }
     return apiClient.get<{ data: GetUserDataType[]; total: number }>(
       `/dashboard/users?${params.toString()}`,

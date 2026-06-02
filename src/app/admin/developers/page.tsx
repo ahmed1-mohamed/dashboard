@@ -81,10 +81,15 @@ export default function DevelopersPage() {
 
   const itemsArray: DeveloperApiResponse[] = useMemo(() => {
     const rawData = (devData as { data?: unknown })?.data;
-    if (Array.isArray(rawData)) return rawData as DeveloperApiResponse[];
-    const nested = (rawData as { developers?: unknown } | undefined)?.developers;
-    if (Array.isArray(nested)) return nested as DeveloperApiResponse[];
-    return [];
+    let arr: DeveloperApiResponse[] = [];
+    if (Array.isArray(rawData)) {
+      arr = rawData as DeveloperApiResponse[];
+    } else {
+      const nested = (rawData as { developers?: unknown } | undefined)?.developers;
+      if (Array.isArray(nested)) arr = nested as DeveloperApiResponse[];
+    }
+
+    return arr;
   }, [devData]);
 
   const totalDevelopers: number = useMemo(() => {
@@ -96,7 +101,7 @@ export default function DevelopersPage() {
       return (rawData as { total: number }).total;
     }
     return itemsArray.length;
-  }, [devData, itemsArray]);
+  }, [devData, itemsArray.length]);
 
   const developers: Developer[] = useMemo(() => {
     return itemsArray.map((dev) => ({
@@ -205,7 +210,7 @@ export default function DevelopersPage() {
       toast.info("No developers to export");
       return;
     }
-    const headers = ["ID","Name","Email","Phone","Website","Countries","Status","Projects"];
+    const headers = ["ID", "Name", "Email", "Phone", "Website", "Countries", "Status", "Projects"];
     const rows = developers.map((d) => [
       d.id, `"${d.name}"`, `"${d.email}"`, `"${d.contact}"`,
       `"${d.website}"`, `"${d.countries}"`,
@@ -313,13 +318,13 @@ export default function DevelopersPage() {
             totalPages={totalPages}
             perPage={perPage}
             totalItems={totalDevelopers}
+            currentItemsCount={developers.length}
             onPageChange={setPage}
             onPerPageChange={setPerPage}
           />
         </>
       )}
 
-      {/* Modals */}
       <AddDeveloperModal
         isOpen={addModalOpen}
         onClose={() => setAddModalOpen(false)}

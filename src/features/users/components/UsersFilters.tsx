@@ -7,6 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useRolesSelect } from "@/hooks/use-roles-select";
 
 interface UsersFiltersProps {
   searchQuery: string;
@@ -25,6 +26,8 @@ export function UsersFilters({
   roleFilter,
   onRoleChange,
 }: UsersFiltersProps) {
+  const { roles } = useRolesSelect();
+
   return (
     <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
       <SearchInput
@@ -39,11 +42,11 @@ export function UsersFilters({
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Roles</SelectItem>
-          <SelectItem value="Super Admin">Super Admin</SelectItem>
-          <SelectItem value="Admin">Admin</SelectItem>
-          <SelectItem value="Agent">Agent</SelectItem>
-          <SelectItem value="Manager">Manager</SelectItem>
-          <SelectItem value="Viewer">Viewer</SelectItem>
+          {roles.map((role) => (
+            <SelectItem key={role.role_id} value={role.role_name}>
+              {role.role_name}
+            </SelectItem>
+          ))}
         </SelectContent>
       </Select>
 

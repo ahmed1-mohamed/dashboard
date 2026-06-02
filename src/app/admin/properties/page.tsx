@@ -71,6 +71,10 @@ export default function PropertiesPage() {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [propertyToEdit, setPropertyToEdit] = useState<number | null>(null);
 
+  const totalProperties: number = useMemo(() => {
+    return total || (propertiesData || []).length;
+  }, [total, propertiesData]);
+
   const properties: Property[] = useMemo(() => {
     return (propertiesData || []).map((prop: any) => ({
       id: prop.property_id,
@@ -85,7 +89,7 @@ export default function PropertiesPage() {
     }));
   }, [propertiesData]);
 
-  const totalPages = Math.max(1, Math.ceil((total || 0) / perPage));
+  const totalPages = Math.max(1, Math.ceil(totalProperties / perPage));
 
   const handleSelectAll = useCallback((checked: boolean) => {
     setSelectedProperties(checked ? properties.map((p) => p.id) : []);
@@ -146,7 +150,7 @@ export default function PropertiesPage() {
     <div className="p-4 px-3 space-y-4 max-w-full overflow-hidden">
       <PageHeader
         title="Properties"
-        totalItems={total || 0}
+        totalItems={totalProperties}
         actionButtonText="Create New Property"
         onActionClick={() => router.push("/admin/properties/create")}
       />
@@ -204,7 +208,8 @@ export default function PropertiesPage() {
             page={page}
             totalPages={totalPages}
             perPage={perPage}
-            totalItems={total || 0}
+            totalItems={totalProperties}
+            currentItemsCount={properties.length}
             onPageChange={setPage}
             onPerPageChange={setPerPage}
           />

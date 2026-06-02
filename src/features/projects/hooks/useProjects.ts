@@ -43,9 +43,9 @@ export default function useProjects(
     },
   });
 
-  const toggleVisibilityMutation = useMutation({
-    mutationFn: ({ id, isVisible }: { id: number; isVisible: boolean }) =>
-      AdminProjectsService.toggleVisibility(id, isVisible),
+  const toggleActiveMutation = useMutation({
+    mutationFn: ({ id, isActive }: { id: number; isActive: boolean }) =>
+      AdminProjectsService.toggleActive(id, isActive),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
     },
@@ -62,7 +62,7 @@ export default function useProjects(
   return {
     paginatedProjectsData,
     deleteProjectMutation,
-    toggleVisibilityMutation,
+    toggleActiveMutation,
     updateProjectMutation,
   };
 }

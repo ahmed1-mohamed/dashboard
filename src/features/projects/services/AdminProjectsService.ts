@@ -179,9 +179,11 @@ export const AdminProjectsService = {
   },
 
 
-  toggleVisibility: async (projectId: number, isVisible: boolean) => {
+  toggleActive: async (projectId: number, isActive: boolean) => {
     const response = await apiClient.post(`/dashboard/projects/${projectId}`, {
-      is_visible: isVisible ? 1 : 0,
+      is_active: isActive ? 1 : 0,
+      is_visible: isActive ? 1 : 0,
+      _method: "PUT",
     });
     return response.data;
   },

@@ -32,6 +32,20 @@ export function PropertiesTable({
 }: PropertiesTableProps) {
   const router = useRouter();
 
+  if (properties.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 px-4 bg-white rounded-lg border border-gray-200 shadow-sm animate-in fade-in zoom-in duration-500">
+        <div className="w-20 h-20 mb-4 bg-gray-50 rounded-full flex items-center justify-center">
+          <svg className="w-10 h-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+          </svg>
+        </div>
+        <h3 className="text-lg font-semibold text-gray-900 mb-1">No properties found</h3>
+        <p className="text-sm text-gray-500 text-center max-w-sm">We couldn't find any properties matching your criteria. Try adjusting your search or filters.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="rounded-lg border border-gray-200 bg-white overflow-hidden overflow-x-auto">
       <Table>
@@ -76,14 +90,7 @@ export function PropertiesTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {properties.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={10} className="h-24 text-center text-gray-500">
-                No properties found.
-              </TableCell>
-            </TableRow>
-          ) : (
-            properties.map((property) => (
+            {properties.map((property) => (
               <TableRow key={property.id}>
                 <TableCell className="px-2">
                   <Checkbox
@@ -139,8 +146,7 @@ export function PropertiesTable({
                   />
                 </TableCell>
               </TableRow>
-            ))
-          )}
+            ))}
         </TableBody>
       </Table>
     </div>

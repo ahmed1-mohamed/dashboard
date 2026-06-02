@@ -2,6 +2,7 @@ import React from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
 
 import {
   Table,
@@ -14,16 +15,17 @@ import {
 import { TableActions } from "@/components/table/table-actions";
 import { useRouter } from "next/navigation";
 import { Project } from "../types";
-import { Eye, EyeOff, CheckCircle2, XCircle } from "lucide-react";
+import { Eye, EyeOff, CheckCircle2, XCircle, Download } from "lucide-react";
 
 interface ProjectsTableProps {
   projects: Project[];
   selectedProjects: number[];
   onSelectAll: (checked: boolean) => void;
   onSelectProject: (id: number, checked: boolean) => void;
-  onVisibilityToggle: (id: number, checked: boolean) => void;
+  onActiveToggle: (id: number, checked: boolean) => void;
   onEdit: (id: number) => void;
   onDelete: (id: number) => void;
+  onImport?: (id: number) => void;
 }
 
 export function ProjectsTable({
@@ -31,11 +33,26 @@ export function ProjectsTable({
   selectedProjects,
   onSelectAll,
   onSelectProject,
-  onVisibilityToggle,
+  onActiveToggle,
   onEdit,
   onDelete,
+  onImport,
 }: ProjectsTableProps) {
   const router = useRouter();
+
+  if (projects.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 px-4 bg-white rounded-lg border border-gray-200 shadow-sm animate-in fade-in zoom-in duration-500">
+        <div className="w-20 h-20 mb-4 bg-gray-50 rounded-full flex items-center justify-center">
+          <svg className="w-10 h-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+          </svg>
+        </div>
+        <h3 className="text-lg font-semibold text-gray-900 mb-1">No projects found</h3>
+        <p className="text-sm text-gray-500 text-center max-w-sm">We couldn't find any projects matching your criteria. Try adjusting your search or filters.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white overflow-hidden overflow-x-auto">
@@ -69,14 +86,15 @@ export function ProjectsTable({
             <TableHead className="font-semibold text-gray-900 w-[80px] px-2 text-sm">
               Price
             </TableHead>
-            <TableHead className="font-semibold text-gray-900 w-[140px] px-2 text-sm">
-              Timeline
-            </TableHead>
+
             <TableHead className="font-semibold text-gray-900 w-[100px] px-2 text-sm">
               Visibility
             </TableHead>
             <TableHead className="font-semibold text-gray-900 w-[100px] px-2 text-sm">
               Status
+            </TableHead>
+            <TableHead className="font-semibold text-gray-900 text-center w-[90px] px-2 text-sm">
+              Import
             </TableHead>
             <TableHead className="font-semibold text-gray-900 text-center w-[50px] px-2 text-sm">
               Actions
@@ -84,14 +102,7 @@ export function ProjectsTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {projects.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={11} className="h-24 text-center text-gray-500">
-                No projects found.
-              </TableCell>
-            </TableRow>
-          ) : (
-            projects.map((project) => (
+            {projects.map((project) => (
               <TableRow key={project.id} className="hover:bg-gray-50">
                 <TableCell className="px-2">
                   <Checkbox
@@ -129,34 +140,22 @@ export function ProjectsTable({
                 <TableCell className="text-gray-900 px-2 text-sm">
                   {project.price_range}
                 </TableCell>
-                <TableCell className="px-2">
-                  <div className="flex flex-col text-xs space-y-1">
-                    <div className="flex items-center justify-between text-gray-500">
-                      <span>Launch:</span>
-                      <span className="text-gray-900">{project.launch_date}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-gray-500">
-                      <span>Completion:</span>
-                      <span className="text-gray-900">{project.completion_date}</span>
-                    </div>
-                  </div>
-                </TableCell>
                 <TableCell className="px-2" onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center gap-2">
                     <Switch
-                      checked={project.is_visible}
-                      onCheckedChange={(checked) => onVisibilityToggle(project.id, checked)}
+                      disabled
+                      checked={project.is_active ?? false}
+                      onCheckedChange={(checked) => onActiveToggle(project.id, checked)}
                       className="data-[state=checked]:bg-green-500 transition-colors duration-300 shadow-sm"
                     />
                     <Badge
-                      variant={project.is_visible ? "default" : "secondary"}
-                      className={`transition-all duration-500 flex items-center justify-center w-6 h-6 p-0 rounded-full shadow-sm ${
-                        project.is_visible
-                          ? "bg-green-100 border-green-300"
-                          : "bg-gray-100 border-gray-200"
-                      }`}
+                      variant={project.is_active ? "default" : "secondary"}
+                      className={`transition-all duration-500 flex items-center justify-center w-6 h-6 p-0 rounded-full shadow-sm ${project.is_active
+                        ? "bg-green-100 border-green-300"
+                        : "bg-gray-100 border-gray-200"
+                        }`}
                     >
-                      {project.is_visible ? (
+                      {project.is_active ? (
                         <CheckCircle2 className="w-4 h-4 text-green-600 animate-in fade-in zoom-in spin-in-12 duration-500" />
                       ) : (
                         <XCircle className="w-4 h-4 text-gray-400 animate-in fade-in zoom-in -spin-in-12 duration-500" />
@@ -181,6 +180,19 @@ export function ProjectsTable({
                   </Badge>
                 </TableCell>
                 <TableCell className="text-center px-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onImport?.(project.id);
+                    }}
+                    className="bg-white border-gray-100 shadow-lg hover:bg-teal-50 h-8 py-4 px-3 text-md"
+                  >
+                    <Download className="w-3 h-3 mr-1" /> Import
+                  </Button>
+                </TableCell>
+                <TableCell className="text-center px-2">
                   <TableActions
                     onView={() => router.push(`/admin/projects/${project.id}`)}
                     onEdit={() => onEdit(project.id)}
@@ -188,8 +200,7 @@ export function ProjectsTable({
                   />
                 </TableCell>
               </TableRow>
-            ))
-          )}
+            ))}
         </TableBody>
       </Table>
     </div>

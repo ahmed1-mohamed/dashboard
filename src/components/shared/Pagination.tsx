@@ -18,6 +18,7 @@ interface PaginationProps {
   onPerPageChange: (perPage: string) => void;
   perPageOptions?: string[];
   isLoading?: boolean;
+  currentItemsCount?: number;
 }
 
 export function Pagination({
@@ -29,13 +30,20 @@ export function Pagination({
   onPerPageChange,
   perPageOptions = ["10", "15", "20", "50", "100"],
   isLoading = false,
+  currentItemsCount,
 }: PaginationProps) {
+  // If the current page didn't fetch a full page of items, there is no next page!
+  const effectiveTotalPages =
+    currentItemsCount !== undefined && currentItemsCount < perPage
+      ? page
+      : totalPages;
+
   const getPageNumbers = () => {
     const pages: (number | string)[] = [];
     const maxVisible = 10;
 
-    if (totalPages <= maxVisible) {
-      for (let i = 1; i <= totalPages; i++) {
+    if (effectiveTotalPages <= maxVisible) {
+      for (let i = 1; i <= effectiveTotalPages; i++) {
         pages.push(i);
       }
     } else {
@@ -44,22 +52,22 @@ export function Pagination({
         pages.push("...");
       }
       let start = Math.max(2, page - 2);
-      let end = Math.min(totalPages - 1, page + 2);
+      let end = Math.min(effectiveTotalPages - 1, page + 2);
       if (page <= 3) {
         start = 2;
-        end = Math.min(maxVisible - 2, totalPages - 1);
+        end = Math.min(maxVisible - 2, effectiveTotalPages - 1);
       }
-      if (page >= totalPages - 2) {
-        start = Math.max(2, totalPages - maxVisible + 2);
-        end = totalPages - 1;
+      if (page >= effectiveTotalPages - 2) {
+        start = Math.max(2, effectiveTotalPages - maxVisible + 2);
+        end = effectiveTotalPages - 1;
       }
       for (let i = start; i <= end; i++) {
         pages.push(i);
       }
-      if (page < totalPages - 2) {
+      if (page < effectiveTotalPages - 2) {
         pages.push("...");
       }
-      pages.push(totalPages);
+      pages.push(effectiveTotalPages);
     }
     return pages;
   };
@@ -67,7 +75,7 @@ export function Pagination({
   const startIndex = (page - 1) * perPage;
   const endIndex = Math.min(startIndex + perPage, totalItems);
 
-  if (totalPages <= 1 && totalItems === 0) return null;
+  if (effectiveTotalPages <= 1 && totalItems === 0) return null;
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-4 mt-4">
@@ -94,7 +102,7 @@ export function Pagination({
         </span>
       </div>
 
-      {totalPages > 1 && (
+      {effectiveTotalPages > 1 && (
         <div className="flex items-center gap-1">
           <Button
             variant="outline"
@@ -130,8 +138,8 @@ export function Pagination({
           <Button
             variant="outline"
             size="icon"
-            onClick={() => onPageChange(Math.min(totalPages, page + 1))}
-            disabled={page === totalPages || totalPages === 0 || isLoading}
+            onClick={() => onPageChange(Math.min(effectiveTotalPages, page + 1))}
+            disabled={page === effectiveTotalPages || effectiveTotalPages === 0 || isLoading}
             className="h-8 w-8 border-gray-200"
           >
             <ChevronRight className="h-4 w-4" />

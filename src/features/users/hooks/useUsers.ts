@@ -8,16 +8,17 @@ import { CreateNewUserInput } from "@/validators/create-new-user.schema";
 export function useUsers(
   page: number = 1,
   perPage: number = 15,
-  search: string = "",
+  search?: string,
   status: string = "all",
+  role: string = "all",
 ) {
   const { data: session } = useSession();
   const token = session?.user?.accessToken;
   const queryClient = useQueryClient();
 
   const usersData = useQuery({
-    queryKey: ["users", page, perPage, search, status],
-    queryFn: () => AdminUsersService.getUsers(page, perPage, search, status),
+    queryKey: ["users", page, perPage, search, status, role],
+    queryFn: () => AdminUsersService.getUsers(page, perPage, search, status, role),
     retry: false,
     enabled: !!token,
     staleTime: 5 * 60 * 1000,

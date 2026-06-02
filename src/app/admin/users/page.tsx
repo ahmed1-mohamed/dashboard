@@ -53,6 +53,7 @@ export default function UsersPage() {
     perPage,
     debouncedSearch || undefined,
     filters.status !== "all" ? filters.status : undefined,
+    filters.role !== "all" ? filters.role : undefined,
   );
 
   const { data, isLoading, isError, error, refetch } = usersData;
@@ -69,10 +70,14 @@ export default function UsersPage() {
   // Extract paginated data from API response
   const usersRaw: GetUserDataType[] = useMemo(() => {
     const rawData = (data as { data?: unknown })?.data;
-    if (Array.isArray(rawData)) return rawData as GetUserDataType[];
-    const nested = (rawData as { data?: unknown } | undefined)?.data;
-    if (Array.isArray(nested)) return nested as GetUserDataType[];
-    return [];
+    let arr: GetUserDataType[] = [];
+    if (Array.isArray(rawData)) {
+      arr = rawData as GetUserDataType[];
+    } else {
+      const nested = (rawData as { data?: unknown } | undefined)?.data;
+      if (Array.isArray(nested)) arr = nested as GetUserDataType[];
+    }
+    return arr;
   }, [data]);
 
   const totalUsers: number = useMemo(() => {
@@ -81,7 +86,7 @@ export default function UsersPage() {
       return (rawData as { total: number }).total;
     }
     return usersRaw.length;
-  }, [data, usersRaw]);
+  }, [data, usersRaw.length]);
 
   const users: User[] = useMemo(() => {
     return usersRaw.map((user) => {
@@ -92,7 +97,7 @@ export default function UsersPage() {
         user_id: user.user_id,
         name: fullName,
         profile_picture: user.profile_picture || "U",
-        role_name: user.role_name || "Viewer",
+        role_name: user.role?.role_name || user.role_name || "User",
         email: user.email || "N/A",
         lastLogin: "Recently",
         status:
@@ -245,6 +250,7 @@ export default function UsersPage() {
             totalPages={totalPages}
             perPage={perPage}
             totalItems={totalUsers}
+            currentItemsCount={users.length}
             onPageChange={setPage}
             onPerPageChange={setPerPage}
           />

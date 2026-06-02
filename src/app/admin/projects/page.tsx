@@ -1,20 +1,14 @@
 "use client";
 
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Pagination } from "@/components/shared/Pagination";
-import { Skeleton } from "@/components/ui/skeleton";
+import { ProjectsLoading } from "@/features/projects/components/ProjectsLoading";
+import { ProjectsError } from "@/features/projects/components/ProjectsError";
+import { DeleteProjectDialog } from "@/features/projects/components/DeleteProjectDialog";
 import { Button } from "@/components/ui/button";
-import { Download, Settings2, AlertCircle, AlertTriangle } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Download, Settings2, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 import { useServerPagination } from "@/hooks/useServerPagination";
@@ -26,6 +20,11 @@ import { EditProjectModal } from "@/components/modals/edit-project-modal";
 
 export default function ProjectsPage() {
   const router = useRouter();
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const {
     page,
@@ -49,7 +48,7 @@ export default function ProjectsPage() {
   const {
     paginatedProjectsData,
     deleteProjectMutation,
-    toggleVisibilityMutation,
+    toggleActiveMutation,
   } = useProjects(
     page,
     perPage,
@@ -66,19 +65,22 @@ export default function ProjectsPage() {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [projectToEdit, setProjectToEdit] = useState<number | undefined>(undefined);
 
-  const itemsArray: unknown[] = useMemo(() => {
-    if (Array.isArray(rawData)) return rawData;
-    if (rawData && Array.isArray((rawData as { data: unknown[] }).data)) {
-      return (rawData as { data: unknown[] }).data;
+  const itemsArray = useMemo(() => {
+    let arr: unknown[] = [];
+    if (Array.isArray(rawData)) {
+      arr = rawData;
+    } else {
+      const nested = (rawData as { data?: unknown } | undefined)?.data;
+      if (Array.isArray(nested)) {
+        arr = nested;
+      } else {
+        const doublyNested = (nested as { data?: unknown } | undefined)?.data;
+        if (Array.isArray(doublyNested)) {
+          arr = doublyNested;
+        }
+      }
     }
-    if (
-      rawData &&
-      (rawData as { data: { data: unknown[] } }).data &&
-      Array.isArray((rawData as { data: { data: unknown[] } }).data.data)
-    ) {
-      return (rawData as { data: { data: unknown[] } }).data.data;
-    }
-    return [];
+    return arr;
   }, [rawData]);
 
   const totalProjects: number = useMemo(() => {
@@ -93,7 +95,7 @@ export default function ProjectsPage() {
       return (rawData as { data: { total: number } }).data.total;
     }
     return itemsArray.length;
-  }, [rawData, itemsArray]);
+  }, [rawData, itemsArray.length]);
 
   const projects: Project[] = useMemo(() => {
     return itemsArray.map((prop: unknown) => {
@@ -125,12 +127,35 @@ export default function ProjectsPage() {
         price_after_discount: (p.price_after_discount as string) || "N/A",
         status: (p.status as string) || "Upcoming",
         projectType: (p.project_type as string) || "N/A",
-        is_visible: Boolean(p.is_visible),
+        is_active: Boolean(p.is_active),
       };
     });
   }, [itemsArray]);
 
   const totalPages = Math.max(1, Math.ceil(totalProjects / perPage));
+
+  const handleImport = useCallback((id: number) => {
+    const p = projects.find(proj => proj.id === id);
+    if (!p) {
+      toast.error("Project not found");
+      return;
+    }
+    const headers = ["ID", "Name", "Developer", "Status", "Type", "Total Units", "Available", "Launch Date", "Completion Date"];
+    const row = [
+      p.id, `"${p.name}"`, `"${p.developer_name}"`,
+      p.status, p.projectType, p.total_units,
+      p.available_units, p.launch_date, p.completion_date,
+    ];
+    const csv = [headers.join(","), row.join(",")].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `project_${id}_${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Project exported successfully!");
+  }, [projects]);
 
   const handleSelectAll = useCallback(
     (checked: boolean) => {
@@ -145,23 +170,23 @@ export default function ProjectsPage() {
     );
   }, []);
 
-  const handleVisibilityToggle = useCallback(
-    (id: number, isVisible: boolean) => {
-      toggleVisibilityMutation.mutate(
-        { id, isVisible },
+  const handleActiveToggle = useCallback(
+    (id: number, isActive: boolean) => {
+      toggleActiveMutation.mutate(
+        { id, isActive },
         {
           onSuccess: () => {
-            toast.success("Project visibility updated successfully");
+            toast.success("Project status updated successfully");
           },
           onError: (err) => {
             toast.error(
-              err instanceof Error ? err.message : "Failed to update visibility",
+              err instanceof Error ? err.message : "Failed to update status",
             );
           },
         },
       );
     },
-    [toggleVisibilityMutation],
+    [toggleActiveMutation],
   );
 
   const handleDeleteClick = useCallback((id: number) => {
@@ -179,7 +204,7 @@ export default function ProjectsPage() {
       toast.info("No projects to export");
       return;
     }
-    const headers = ["ID","Name","Developer","Status","Type","Total Units","Available","Launch Date","Completion Date"];
+    const headers = ["ID", "Name", "Developer", "Status", "Type", "Total Units", "Available", "Launch Date", "Completion Date"];
     const rows = projects.map((p) => [
       p.id, `"${p.name}"`, `"${p.developer_name}"`,
       p.status, p.projectType, p.total_units,
@@ -221,47 +246,9 @@ export default function ProjectsPage() {
       />
 
       {isLoading ? (
-        <div className="space-y-4">
-          <div className="flex items-center gap-4">
-            <Skeleton className="h-10 w-[200px]" />
-            <Skeleton className="h-10 w-[120px]" />
-            <Skeleton className="h-10 w-[120px]" />
-          </div>
-          <div className="rounded-lg border border-gray-200 bg-white">
-            <div className="p-4 space-y-3">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="flex items-center gap-4">
-                  <Skeleton className="h-4 w-4" />
-                  <Skeleton className="h-4 w-[100px]" />
-                  <Skeleton className="h-4 w-[100px]" />
-                  <Skeleton className="h-4 w-[60px]" />
-                  <Skeleton className="h-4 w-[80px]" />
-                  <Skeleton className="h-4 w-[70px]" />
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+        <ProjectsLoading />
       ) : isError ? (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-          <div className="flex items-center gap-2">
-            <AlertCircle className="h-5 w-5 text-red-500" />
-            <p className="text-sm text-red-800">
-              <strong>Error:</strong>{" "}
-              {error instanceof Error
-                ? error.message
-                : "Failed to load projects"}
-            </p>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetch()}
-            className="mt-2 border-red-200 text-red-700 hover:bg-red-100"
-          >
-            Try Again
-          </Button>
-        </div>
+        <ProjectsError error={error} onRetry={refetch} />
       ) : (
         <>
           <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
@@ -288,9 +275,10 @@ export default function ProjectsPage() {
             selectedProjects={selectedProjects}
             onSelectAll={handleSelectAll}
             onSelectProject={handleSelectProject}
-            onVisibilityToggle={handleVisibilityToggle}
+            onActiveToggle={handleActiveToggle}
             onEdit={handleEditClick}
             onDelete={handleDeleteClick}
+            onImport={handleImport}
           />
 
           <Pagination
@@ -298,43 +286,20 @@ export default function ProjectsPage() {
             totalPages={totalPages}
             perPage={perPage}
             totalItems={totalProjects}
+            currentItemsCount={projects.length}
             onPageChange={setPage}
             onPerPageChange={setPerPage}
           />
         </>
       )}
 
-      {/* Delete Modal */}
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-red-600">
-              <AlertTriangle className="h-5 w-5" /> Delete Project
-            </DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete this project? This action cannot
-              be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setDeleteDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleConfirmDelete}
-              disabled={deleteProjectMutation.isPending}
-            >
-              {deleteProjectMutation.isPending ? "Deleting..." : "Delete"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <DeleteProjectDialog
+        isOpen={deleteDialogOpen}
+        onClose={setDeleteDialogOpen}
+        onConfirm={handleConfirmDelete}
+        isPending={deleteProjectMutation.isPending}
+      />
 
-      {/* Edit Modal */}
       <EditProjectModal
         isOpen={editModalOpen}
         onClose={() => { setEditModalOpen(false); setProjectToEdit(undefined); }}

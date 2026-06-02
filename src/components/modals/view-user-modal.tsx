@@ -143,9 +143,8 @@ export function ViewUserModal({
     );
   }
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="User Details" size="md">
+    <Modal isOpen={isOpen} onClose={onClose} title="User Details" size="xl">
       <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-2">
-        {/* User Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             {user?.profile_picture ? (
@@ -178,8 +177,7 @@ export function ViewUserModal({
             {user?.status || "N/A"}
           </Badge>
         </div>
-        {/* User Info Grid */}
-        <div className="grid grid-cols-1 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           <div className="p-4 bg-gray-50 rounded-lg">
             <div className="flex items-center gap-2 text-gray-500 mb-1">
               <Mail className="w-4 h-4" />
@@ -227,7 +225,6 @@ export function ViewUserModal({
             </p>
           </div>
 
-          {/* Subscriptions */}
           {user?.subscriptions && user.subscriptions.length > 0 && (
             <div className="p-4 bg-gray-50 rounded-lg">
               <div className="flex items-center gap-2 text-gray-500 mb-2">
@@ -255,7 +252,6 @@ export function ViewUserModal({
             </div>
           )}
         </div>
-        {/* Action Buttons */}
         <div className="flex gap-3 justify-end pt-4 border-t">
           <Button
             variant="outline"
