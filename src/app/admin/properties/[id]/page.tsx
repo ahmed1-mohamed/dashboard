@@ -41,6 +41,11 @@ import { use } from "react";
 import { fetchPropertyDetails } from "@/data/api-client";
 import { PropertiesDataType } from "@/types";
 import { EditPropertyModal } from "@/components/modals/edit-property-modal";
+import { PropertyMedia } from "@/features/properties/components/property-details/PropertyMedia";
+import { PropertyDescription } from "@/features/properties/components/property-details/PropertyDescription";
+import { PropertyInfo } from "@/features/properties/components/property-details/PropertyInfo";
+import { PropertyFeatures } from "@/features/properties/components/property-details/PropertyFeatures";
+import { PropertySidebar } from "@/features/properties/components/property-details/PropertySidebar";
 
 export default function PropertyDetailsPage({
   params,
@@ -53,30 +58,22 @@ export default function PropertyDetailsPage({
   const token = session?.user.accessToken;
   const queryClient = useQueryClient();
 
-  // Delete dialog state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
-  // Edit modal state
   const [editModalOpen, setEditModalOpen] = useState(false);
 
   const { data, isError, error, isLoading } = useQuery({
     queryKey: ["propertyDetails", id],
     queryFn: () => fetchPropertyDetails(Number(id), token!),
     select: (data) => {
-      const property = data;
+      const property = data as any;
       if (!property) return null;
-      // Transform API response to match UI expectations
       return {
         ...property,
-        // Map property_type from object to array format
         property_type: property?.property_type ? [property.property_type] : [],
-        // Map project from object to array format
         project: property.project ? [property.project] : [],
-        // Handle floor (not available in API, set to N/A)
         floor: "N/A",
-        // Map zone_name to area_name for UI compatibility
         area_name: property.zone_name || "N/A",
-        // Map features to include feature_id if not present
         features: property.features?.map((f: any, index: number) => ({
           ...f,
           feature_id: f.feature_id || index + 1,
@@ -161,7 +158,6 @@ export default function PropertyDetailsPage({
         </Badge>
       </div>
 
-      {/* Actions */}
       <div className="flex gap-2">
         <Button onClick={() => setEditModalOpen(true)}>
           <Edit className="mr-2 h-4 w-4" />
@@ -178,214 +174,20 @@ export default function PropertyDetailsPage({
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">
-        {/* Main Content */}
         <div className="md:col-span-2 space-y-6">
-          {/* Property Image */}
-          <Card>
-            <CardContent className="p-0">
-              {property.medias && property.medias.length > 0 ? (
-                <div className="aspect-video relative">
-                  <img
-                    src={property.medias[0].media_url}
-                    alt={property.property_name}
-                    className="w-full h-full object-cover rounded-lg"
-                  />
-                </div>
-              ) : (
-                <div className="aspect-video bg-muted flex items-center justify-center">
-                  <Building2 className="h-24 w-24 text-muted-foreground/20" />
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Description */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Description</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div
-                className="text-muted-foreground leading-relaxed"
-                dangerouslySetInnerHTML={{
-                  __html: property.description || "No description available",
-                }}
-              />
-            </CardContent>
-          </Card>
-
-          {/* Details */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Property Details</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-primary/10 rounded-lg">
-                    <Bed className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Bedrooms</p>
-                    <p className="font-semibold">
-                      {property.bedrooms || "N/A"}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-primary/10 rounded-lg">
-                    <Bath className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Bathrooms</p>
-                    <p className="font-semibold">
-                      {property.bathrooms || "N/A"}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-primary/10 rounded-lg">
-                    <Maximize className="h-5 w-5 text-primary" />
-                  </div>
-
-                  <div>
-                    <p className="text-sm text-muted-foreground">Area</p>
-                    <p className="font-semibold">
-                      {property.size ? `${property.size} sqm` : "N/A"}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-primary/10 rounded-lg">
-                    <Calendar className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Floor</p>
-                    <p className="font-semibold">{property.floor || "N/A"}</p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Amenities/Features */}
-          {property.features && property.features.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Features & Amenities</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  {property.features.map((feature) => (
-                    <Badge key={feature.feature_id} variant="secondary">
-                      {feature.feature_name}
-                    </Badge>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          <PropertyMedia medias={property.medias} propertyName={property.property_name} />
+          <PropertyDescription description={property.description} />
+          <PropertyInfo 
+            bedrooms={property.bedrooms} 
+            bathrooms={property.bathrooms} 
+            size={property.size} 
+            floor={property.floor} 
+          />
+          <PropertyFeatures features={property.features} />
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Price Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <DollarSign className="h-5 w-5" />
-                Price
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold text-primary">
-                {property.price
-                  ? `AED ${Number(property.price).toLocaleString()}`
-                  : "N/A"}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {property.property_type && property.property_type[0]
-                  ? property.property_type[0].name
-                  : "Property"}
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* Property Info */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Property Information</CardTitle>
-              <CardDescription>Additional details</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Status:</span>
-                  <Badge
-                    variant={
-                      property.status === "active" ? "success" : "outline"
-                    }
-                  >
-                    {property.status}
-                  </Badge>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Furnish Status:</span>
-                  <span className="font-medium">
-                    {property.furnish_status || "N/A"}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">
-                    Construction Status:
-                  </span>
-                  <span className="font-medium">
-                    {property.construction_status || "N/A"}
-                  </span>
-                </div>
-                {property.parking_spaces !== undefined && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">
-                      Parking Spaces:
-                    </span>
-                    <span className="font-medium">
-                      {property.parking_spaces}
-                    </span>
-                  </div>
-                )}
-                {property.project && property.project[0] && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Project:</span>
-                    <span className="font-medium">
-                      {property.project[0].project_name}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Quick Actions */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Button variant="outline" className="w-full justify-start">
-                <Calendar className="mr-2 h-4 w-4" />
-                Schedule Viewing
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
-                <Phone className="mr-2 h-4 w-4" />
-                Contact Agent
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
-                <DollarSign className="mr-2 h-4 w-4" />
-                Make Reservation
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
+        <PropertySidebar property={property} />
       </div>
 
       {/* Delete Confirmation Dialog */}

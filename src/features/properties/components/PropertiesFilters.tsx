@@ -38,7 +38,7 @@ export function PropertiesFilters({
       />
 
       <Select value={countryId} onValueChange={onCountryChange}>
-        <SelectTrigger className="w-[120px]">
+        <SelectTrigger className="w-[120px] max-sm:w-full">
           <SelectValue placeholder="Country" />
         </SelectTrigger>
         <SelectContent>
@@ -48,7 +48,7 @@ export function PropertiesFilters({
       </Select>
 
       <Select value={developerId} onValueChange={onDeveloperChange}>
-        <SelectTrigger className="w-[120px]">
+        <SelectTrigger className="w-[120px] max-sm:w-full">
           <SelectValue placeholder="Developer" />
         </SelectTrigger>
         <SelectContent>
@@ -58,7 +58,7 @@ export function PropertiesFilters({
       </Select>
 
       <Select value={projectId} onValueChange={onProjectChange}>
-        <SelectTrigger className="w-[120px]">
+        <SelectTrigger className="w-[120px] max-sm:w-full">
           <SelectValue placeholder="Project" />
         </SelectTrigger>
         <SelectContent>
@@ -68,7 +68,7 @@ export function PropertiesFilters({
       </Select>
 
       <Select defaultValue="all">
-        <SelectTrigger className="w-[120px]">
+        <SelectTrigger className="w-[120px] max-sm:w-full">
           <SelectValue placeholder="All Filters" />
         </SelectTrigger>
         <SelectContent>

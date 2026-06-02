@@ -9,7 +9,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Eye, Edit, Trash2 } from "lucide-react";
+import { Eye, Edit, Trash2, MoreHorizontal } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { User } from "../types";
 
 const roleColors = {
@@ -132,33 +138,29 @@ export function UsersTable({ users, onView, onEdit, onDelete }: UsersTableProps)
                     <span className="text-gray-900 text-sm">{user.status}</span>
                   </div>
                 </TableCell>
-                <TableCell className="px-2">
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 px-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-                      onClick={() => onView(user)}
-                    >
-                      <Eye className="h-3.5 w-3.5 mr-1" /> View
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 px-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-                      onClick={() => onEdit(user.user_id)}
-                    >
-                      <Edit className="h-3.5 w-3.5 mr-1" /> Edit
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
-                      onClick={() => onDelete(user.user_id)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5 mr-1" /> Delete
-                    </Button>
-                  </div>
+                <TableCell className="px-2 text-left" onClick={(e) => e.stopPropagation()}>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="h-8 w-8 p-0">
+                        <span className="sr-only">Open menu</span>
+                        <MoreHorizontal className="h-4 w-4 text-gray-600" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="center" className="w-[160px] bg-white z-50">
+                      <DropdownMenuItem onClick={() => onView(user)} className="cursor-pointer">
+                        <Eye className="h-4 w-4 mr-2" /> View Details
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onEdit(user.user_id)} className="cursor-pointer">
+                        <Edit className="h-4 w-4 mr-2" /> Edit User
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => onDelete(user.user_id)}
+                        className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" /> Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </TableCell>
               </TableRow>
             ))

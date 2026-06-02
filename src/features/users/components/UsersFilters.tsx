@@ -34,7 +34,7 @@ export function UsersFilters({
       />
 
       <Select value={countryFilter} onValueChange={onCountryChange}>
-        <SelectTrigger className="w-[120px]">
+        <SelectTrigger className="w-[120px] max-sm:w-full">
           <SelectValue placeholder="Country" />
         </SelectTrigger>
         <SelectContent>
@@ -46,7 +46,7 @@ export function UsersFilters({
       </Select>
 
       <Select value={statusFilter} onValueChange={onStatusChange}>
-        <SelectTrigger className="w-[120px]">
+        <SelectTrigger className="w-[120px] max-sm:w-full">
           <SelectValue placeholder="Status" />
         </SelectTrigger>
         <SelectContent>

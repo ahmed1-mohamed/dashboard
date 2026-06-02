@@ -26,8 +26,8 @@ export function DevelopersFilters({
   onCountryChange,
 }: DevelopersFiltersProps) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-      <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
+    <div className="flex items-center justify-between gap-4 mb-4">
+      <div className="flex items-center gap-2  flex-1 min-w-0">
         <SearchInput
           value={searchQuery}
           onChange={onSearchChange}
@@ -35,7 +35,7 @@ export function DevelopersFilters({
         />
 
         <Select value={countryFilter} onValueChange={onCountryChange}>
-          <SelectTrigger className="w-[120px]">
+          <SelectTrigger className="w-[200px] max-sm:w-full">
             <SelectValue placeholder="Country" />
           </SelectTrigger>
           <SelectContent>
@@ -47,7 +47,7 @@ export function DevelopersFilters({
         </Select>
 
         <Select value={statusFilter} onValueChange={onStatusChange}>
-          <SelectTrigger className="w-[120px]">
+          <SelectTrigger className="w-[200px] max-sm:w-full">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>

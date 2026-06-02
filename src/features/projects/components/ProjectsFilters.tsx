@@ -34,7 +34,7 @@ export function ProjectsFilters({
       />
 
       <Select value={statusFilter} onValueChange={onStatusChange}>
-        <SelectTrigger className="w-[180px] bg-white">
+        <SelectTrigger className="w-[180px] max-sm:w-full bg-white">
           <SelectValue placeholder="All Status" />
         </SelectTrigger>
         <SelectContent>
@@ -46,7 +46,7 @@ export function ProjectsFilters({
       </Select>
 
       <Select value={projectTypeFilter} onValueChange={onProjectTypeChange}>
-        <SelectTrigger className="w-[180px] bg-white">
+        <SelectTrigger className="w-[180px] max-sm:w-full bg-white">
           <SelectValue placeholder="All Types" />
         </SelectTrigger>
         <SelectContent>

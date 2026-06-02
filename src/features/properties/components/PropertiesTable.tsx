@@ -96,7 +96,7 @@ export function PropertiesTable({
                 <TableCell className="text-teal-600 font-medium px-2 text-sm">
                   <button
                     onClick={() => router.push(`/admin/properties/${property.id}`)}
-                    className="text-teal-600 hover:text-teal-800 active:text-teal-900 transition-colors cursor-pointer text-left focus:outline-none"
+                    className="text-gray-900 text-sm font-medium hover:text-teal-600 active:text-teal-800 transition-colors cursor-pointer text-left focus:outline-none"
                   >
                     {property.unitNumber}
                   </button>

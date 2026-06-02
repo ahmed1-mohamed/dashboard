@@ -55,7 +55,6 @@ export default function UsersPage() {
   const { data, isLoading, isError, error, refetch } = usersData;
   const isDeleting = deleteUserMutation.isPending;
 
-  // Modal states
   const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
   const [viewUserModalOpen, setViewUserModalOpen] = useState(false);
   const [userIdToView, setUserIdToView] = useState<number | null>(null);
@@ -64,7 +63,6 @@ export default function UsersPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<number | null>(null);
 
-  // Parse data
   const usersArray: GetUserDataType[] = useMemo(() => {
     const rawData = data?.data;
     if (Array.isArray(rawData)) return rawData;
@@ -197,7 +195,6 @@ export default function UsersPage() {
         </>
       )}
 
-      {/* Modals */}
       <AddUserModal isOpen={isAddUserModalOpen} onClose={() => setIsAddUserModalOpen(false)} onSubmit={handleAddUser} />
 
       <ViewUserModal
