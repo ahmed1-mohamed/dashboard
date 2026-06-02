@@ -163,9 +163,10 @@ export const AdminProjectsService = {
 
   /**
    * Update a project
+   * Note: The backend uses POST (not PUT) for project updates
    */
   updateProject: async (projectId: number, data: Record<string, unknown>) => {
-    const response = await apiClient.put(`/dashboard/projects/${projectId}`, data);
+    const response = await apiClient.post(`/dashboard/projects/${projectId}`, data);
     return response.data;
   },
 
@@ -177,13 +178,10 @@ export const AdminProjectsService = {
     return response.data;
   },
 
-  /**
-   * Toggle project visibility
-   */
+
   toggleVisibility: async (projectId: number, isVisible: boolean) => {
-    const response = await apiClient.patch(`/dashboard/projects/${projectId}/toggle-visibility`, {
+    const response = await apiClient.post(`/dashboard/projects/${projectId}`, {
       is_visible: isVisible ? 1 : 0,
-      status: isVisible ? 1 : 0,
     });
     return response.data;
   },

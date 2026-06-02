@@ -15,7 +15,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { DeveloperDataType } from "@/types";
+
 import { Developer, DeveloperApiResponse } from "@/features/developers/types";
 import { useDevelopers } from "@/features/developers/hooks/useDevelopers";
 import { DevelopersTable } from "@/features/developers/components/DevelopersTable";
@@ -24,6 +24,18 @@ import { useServerPagination } from "@/hooks/useServerPagination";
 import { AddDeveloperModal } from "@/components/modals/add-developer-modal";
 import { BulkImportDevelopersModal } from "@/components/modals/bulk-import-developers-modal";
 import { EditDeveloperModal } from "@/components/modals/edit-developer-modal";
+
+interface DeveloperData {
+  developer_id: number;
+  name: string;
+  email: string;
+  phone_number: string;
+  website: string;
+  logo: string;
+  description: string;
+  status: string;
+  is_top: number;
+}
 
 export default function DevelopersPage() {
   const {
@@ -42,24 +54,20 @@ export default function DevelopersPage() {
     initialFilters: { status: "all", country: "all" },
   });
 
-  const isFiltering = filters.status !== "all" || filters.country !== "all" || debouncedSearch !== "";
-  const fetchPerPage = isFiltering ? 1000 : perPage;
-  const fetchPage = isFiltering ? 1 : page;
-
   const {
     developersData,
     deleteMutation,
     bulkImportMutation,
     toggleStatusMutation,
   } = useDevelopers(
-    fetchPage, 
-    fetchPerPage, 
-    undefined, 
-    undefined, 
-    undefined
+    page,
+    perPage,
+    debouncedSearch || undefined,
+    filters.status !== "all" ? filters.status : undefined,
+    filters.country !== "all" ? filters.country : undefined,
   );
 
-  const { data: devData, isLoading, isError, error, refetch } = developersData as any;
+  const { data: devData, isLoading, isError, error, refetch } = developersData;
 
   // Modal states
   const [addModalOpen, setAddModalOpen] = useState(false);
@@ -67,56 +75,31 @@ export default function DevelopersPage() {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [developerToDelete, setDeveloperToDelete] = useState<number | null>(null);
-
   const [selectedDeveloperId, setSelectedDeveloperId] = useState<number | null>(null);
-  const [selectedDeveloperData, setSelectedDeveloperData] = useState<DeveloperDataType>({} as DeveloperDataType);
+  const [selectedDeveloperData, setSelectedDeveloperData] = useState<DeveloperData | undefined>(undefined);
   const [selectedDevelopers, setSelectedDevelopers] = useState<number[]>([]);
 
-  let itemsArray: any[] = [];
-  let totalDevelopers = 0;
+  const itemsArray: DeveloperApiResponse[] = useMemo(() => {
+    const rawData = (devData as { data?: unknown })?.data;
+    if (Array.isArray(rawData)) return rawData as DeveloperApiResponse[];
+    const nested = (rawData as { developers?: unknown } | undefined)?.developers;
+    if (Array.isArray(nested)) return nested as DeveloperApiResponse[];
+    return [];
+  }, [devData]);
 
-  const rawData = devData?.data;
-  if (Array.isArray(rawData)) {
-    itemsArray = rawData;
-    totalDevelopers = devData?.total || itemsArray.length;
-  } else if (rawData?.developers && Array.isArray(rawData.developers)) {
-    itemsArray = rawData.developers;
-    totalDevelopers = rawData.total || itemsArray.length;
-  }
-
-  // Local filtering
-  if (isFiltering && itemsArray.length > 0) {
-    if (debouncedSearch) {
-      itemsArray = itemsArray.filter((d: any) => 
-        d.developer_name?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-        d.email?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-        d.phone_number?.toLowerCase().includes(debouncedSearch.toLowerCase())
-      );
+  const totalDevelopers: number = useMemo(() => {
+    const rawData = (devData as { data?: unknown; total?: number })?.data;
+    if (typeof (devData as { total?: number })?.total === "number") {
+      return (devData as { total: number }).total;
     }
-    if (filters.status !== "all") {
-      const isActive = filters.status === "active";
-      itemsArray = itemsArray.filter((d: any) => {
-        const isDevActive = d.status === "active" || Boolean(d.is_active);
-        return isDevActive === isActive;
-      });
+    if (rawData && typeof rawData === "object" && "total" in rawData) {
+      return (rawData as { total: number }).total;
     }
-    if (filters.country !== "all") {
-      itemsArray = itemsArray.filter((d: any) => {
-        const c = d.countries?.toLowerCase() || "";
-        return c.includes(filters.country.toLowerCase());
-      });
-    }
-    
-    totalDevelopers = itemsArray.length;
-    const startIndex = (page - 1) * perPage;
-    itemsArray = itemsArray.slice(startIndex, startIndex + perPage);
-  }
-
-  // Parse data
-  const developersArray: DeveloperApiResponse[] = itemsArray;
+    return itemsArray.length;
+  }, [devData, itemsArray]);
 
   const developers: Developer[] = useMemo(() => {
-    return developersArray.map((dev) => ({
+    return itemsArray.map((dev) => ({
       id: dev.developer_id,
       name: dev.developer_name || "N/A",
       countries: dev.countries || "N/A",
@@ -128,39 +111,64 @@ export default function DevelopersPage() {
       status: dev.status === "active" || Boolean(dev.is_active),
       logo: dev.logo,
     }));
-  }, [developersArray]);
+  }, [itemsArray]);
 
   const totalPages = Math.max(1, Math.ceil(totalDevelopers / perPage));
 
-  const handleSelectAll = useCallback((checked: boolean) => {
-    setSelectedDevelopers(checked ? developers.map((d) => d.id) : []);
-  }, [developers]);
+  const handleSelectAll = useCallback(
+    (checked: boolean) => {
+      setSelectedDevelopers(checked ? developers.map((d) => d.id) : []);
+    },
+    [developers],
+  );
 
   const handleSelectDeveloper = useCallback((id: number, checked: boolean) => {
     setSelectedDevelopers((prev) =>
-      checked ? [...prev, id] : prev.filter((did) => did !== id)
+      checked ? [...prev, id] : prev.filter((did) => did !== id),
     );
   }, []);
 
-  const handleToggleStatus = useCallback((id: number, newStatus: boolean) => {
-    const status = newStatus ? "active" : "inactive";
-    toggleStatusMutation.mutate(
-      { id, status },
-      {
-        onSuccess: () => toast.success(`Developer ${newStatus ? "activated" : "deactivated"} successfully`),
-        onError: (err) => toast.error(err instanceof Error ? err.message : "Failed to update status"),
-      }
-    );
-  }, [toggleStatusMutation]);
+  const handleToggleStatus = useCallback(
+    (id: number, newStatus: boolean) => {
+      const status = newStatus ? "active" : "inactive";
+      toggleStatusMutation.mutate(
+        { id, status },
+        {
+          onSuccess: () =>
+            toast.success(
+              `Developer ${newStatus ? "activated" : "deactivated"} successfully`,
+            ),
+          onError: (err) =>
+            toast.error(
+              err instanceof Error ? err.message : "Failed to update status",
+            ),
+        },
+      );
+    },
+    [toggleStatusMutation],
+  );
 
-  const handleEditDeveloper = useCallback((id: number) => {
-    const developer = developersArray.find((d) => d.developer_id === id);
-    if (developer) {
-      setSelectedDeveloperId(id);
-      setSelectedDeveloperData(developer as unknown as DeveloperDataType);
-      setEditModalOpen(true);
-    }
-  }, [developersArray]);
+  const handleEditDeveloper = useCallback(
+    (id: number) => {
+      const developer = itemsArray.find((d) => d.developer_id === id);
+      if (developer) {
+        setSelectedDeveloperId(id);
+        setSelectedDeveloperData({
+          developer_id: developer.developer_id,
+          name: developer.developer_name || "",
+          email: developer.email || "",
+          phone_number: developer.phone_number || "",
+          website: developer.website || "",
+          logo: developer.logo || "",
+          description: developer.description || "",
+          status: developer.status || "active",
+          is_top: developer.is_top ? 1 : 0,
+        });
+        setEditModalOpen(true);
+      }
+    },
+    [itemsArray],
+  );
 
   const handleDeleteDeveloper = useCallback((id: number) => {
     setDeveloperToDelete(id);
@@ -168,27 +176,51 @@ export default function DevelopersPage() {
   }, []);
 
   const confirmDeleteDeveloper = useCallback(() => {
-    if (developerToDelete) {
-      deleteMutation.mutate(developerToDelete, {
-        onSuccess: () => {
-          toast.success("Developer deleted successfully!");
-          setDeleteDialogOpen(false);
-          setDeveloperToDelete(null);
-        },
-        onError: () => toast.error("Failed to delete developer."),
-      });
-    }
+    if (!developerToDelete) return;
+    deleteMutation.mutate(developerToDelete, {
+      onSuccess: () => {
+        toast.success("Developer deleted successfully!");
+        setDeleteDialogOpen(false);
+        setDeveloperToDelete(null);
+      },
+      onError: () => toast.error("Failed to delete developer."),
+    });
   }, [developerToDelete, deleteMutation]);
 
-  const handleBulkImport = useCallback((file: File) => {
-    bulkImportMutation.mutate(file, {
-      onSuccess: () => {
-        toast.success("Developers imported successfully!");
-        setBulkImportModalOpen(false);
-      },
-      onError: () => toast.error("Failed to import developers."),
-    });
-  }, [bulkImportMutation]);
+  const handleBulkImport = useCallback(
+    (file: File) => {
+      bulkImportMutation.mutate(file, {
+        onSuccess: () => {
+          toast.success("Developers imported successfully!");
+          setBulkImportModalOpen(false);
+        },
+        onError: () => toast.error("Failed to import developers."),
+      });
+    },
+    [bulkImportMutation],
+  );
+
+  const handleExport = useCallback(() => {
+    if (developers.length === 0) {
+      toast.info("No developers to export");
+      return;
+    }
+    const headers = ["ID","Name","Email","Phone","Website","Countries","Status","Projects"];
+    const rows = developers.map((d) => [
+      d.id, `"${d.name}"`, `"${d.email}"`, `"${d.contact}"`,
+      `"${d.website}"`, `"${d.countries}"`,
+      d.status ? "Active" : "Inactive", d.projects,
+    ]);
+    const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `developers_${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Developers exported!");
+  }, [developers]);
 
   return (
     <div className="p-4 px-3 space-y-4 max-w-full overflow-hidden">
@@ -201,18 +233,40 @@ export default function DevelopersPage() {
 
       {isLoading ? (
         <div className="space-y-4">
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-96 w-full" />
+          <div className="flex items-center gap-4">
+            <Skeleton className="h-10 w-[200px]" />
+            <Skeleton className="h-10 w-[120px]" />
+            <Skeleton className="h-10 w-[120px]" />
+          </div>
+          <div className="rounded-lg border border-gray-200 bg-white p-4 space-y-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-4">
+                <Skeleton className="h-10 w-10 rounded-full" />
+                <Skeleton className="h-4 w-[150px]" />
+                <Skeleton className="h-4 w-[100px]" />
+                <Skeleton className="h-4 w-[80px]" />
+                <Skeleton className="h-4 w-[60px]" />
+              </div>
+            ))}
+          </div>
         </div>
       ) : isError ? (
         <div className="rounded-lg border border-red-200 bg-red-50 p-4">
           <div className="flex items-center gap-2">
             <AlertCircle className="h-5 w-5 text-red-500" />
             <p className="text-sm text-red-800">
-              <strong>Error:</strong> {error instanceof Error ? error.message : "Failed to load developers"}
+              <strong>Error:</strong>{" "}
+              {error instanceof Error
+                ? error.message
+                : "Failed to load developers"}
             </p>
           </div>
-          <Button variant="outline" size="sm" onClick={() => refetch()} className="mt-2 border-red-200 text-red-700 hover:bg-red-100">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => refetch()}
+            className="mt-2 border-red-200 text-red-700 hover:bg-red-100"
+          >
             Try Again
           </Button>
         </div>
@@ -228,10 +282,14 @@ export default function DevelopersPage() {
               onCountryChange={(val) => setFilter("country", val)}
             />
             <div className="flex items-center gap-2 mb-4">
-              <Button variant="outline" className="gap-2 border-gray-200">
+              <Button variant="outline" className="gap-2 border-gray-200" onClick={handleExport}>
                 <Download className="h-4 w-4" /> Export
               </Button>
-              <Button variant="outline" className="gap-2 border-gray-200" onClick={() => setBulkImportModalOpen(true)}>
+              <Button
+                variant="outline"
+                className="gap-2 border-gray-200"
+                onClick={() => setBulkImportModalOpen(true)}
+              >
                 <Upload className="h-4 w-4" /> Import
               </Button>
               <Button variant="outline" className="gap-2 border-gray-200">
@@ -257,34 +315,66 @@ export default function DevelopersPage() {
             totalItems={totalDevelopers}
             onPageChange={setPage}
             onPerPageChange={setPerPage}
-            isLoading={false}
           />
         </>
       )}
 
       {/* Modals */}
-      <AddDeveloperModal isOpen={addModalOpen} onClose={() => setAddModalOpen(false)} />
-      <BulkImportDevelopersModal isOpen={bulkImportModalOpen} onClose={() => setBulkImportModalOpen(false)} onSubmit={handleBulkImport} />
+      <AddDeveloperModal
+        isOpen={addModalOpen}
+        onClose={() => setAddModalOpen(false)}
+      />
+      <BulkImportDevelopersModal
+        isOpen={bulkImportModalOpen}
+        onClose={() => setBulkImportModalOpen(false)}
+        onSubmit={handleBulkImport}
+      />
+      <EditDeveloperModal
+        isOpen={editModalOpen}
+        onClose={() => {
+          setEditModalOpen(false);
+          setSelectedDeveloperId(null);
+          setSelectedDeveloperData(undefined);
+        }}
+        developerId={selectedDeveloperId}
+        data={selectedDeveloperData}
+        onSuccess={() => {
+          setEditModalOpen(false);
+          setSelectedDeveloperId(null);
+          setSelectedDeveloperData(undefined);
+        }}
+      />
 
-      <Dialog open={deleteDialogOpen && developerToDelete !== null} onOpenChange={(open) => {
-        setDeleteDialogOpen(open);
-        if (!open) setDeveloperToDelete(null);
-      }}>
+      <Dialog
+        open={deleteDialogOpen && developerToDelete !== null}
+        onOpenChange={(open) => {
+          setDeleteDialogOpen(open);
+          if (!open) setDeveloperToDelete(null);
+        }}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-red-600">
-              <AlertTriangle className="h-5 w-5" />
-              Delete Developer
+              <AlertTriangle className="h-5 w-5" /> Delete Developer
             </DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this developer? This action cannot be undone.
+              Are you sure you want to delete this developer? This action cannot
+              be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="sm:justify-end">
-            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} disabled={deleteMutation.isPending}>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(false)}
+              disabled={deleteMutation.isPending}
+            >
               Cancel
             </Button>
-            <Button variant="destructive" onClick={confirmDeleteDeveloper} disabled={deleteMutation.isPending}>
+            <Button
+              variant="destructive"
+              onClick={confirmDeleteDeveloper}
+              disabled={deleteMutation.isPending}
+            >
               {deleteMutation.isPending ? "Deleting..." : "Delete"}
             </Button>
           </DialogFooter>

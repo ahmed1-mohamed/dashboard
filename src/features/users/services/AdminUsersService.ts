@@ -1,13 +1,15 @@
 import { apiClient } from "@/lib/apiClient";
 import { GetUserDataType } from "@/types";
 import { CreateNewUserInput } from "@/validators/create-new-user.schema";
-import { EditNewUserInput } from "@/validators/edit-new-user.schema";
 
 export const AdminUsersService = {
-  /**
-   * Get all users with pagination
-   */
-  getUsers: (page: number = 1, perPage: number = 15, search?: string, status?: string) => {
+
+  getUsers: (
+    page: number = 1,
+    perPage: number = 15,
+    search?: string,
+    status?: string,
+  ) => {
     const params = new URLSearchParams({
       page: page.toString(),
       per_page: perPage.toString(),
@@ -16,7 +18,7 @@ export const AdminUsersService = {
       params.append("search", search.trim());
     }
     if (status && status !== "all") {
-      params.append("status", status);
+      params.append("status", status.toLowerCase());
     }
     return apiClient.get<{ data: GetUserDataType[]; total: number }>(
       `/dashboard/users?${params.toString()}`,
@@ -24,10 +26,17 @@ export const AdminUsersService = {
   },
 
   /**
-   * Get user by ID
+   * Get user by ID (admin endpoint)
    */
   getUser: (userId: number) => {
-    return apiClient.get<GetUserDataType>(`/users/${userId}`);
+    return apiClient.get<GetUserDataType>(`/dashboard/users/${userId}`);
+  },
+
+  /**
+   * Get all roles
+   */
+  getRoles: () => {
+    return apiClient.get("/dashboard/roles").then((res) => res.data);
   },
 
   /**
@@ -40,8 +49,10 @@ export const AdminUsersService = {
   /**
    * Update a user
    */
-  updateUser: (userId: number, data: any) => {
-    return apiClient.put<GetUserDataType>(`/dashboard/users/${userId}`, data);
+  updateUser: (userId: number, data: Record<string, unknown>) => {
+    return apiClient
+      .put<GetUserDataType>(`/dashboard/users/${userId}`, data)
+      .then((res) => res.data);
   },
 
   /**

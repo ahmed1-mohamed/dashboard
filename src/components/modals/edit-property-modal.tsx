@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useForm, Controller } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
@@ -16,25 +15,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  propertiesSchema,
-  PropertiesInput,
-} from "@/validators/propertiesSchema";
-import {
-  editProperty,
-  fetchPropertyDetails,
-  fetchProjectsPaginated,
-  fetchPropertySubtype,
-  fetchPropertyTypes,
-} from "@/data/api-client";
 import { toast } from "sonner";
-import { AxiosError } from "axios";
-import {
-  ProjectsDataType,
-  PropertiesDataType,
-  PropertySubtypeDataType,
-  PropertyTypeDataType,
-} from "@/types";
+import { AdminPropertiesService } from "@/features/properties/services/AdminPropertiesService";
+import { fetchPropertyTypes, fetchPropertySubtype, fetchProjectsPaginated } from "@/data/api-client";
+
+interface EditPropertyFormValues {
+  property_name: string;
+  unit_number: string;
+  floor: string;
+  price: string;
+  size: string;
+  bedrooms: string;
+  bathrooms: string;
+  project_id: string;
+  property_type_id: string;
+  availability_status: string;
+  construction_status: string;
+  furnish_status: string;
+  finishing_status: string;
+  view: string;
+  ownership_type: string;
+  description: string;
+}
 
 interface EditPropertyModalProps {
   isOpen: boolean;
@@ -42,30 +44,25 @@ interface EditPropertyModalProps {
   propertyId: number;
 }
 
+const availabilityOptions = [
+  { label: "Available", value: "available" },
+  { label: "Reserved", value: "reserved" },
+  { label: "Sold", value: "sold" },
+];
+
 const constructionStatusOptions = [
   { label: "Ready", value: "ready" },
   { label: "Under Construction", value: "under-construction" },
   { label: "Off Plan", value: "off-plan" },
 ];
 
-const availabilityStatus = [
-  { label: "Available", value: "available" },
-  { label: "Reserved", value: "reserved" },
-  { label: "Sold", value: "sold" },
-];
-
-const statusOptions = [
-  { label: "Active", value: "active" },
-  { label: "Inactive", value: "inactive" },
-];
-
-const furnishStatus = [
+const furnishOptions = [
   { label: "Furnished", value: "furnished" },
   { label: "UnFurnished", value: "unfurnished" },
   { label: "SemiFurnished", value: "semi-furnished" },
 ];
 
-const finishingStatus = [
+const finishingOptions = [
   { label: "Finished", value: "finished" },
   { label: "SemiFinished", value: "semi-finished" },
   { label: "UnFinished", value: "unfinished" },
@@ -77,7 +74,7 @@ const viewOptions = [
   { label: "Garden View", value: "garden" },
 ];
 
-const ownershipType = [
+const ownershipOptions = [
   { label: "Freehold", value: "freehold" },
   { label: "Leasehold", value: "leasehold" },
 ];
@@ -87,542 +84,324 @@ export function EditPropertyModal({
   onClose,
   propertyId,
 }: EditPropertyModalProps) {
-  // const queryClient = useQueryClient();
-  // const { data: session } = useSession();
-  // const token = session?.user?.accessToken;
-  // const [projectSearch, setProjectSearch] = useState("");
-  // const [projectPerPage, setProjectPerPage] = useState(10);
-  // const {
-  //   register,
-  //   handleSubmit,
-  //   setValue,
-  //   watch,
-  //   reset,
-  //   control,
-  //   setError,
-  //   formState: { errors },
-  // } = useForm<PropertiesInput>({
-  //   resolver: zodResolver(propertiesSchema),
-  // });
-  // // Fetch property data
-  // const { data: propertyData, isLoading: propertyLoading } = useQuery({
-  //   queryKey: ["property", propertyId],
-  //   queryFn: () => fetchPropertyDetails(propertyId, token!),
-  //   enabled: !!token && isOpen && !!propertyId,
-  // });
-  // // Fetch property types
-  // const { data: propertiesType = [] } = useQuery({
-  //   queryKey: ["PropertiesType"],
-  //   queryFn: () => fetchPropertyTypes(token!),
-  //    select: (data) => data.data as PropertyTypeDataType[],
-  //   enabled: !!token && isOpen,
-  // });
-  // // Fetch property subtypes
-  // const { data: propertiesSubtype = [] } = useQuery({
-  //   queryKey: ["PropertiesSubtype"],
-  //   queryFn: () => fetchPropertySubtype(token!),
-  //    select: (data) => data.data as PropertySubtypeDataType[],
-  //   enabled: !!token && isOpen,
-  // });
-  // // Fetch projects
-  // const { data: projects = [] } = useQuery({
-  //   queryKey: ["Projects", projectPerPage, projectSearch],
-  //   queryFn: () => fetchProjectsPaginated(token!, 1, projectPerPage, projectSearch),
-  //   select: (data) => data.data as ProjectsDataType[],
-  //   enabled: !!token && isOpen,
-  // });
-  // // Set form values when property data is loaded
-  // useEffect(() => {
-  //   console.log(propertyData);
-  //   if (propertyData) {
-  //     const data = propertyData;
-  //     reset({
-  //       property_name: data.property_name || "",
-  //       status: data.status || "active",
-  //       building_name: data.building_name || "",
-  //       project_id: data.project_id || undefined,
-  //       property_type_id: data.property_type_id || undefined,
-  //       property_subtype_id: data.property_subtype_id || undefined,
-  //       unit_number: data.unit_number || "",
-  //       floor: data.floor || "",
-  //       price: data.price || undefined,
-  //       size: data.size || undefined,
-  //       bedrooms: data.bedrooms || undefined,
-  //       bathrooms: data.bathrooms || undefined,
-  //       parking_spaces: data.parking_spaces || undefined,
-  //       description: data.description || "",
-  //       construction_status: data.construction_status || "",
-  //       availability_status: data.availability_status || "",
-  //       furnish_status: data.furnish_status || "",
-  //       finishing_status: data.finishing_status || "",
-  //       view: data.view || "",
-  //       ownership_type: data.ownership_type || "",
-  //     });
-  //   }
-  // }, [propertyData, reset]);
-  // const mutation = useMutation({
-  //   mutationFn: async (data: PropertiesInput) => {
-  //     if (!token) throw new Error("Not authenticated");
-  //     return editProperty(propertyId, data as unknown as PropertiesDataType, token);
-  //   },
-  //   onSuccess: () => {
-  //     toast.success("Property updated successfully!");
-  //     queryClient.invalidateQueries({ queryKey: ["Properties"] });
-  //     queryClient.invalidateQueries({ queryKey: ["property", propertyId] });
-  //     handleClose();
-  //   },
-  //   onError: (error) => {
-  //     const axiosError = error as AxiosError<{
-  //       status?: string;
-  //       errors?: Record<string, string>[];
-  //       message?: string;
-  //     }>;
-  //     const errorList = axiosError?.response?.data?.errors;
-  //     const flatMessages = errorList
-  //       ? Object.values(errorList)
-  //           .map((errObj) => Object.values(errObj))
-  //           .flat()
-  //           .join(", ")
-  //       : "";
-  //     const fallbackMessage =
-  //       axiosError.response?.data?.message ||
-  //       axiosError.message ||
-  //       "Failed to update Property.";
-  //     toast.error(flatMessages || fallbackMessage);
-  //     setError("root", { message: flatMessages || fallbackMessage });
-  //   },
-  // });
-  // const handleClose = () => {
-  //   reset();
-  //   onClose();
-  // };
-  // const onSubmitForm = (data: PropertiesInput) => {
-  //   mutation.mutate(data);
-  // };
-  // return (
-  //   <Modal
-  //     isOpen={isOpen}
-  //     onClose={handleClose}
-  //     title="Edit Property"
-  //     size="xl"
-  //     scrollable={true}
-  //     footer={
-  //       <div className="flex gap-3 justify-end w-full">
-  //         <Button
-  //           variant="outline"
-  //           onClick={handleClose}
-  //           disabled={mutation.isPending}
-  //         >
-  //           Cancel
-  //         </Button>
-  //         <Button
-  //           className="bg-teal-600 hover:bg-teal-700 text-white"
-  //           onClick={handleSubmit(onSubmitForm)}
-  //           disabled={mutation.isPending}
-  //         >
-  //           {mutation.isPending ? "Updating..." : "Update Property"}
-  //         </Button>
-  //       </div>
-  //     }
-  //   >
-  //     {propertyLoading ? (
-  //       <div className="flex items-center justify-center py-8">
-  //         <div className="text-gray-500">Loading property data...</div>
-  //       </div>
-  //     ) : (
-  //       <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-4">
-  //         {/* Basic Information */}
-  //         <div>
-  //           <h3 className="text-sm font-semibold text-gray-900 mb-3">Basic Information</h3>
-  //           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-  //             <div>
-  //               <Label htmlFor="property_name">
-  //                 Property Name <span className="text-red-500">*</span>
-  //               </Label>
-  //               <Input
-  //                 id="property_name"
-  //                 {...register("property_name")}
-  //                 placeholder="Property Name"
-  //                 className="mt-1"
-  //               />
-  //               {errors.property_name && (
-  //                 <p className="text-red-500 text-xs mt-1">
-  //                   {errors.property_name.message as string}
-  //                 </p>
-  //               )}
-  //             </div>
-  //             <div>
-  //               <Label htmlFor="unit-number">Unit Number</Label>
-  //               <Input
-  //                 id="unit-number"
-  //                 {...register("unit_number")}
-  //                 placeholder="e.g. Unit 101"
-  //                 className="mt-1"
-  //               />
-  //             </div>
-  //             <div>
-  //               <Label htmlFor="project_id">Project</Label>
-  //               <Controller
-  //                 name="project_id"
-  //                 control={control}
-  //                 render={({ field }) => (
-  //                   <Select
-  //                     onValueChange={(value) => field.onChange(Number(value))}
-  //                     value={field.value?.toString() || ""}
-  //                   >
-  //                     <SelectTrigger className="mt-1">
-  //                       <SelectValue placeholder="Select Project" />
-  //                     </SelectTrigger>
-  //                     <SelectContent>
-  //                       {projects.map((project: any) => (
-  //                         <SelectItem key={project.project_id} value={String(project.project_id)}>
-  //                           {project.project_name}
-  //                         </SelectItem>
-  //                       ))}
-  //                     </SelectContent>
-  //                   </Select>
-  //                 )}
-  //               />
-  //             </div>
-  //             <div>
-  //               <Label htmlFor="building_name">
-  //                 Building Name <span className="text-red-500">*</span>
-  //               </Label>
-  //               <Input
-  //                 id="building_name"
-  //                 {...register("building_name")}
-  //                 placeholder="Enter Building Name"
-  //                 className="mt-1"
-  //               />
-  //               {errors.building_name && (
-  //                 <p className="text-red-500 text-xs mt-1">
-  //                   {errors.building_name.message as string}
-  //                 </p>
-  //               )}
-  //             </div>
-  //             <div>
-  //               <Label htmlFor="property_type_id">Property Type <span className="text-red-500">*</span></Label>
-  //               <Controller
-  //                 name="property_type_id"
-  //                 control={control}
-  //                 render={({ field }) => (
-  //                   <Select
-  //                     onValueChange={(value) => field.onChange(Number(value))}
-  //                     value={field.value?.toString() || ""}
-  //                   >
-  //                     <SelectTrigger className="mt-1">
-  //                       <SelectValue placeholder="Select Property Type" />
-  //                     </SelectTrigger>
-  //                     <SelectContent>
-  //                       {propertiesType.map((type: any) => (
-  //                         <SelectItem key={type.property_type_id} value={String(type.property_type_id)}>
-  //                           {type.property_type_name}
-  //                         </SelectItem>
-  //                       ))}
-  //                     </SelectContent>
-  //                   </Select>
-  //                 )}
-  //               />
-  //             </div>
-  //             <div>
-  //               <Label htmlFor="property_subtype_id">Property Subtype <span className="text-red-500">*</span></Label>
-  //               <Controller
-  //                 name="property_subtype_id"
-  //                 control={control}
-  //                 render={({ field }) => (
-  //                   <Select
-  //                     onValueChange={(value) => field.onChange(Number(value))}
-  //                     value={field.value?.toString() || ""}
-  //                   >
-  //                     <SelectTrigger className="mt-1">
-  //                       <SelectValue placeholder="Select Subtype" />
-  //                     </SelectTrigger>
-  //                     <SelectContent>
-  //                       {propertiesSubtype.map((subtype: any) => (
-  //                         <SelectItem key={subtype.property_subtype_id} value={String(subtype.property_subtype_id)}>
-  //                           {subtype.property_subtype_name}
-  //                         </SelectItem>
-  //                       ))}
-  //                     </SelectContent>
-  //                   </Select>
-  //                 )}
-  //               />
-  //             </div>
-  //           </div>
-  //         </div>
-  //         {/* Status Information */}
-  //         <div>
-  //           <h3 className="text-sm font-semibold text-gray-900 mb-3">Status</h3>
-  //           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-  //             <div>
-  //               <Label htmlFor="status">Status <span className="text-red-500">*</span></Label>
-  //               <Controller
-  //                 name="status"
-  //                 control={control}
-  //                 render={({ field }) => (
-  //                   <Select
-  //                     onValueChange={field.onChange}
-  //                     value={field.value || ""}
-  //                   >
-  //                     <SelectTrigger className="mt-1">
-  //                       <SelectValue placeholder="Select Status" />
-  //                     </SelectTrigger>
-  //                     <SelectContent>
-  //                       {statusOptions.map((option) => (
-  //                         <SelectItem key={option.value} value={option.value}>
-  //                           {option.label}
-  //                         </SelectItem>
-  //                       ))}
-  //                     </SelectContent>
-  //                   </Select>
-  //                 )}
-  //               />
-  //             </div>
-  //             <div>
-  //               <Label htmlFor="availability_status">Availability Status</Label>
-  //               <Controller
-  //                 name="availability_status"
-  //                 control={control}
-  //                 render={({ field }) => (
-  //                   <Select
-  //                     onValueChange={field.onChange}
-  //                     value={field.value || ""}
-  //                   >
-  //                     <SelectTrigger className="mt-1">
-  //                       <SelectValue placeholder="Select Availability" />
-  //                     </SelectTrigger>
-  //                     <SelectContent>
-  //                       {availabilityStatus.map((option) => (
-  //                         <SelectItem key={option.value} value={option.value}>
-  //                           {option.label}
-  //                         </SelectItem>
-  //                       ))}
-  //                     </SelectContent>
-  //                   </Select>
-  //                 )}
-  //               />
-  //             </div>
-  //             <div>
-  //               <Label htmlFor="construction_status">Construction Status</Label>
-  //               <Controller
-  //                 name="construction_status"
-  //                 control={control}
-  //                 render={({ field }) => (
-  //                   <Select
-  //                     onValueChange={field.onChange}
-  //                     value={field.value || ""}
-  //                   >
-  //                     <SelectTrigger className="mt-1">
-  //                       <SelectValue placeholder="Select Construction Status" />
-  //                     </SelectTrigger>
-  //                     <SelectContent>
-  //                       {constructionStatusOptions.map((option) => (
-  //                         <SelectItem key={option.value} value={option.value}>
-  //                           {option.label}
-  //                         </SelectItem>
-  //                       ))}
-  //                     </SelectContent>
-  //                   </Select>
-  //                 )}
-  //               />
-  //             </div>
-  //           </div>
-  //         </div>
-  //         {/* Size & Pricing */}
-  //         <div>
-  //           <h3 className="text-sm font-semibold text-gray-900 mb-3">Size & Pricing</h3>
-  //           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-  //             <div>
-  //               <Label htmlFor="price">Price</Label>
-  //               <Input
-  //                 id="price"
-  //                 type="number"
-  //                 {...register("price", { valueAsNumber: true })}
-  //                 placeholder="Price"
-  //                 className="mt-1"
-  //               />
-  //             </div>
-  //             <div>
-  //               <Label htmlFor="size">Size (sq ft)</Label>
-  //               <Input
-  //                 id="size"
-  //                 type="number"
-  //                 {...register("size", { valueAsNumber: true })}
-  //                 placeholder="Size"
-  //                 className="mt-1"
-  //               />
-  //             </div>
-  //             <div>
-  //               <Label htmlFor="plot_size">Plot Size</Label>
-  //               <Input
-  //                 id="plot_size"
-  //                 type="number"
-  //                 {...register("plot_size", { valueAsNumber: true })}
-  //                 placeholder="Plot Size"
-  //                 className="mt-1"
-  //               />
-  //             </div>
-  //           </div>
-  //         </div>
-  //         {/* Rooms & Facilities */}
-  //         <div>
-  //           <h3 className="text-sm font-semibold text-gray-900 mb-3">Rooms & Facilities</h3>
-  //           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-  //             <div>
-  //               <Label htmlFor="bedrooms">Bedrooms</Label>
-  //               <Input
-  //                 id="bedrooms"
-  //                 type="number"
-  //                 {...register("bedrooms", { valueAsNumber: true })}
-  //                 placeholder="Bedrooms"
-  //                 className="mt-1"
-  //               />
-  //             </div>
-  //             <div>
-  //               <Label htmlFor="bathrooms">Bathrooms</Label>
-  //               <Input
-  //                 id="bathrooms"
-  //                 type="number"
-  //                 {...register("bathrooms", { valueAsNumber: true })}
-  //                 placeholder="Bathrooms"
-  //                 className="mt-1"
-  //               />
-  //             </div>
-  //             <div>
-  //               <Label htmlFor="parking_spaces">Parking Spaces</Label>
-  //               <Input
-  //                 id="parking_spaces"
-  //                 type="number"
-  //                 {...register("parking_spaces", { valueAsNumber: true })}
-  //                 placeholder="Parking Spaces"
-  //                 className="mt-1"
-  //               />
-  //             </div>
-  //             <div>
-  //               <Label htmlFor="floor">Floor</Label>
-  //               <Input
-  //                 id="floor"
-  //                 {...register("floor")}
-  //                 placeholder="Floor"
-  //                 className="mt-1"
-  //               />
-  //             </div>
-  //             <div>
-  //               <Label htmlFor="view">View</Label>
-  //               <Controller
-  //                 name="view"
-  //                 control={control}
-  //                 render={({ field }) => (
-  //                   <Select
-  //                     onValueChange={field.onChange}
-  //                     value={field.value || ""}
-  //                   >
-  //                     <SelectTrigger className="mt-1">
-  //                       <SelectValue placeholder="Select View" />
-  //                     </SelectTrigger>
-  //                     <SelectContent>
-  //                       {viewOptions.map((option) => (
-  //                         <SelectItem key={option.value} value={option.value}>
-  //                           {option.label}
-  //                         </SelectItem>
-  //                       ))}
-  //                     </SelectContent>
-  //                   </Select>
-  //                 )}
-  //               />
-  //             </div>
-  //             <div>
-  //               <Label htmlFor="finishing_status">Finishing Type</Label>
-  //               <Controller
-  //                 name="finishing_status"
-  //                 control={control}
-  //                 render={({ field }) => (
-  //                   <Select
-  //                     onValueChange={field.onChange}
-  //                     value={field.value || ""}
-  //                   >
-  //                     <SelectTrigger className="mt-1">
-  //                       <SelectValue placeholder="Select Finishing" />
-  //                     </SelectTrigger>
-  //                     <SelectContent>
-  //                       {finishingStatus.map((option) => (
-  //                         <SelectItem key={option.value} value={option.value}>
-  //                           {option.label}
-  //                         </SelectItem>
-  //                       ))}
-  //                     </SelectContent>
-  //                   </Select>
-  //                 )}
-  //               />
-  //             </div>
-  //             <div>
-  //               <Label htmlFor="furnish_status">Furnish Status</Label>
-  //               <Controller
-  //                 name="furnish_status"
-  //                 control={control}
-  //                 render={({ field }) => (
-  //                   <Select
-  //                     onValueChange={field.onChange}
-  //                     value={field.value || ""}
-  //                   >
-  //                     <SelectTrigger className="mt-1">
-  //                       <SelectValue placeholder="Select Furnish Status" />
-  //                     </SelectTrigger>
-  //                     <SelectContent>
-  //                       {furnishStatus.map((option) => (
-  //                         <SelectItem key={option.value} value={option.value}>
-  //                           {option.label}
-  //                         </SelectItem>
-  //                       ))}
-  //                     </SelectContent>
-  //                   </Select>
-  //                 )}
-  //               />
-  //             </div>
-  //             <div>
-  //               <Label htmlFor="ownership_type">Ownership Type</Label>
-  //               <Controller
-  //                 name="ownership_type"
-  //                 control={control}
-  //                 render={({ field }) => (
-  //                   <Select
-  //                     onValueChange={field.onChange}
-  //                     value={field.value || ""}
-  //                   >
-  //                     <SelectTrigger className="mt-1">
-  //                       <SelectValue placeholder="Select Ownership Type" />
-  //                     </SelectTrigger>
-  //                     <SelectContent>
-  //                       {ownershipType.map((option) => (
-  //                         <SelectItem key={option.value} value={option.value}>
-  //                           {option.label}
-  //                         </SelectItem>
-  //                       ))}
-  //                     </SelectContent>
-  //                   </Select>
-  //                 )}
-  //               />
-  //             </div>
-  //           </div>
-  //         </div>
-  //         {/* Description */}
-  //         <div>
-  //           <Label htmlFor="description">Description</Label>
-  //           <Input
-  //             id="description"
-  //             {...register("description")}
-  //             placeholder="Property description"
-  //             className="mt-1"
-  //           />
-  //         </div>
-  //         {/* Root Error */}
-  //         {errors.root && (
-  //           <p className="text-red-500 text-xs mt-1">
-  //             {errors.root.message as string}
-  //           </p>
-  //         )}
-  //       </form>
-  //     )}
-  //   </Modal>
-  // );
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken;
+  const queryClient = useQueryClient();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    control,
+    formState: { errors },
+  } = useForm<EditPropertyFormValues>({
+    defaultValues: {
+      property_name: "",
+      unit_number: "",
+      floor: "",
+      price: "",
+      size: "",
+      bedrooms: "",
+      bathrooms: "",
+      project_id: "",
+      property_type_id: "",
+      availability_status: "available",
+      construction_status: "",
+      furnish_status: "",
+      finishing_status: "",
+      view: "",
+      ownership_type: "",
+      description: "",
+    },
+  });
+
+  // Fetch property details
+  const { data: propertyData, isLoading: propertyLoading } = useQuery({
+    queryKey: ["property-detail", propertyId],
+    queryFn: () => AdminPropertiesService.getProperty(propertyId),
+    enabled: !!token && !!propertyId && isOpen,
+  });
+
+  // Fetch property types
+  const { data: propertyTypesRaw = [] } = useQuery({
+    queryKey: ["property-types"],
+    queryFn: () => fetchPropertyTypes(token!),
+    enabled: !!token && isOpen,
+    select: (data) => (data as { data?: unknown[] }).data ?? [],
+  });
+
+  // Fetch projects for dropdown
+  const { data: projectsRaw } = useQuery({
+    queryKey: ["projects-dropdown"],
+    queryFn: () => fetchProjectsPaginated(token!, 1, 100),
+    enabled: !!token && isOpen,
+    select: (data) => (data as { data?: unknown[] }).data ?? [],
+  });
+
+  const propertyTypes = propertyTypesRaw as Array<{ property_type_id: number; property_type_name: string }>;
+  const projects = (projectsRaw ?? []) as Array<{ project_id: number; project_name: string }>;
+
+  // Populate form when data arrives
+  useEffect(() => {
+    if (!propertyData) return;
+    const raw = (propertyData as { data?: unknown }).data ?? propertyData;
+    const p = raw as Record<string, unknown>;
+    reset({
+      property_name: (p.property_name as string) ?? "",
+      unit_number: (p.unit_number as string) ?? (p.property_no as string) ?? "",
+      floor: String(p.floor ?? ""),
+      price: String(p.price ?? ""),
+      size: String(p.size ?? ""),
+      bedrooms: String(p.bedrooms ?? ""),
+      bathrooms: String(p.bathrooms ?? ""),
+      project_id: p.project_id ? String(p.project_id) : "",
+      property_type_id: p.property_type_id ? String(p.property_type_id) : "",
+      availability_status: (p.availability_status as string) ?? "available",
+      construction_status: (p.construction_status as string) ?? "",
+      furnish_status: (p.furnish_status as string) ?? "",
+      finishing_status: (p.finishing_status as string) ?? "",
+      view: (p.view as string) ?? "",
+      ownership_type: (p.ownership_type as string) ?? "",
+      description: (p.description as string) ?? "",
+    });
+  }, [propertyData, reset]);
+
+  const handleClose = useCallback(() => {
+    reset();
+    onClose();
+  }, [reset, onClose]);
+
+  const onSubmit = async (formValues: EditPropertyFormValues) => {
+    if (!propertyId) return;
+    setIsSubmitting(true);
+    try {
+      await AdminPropertiesService.updateProperty(propertyId, {
+        ...formValues,
+        project_id: formValues.project_id ? Number(formValues.project_id) : undefined,
+        property_type_id: formValues.property_type_id ? Number(formValues.property_type_id) : undefined,
+        price: formValues.price ? Number(formValues.price) : undefined,
+        size: formValues.size ? Number(formValues.size) : undefined,
+        bedrooms: formValues.bedrooms ? Number(formValues.bedrooms) : undefined,
+        bathrooms: formValues.bathrooms ? Number(formValues.bathrooms) : undefined,
+      });
+      toast.success("Property updated successfully!");
+      queryClient.invalidateQueries({ queryKey: ["properties"] });
+      queryClient.invalidateQueries({ queryKey: ["property-detail", propertyId] });
+      handleClose();
+    } catch (error) {
+      const err = error as { response?: { data?: { message?: string } }; message?: string };
+      toast.error(err.response?.data?.message ?? err.message ?? "Failed to update property");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={handleClose}
+      title="Edit Property"
+      size="xl"
+      showCloseButton={false}
+      footer={
+        <div className="flex gap-3 justify-end w-full">
+          <Button variant="outline" onClick={handleClose} disabled={isSubmitting}>
+            Cancel
+          </Button>
+          <Button
+            className="bg-teal-600 hover:bg-teal-700 text-white"
+            onClick={handleSubmit(onSubmit)}
+            disabled={isSubmitting || propertyLoading}
+          >
+            {isSubmitting ? "Updating..." : "Update Property"}
+          </Button>
+        </div>
+      }
+    >
+      {propertyLoading ? (
+        <div className="flex items-center justify-center py-8">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-teal-600 border-r-transparent" />
+        </div>
+      ) : (
+        <div className="max-h-[calc(100vh-280px)] overflow-y-auto pr-2">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            {/* Basic Info */}
+            <h3 className="text-sm font-semibold text-gray-900">Basic Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="ep-name">Property Name</Label>
+                <Input id="ep-name" {...register("property_name")} placeholder="Property Name" className="mt-1" />
+              </div>
+              <div>
+                <Label htmlFor="ep-unit">Unit Number</Label>
+                <Input id="ep-unit" {...register("unit_number")} placeholder="e.g. Unit 101" className="mt-1" />
+              </div>
+              <div>
+                <Label htmlFor="ep-project">Project</Label>
+                <Controller
+                  name="project_id"
+                  control={control}
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger className="mt-1"><SelectValue placeholder="Select Project" /></SelectTrigger>
+                      <SelectContent>
+                        {projects.map((p) => (
+                          <SelectItem key={p.project_id} value={String(p.project_id)}>
+                            {p.project_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
+              <div>
+                <Label htmlFor="ep-type">Property Type</Label>
+                <Controller
+                  name="property_type_id"
+                  control={control}
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger className="mt-1"><SelectValue placeholder="Select Type" /></SelectTrigger>
+                      <SelectContent>
+                        {propertyTypes.map((t) => (
+                          <SelectItem key={t.property_type_id} value={String(t.property_type_id)}>
+                            {t.property_type_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
+            </div>
+
+            {/* Status */}
+            <h3 className="text-sm font-semibold text-gray-900 mt-2">Status</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label>Availability</Label>
+                <Controller name="availability_status" control={control} render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger className="mt-1"><SelectValue placeholder="Availability" /></SelectTrigger>
+                    <SelectContent>
+                      {availabilityOptions.map((o) => (
+                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )} />
+              </div>
+              <div>
+                <Label>Construction Status</Label>
+                <Controller name="construction_status" control={control} render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger className="mt-1"><SelectValue placeholder="Construction Status" /></SelectTrigger>
+                    <SelectContent>
+                      {constructionStatusOptions.map((o) => (
+                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )} />
+              </div>
+            </div>
+
+            {/* Size & Pricing */}
+            <h3 className="text-sm font-semibold text-gray-900 mt-2">Size & Pricing</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="ep-price">Price</Label>
+                <Input id="ep-price" type="number" {...register("price")} placeholder="Price" className="mt-1" />
+              </div>
+              <div>
+                <Label htmlFor="ep-size">Size (sqm)</Label>
+                <Input id="ep-size" type="number" {...register("size")} placeholder="Size" className="mt-1" />
+              </div>
+              <div>
+                <Label htmlFor="ep-floor">Floor</Label>
+                <Input id="ep-floor" {...register("floor")} placeholder="Floor" className="mt-1" />
+              </div>
+            </div>
+
+            {/* Rooms */}
+            <h3 className="text-sm font-semibold text-gray-900 mt-2">Rooms</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="ep-bedrooms">Bedrooms</Label>
+                <Input id="ep-bedrooms" type="number" {...register("bedrooms")} placeholder="Bedrooms" className="mt-1" />
+              </div>
+              <div>
+                <Label htmlFor="ep-bathrooms">Bathrooms</Label>
+                <Input id="ep-bathrooms" type="number" {...register("bathrooms")} placeholder="Bathrooms" className="mt-1" />
+              </div>
+              <div>
+                <Label>View</Label>
+                <Controller name="view" control={control} render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger className="mt-1"><SelectValue placeholder="Select View" /></SelectTrigger>
+                    <SelectContent>
+                      {viewOptions.map((o) => (
+                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )} />
+              </div>
+            </div>
+
+            {/* Finishing */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <Label>Furnish Status</Label>
+                <Controller name="furnish_status" control={control} render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger className="mt-1"><SelectValue placeholder="Furnish Status" /></SelectTrigger>
+                    <SelectContent>
+                      {furnishOptions.map((o) => (
+                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )} />
+              </div>
+              <div>
+                <Label>Finishing Type</Label>
+                <Controller name="finishing_status" control={control} render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger className="mt-1"><SelectValue placeholder="Finishing" /></SelectTrigger>
+                    <SelectContent>
+                      {finishingOptions.map((o) => (
+                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )} />
+              </div>
+              <div>
+                <Label>Ownership Type</Label>
+                <Controller name="ownership_type" control={control} render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger className="mt-1"><SelectValue placeholder="Ownership" /></SelectTrigger>
+                    <SelectContent>
+                      {ownershipOptions.map((o) => (
+                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )} />
+              </div>
+            </div>
+
+            {/* Description */}
+            <div>
+              <Label htmlFor="ep-desc">Description</Label>
+              <Input id="ep-desc" {...register("description")} placeholder="Property description" className="mt-1" />
+            </div>
+          </form>
+        </div>
+      )}
+    </Modal>
+  );
 }

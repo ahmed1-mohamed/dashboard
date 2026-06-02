@@ -120,6 +120,28 @@ export default function PropertiesPage() {
     });
   }, [propertyToDelete, deletePropertyMutation]);
 
+  const handleExport = useCallback(() => {
+    if (properties.length === 0) {
+      toast.info("No properties to export");
+      return;
+    }
+    const headers = ["ID","Unit Number","Property Name","Type","Area","Floor","Price","Project","Status"];
+    const rows = properties.map((p) => [
+      p.id, `"${p.unitNumber}"`, `"${p.property_name}"`,
+      `"${p.type}"`, `"${p.area}"`, p.floor,
+      `"${p.price}"`, `"${p.project_name}"`, p.status,
+    ]);
+    const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `properties_${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Properties exported!");
+  }, [properties]);
+
   return (
     <div className="p-4 px-3 space-y-4 max-w-full overflow-hidden">
       <PageHeader
@@ -160,7 +182,7 @@ export default function PropertiesPage() {
               onStatusChange={(val) => setFilter("status", val)}
             />
             <div className="flex items-center gap-2">
-              <Button variant="outline" className="gap-2 border-gray-200">
+              <Button variant="outline" className="gap-2 border-gray-200" onClick={handleExport}>
                 <Download className="h-4 w-4" /> Export
               </Button>
               <Button variant="outline" className="gap-2 border-gray-200">

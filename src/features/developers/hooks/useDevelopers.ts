@@ -1,6 +1,11 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  keepPreviousData,
+} from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import { AdminDevelopersService } from "../services/AdminDevelopersService";
 
@@ -27,7 +32,7 @@ export function useDevelopers(
       ),
     retry: false,
     enabled: !!token,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
     placeholderData: keepPreviousData,
   });
 
@@ -45,8 +50,17 @@ export function useDevelopers(
     },
   });
 
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: FormData }) =>
+      AdminDevelopersService.updateDeveloper(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["developers"] });
+    },
+  });
+
   const bulkImportMutation = useMutation({
-    mutationFn: (file: File) => AdminDevelopersService.bulkImportDevelopers(file),
+    mutationFn: (file: File) =>
+      AdminDevelopersService.bulkImportDevelopers(file),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["developers"] });
     },
@@ -64,6 +78,7 @@ export function useDevelopers(
     developersData,
     deleteMutation,
     addMutation,
+    updateMutation,
     bulkImportMutation,
     toggleStatusMutation,
   };

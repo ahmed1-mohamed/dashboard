@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useCallback, useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Pagination } from "@/components/shared/Pagination";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -21,14 +22,16 @@ import { UsersTable } from "@/features/users/components/UsersTable";
 import { UsersFilters } from "@/features/users/components/UsersFilters";
 import { useServerPagination } from "@/hooks/useServerPagination";
 import { User } from "@/features/users/types";
+import { GetUserDataType } from "@/types";
 
 import { AddUserModal } from "@/components/modals/add-user-modal";
 import { ViewUserModal } from "@/components/modals/view-user-modal";
 import { EditUserModal } from "@/components/modals/edit-user-modal";
 import { CreateNewUserInput } from "@/validators/create-new-user.schema";
-import { GetUserDataType } from "@/types";
 
 export default function UsersPage() {
+  const queryClient = useQueryClient();
+
   const {
     page,
     perPage,
@@ -45,15 +48,11 @@ export default function UsersPage() {
     initialFilters: { status: "all", role: "all" },
   });
 
-  const isFiltering = filters.status !== "all" || filters.role !== "all" || debouncedSearch !== "";
-  const fetchPerPage = isFiltering ? 1000 : perPage;
-  const fetchPage = isFiltering ? 1 : page;
-
   const { usersData, deleteUserMutation, addUserMutation } = useUsers(
-    fetchPage,
-    fetchPerPage,
-    undefined,
-    undefined
+    page,
+    perPage,
+    debouncedSearch || undefined,
+    filters.status !== "all" ? filters.status : undefined,
   );
 
   const { data, isLoading, isError, error, refetch } = usersData;
@@ -67,59 +66,28 @@ export default function UsersPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<number | null>(null);
 
-  const usersArrayData: { items: GetUserDataType[]; totalCount: number } = useMemo(() => {
-    let rawData = data?.data;
-    if (!Array.isArray(rawData)) {
-      if (rawData?.data && Array.isArray(rawData.data)) {
-        rawData = rawData.data;
-      } else {
-        rawData = [];
-      }
+  // Extract paginated data from API response
+  const usersRaw: GetUserDataType[] = useMemo(() => {
+    const rawData = (data as { data?: unknown })?.data;
+    if (Array.isArray(rawData)) return rawData as GetUserDataType[];
+    const nested = (rawData as { data?: unknown } | undefined)?.data;
+    if (Array.isArray(nested)) return nested as GetUserDataType[];
+    return [];
+  }, [data]);
+
+  const totalUsers: number = useMemo(() => {
+    const rawData = (data as { data?: unknown })?.data;
+    if (rawData && typeof rawData === "object" && "total" in rawData) {
+      return (rawData as { total: number }).total;
     }
-
-    let itemsArray = [...rawData];
-
-    // Local filtering
-    const isFiltering = filters.status !== "all" || filters.role !== "all" || debouncedSearch !== "";
-    if (isFiltering && itemsArray.length > 0) {
-      if (filters.status !== "all") {
-        itemsArray = itemsArray.filter((u: any) => {
-          const uStatus = u.status?.toLowerCase();
-          return uStatus === filters.status.toLowerCase();
-        });
-      }
-      if (filters.role !== "all") {
-        itemsArray = itemsArray.filter((u: any) => {
-          const uRole = u.role_name?.toLowerCase() || "viewer";
-          return uRole === filters.role.toLowerCase();
-        });
-      }
-      // Assuming search is handled locally if we fetch all, or handled by backend.
-      if (debouncedSearch) {
-        const query = debouncedSearch.toLowerCase();
-        itemsArray = itemsArray.filter((u: any) => {
-          const fullName = `${u.first_name || ""} ${u.last_name || ""}`.toLowerCase();
-          return fullName.includes(query) || (u.email || "").toLowerCase().includes(query);
-        });
-      }
-    }
-
-    // Capture total after filtering but before pagination
-    const totalCount = itemsArray.length;
-
-    // Local pagination
-    const startIndex = (page - 1) * perPage;
-    itemsArray = itemsArray.slice(startIndex, startIndex + perPage);
-
-    return { items: itemsArray, totalCount };
-  }, [data, filters.status, filters.role, debouncedSearch, page, perPage]);
+    return usersRaw.length;
+  }, [data, usersRaw]);
 
   const users: User[] = useMemo(() => {
-    return usersArrayData.items.map((user) => {
-      const firstName = user.first_name || "";
-      const lastName = user.last_name || "";
+    return usersRaw.map((user) => {
+      const firstName = user.first_name ?? "";
+      const lastName = user.last_name ?? "";
       const fullName = `${firstName} ${lastName}`.trim() || "N/A";
-
       return {
         user_id: user.user_id,
         name: fullName,
@@ -127,29 +95,55 @@ export default function UsersPage() {
         role_name: user.role_name || "Viewer",
         email: user.email || "N/A",
         lastLogin: "Recently",
-        status: user.status === "active" ? "Active" : user.status === "inactive" ? "Inactive" : "Suspended",
+        status:
+          user.status === "active"
+            ? "Active"
+            : user.status === "inactive"
+              ? "Inactive"
+              : "Suspended",
       };
     });
-  }, [usersArrayData]);
+  }, [usersRaw]);
 
-  const isFiltering = filters.status !== "all" || filters.role !== "all" || debouncedSearch !== "";
-  const total = isFiltering ? usersArrayData.totalCount : (data?.data?.total || usersArrayData.totalCount || 0);
-  const totalPages = Math.max(1, Math.ceil(total / perPage));
+  const totalPages = Math.max(1, Math.ceil(totalUsers / perPage));
 
-  const handleAddUser = useCallback((userData: CreateNewUserInput) => {
-    addUserMutation.mutate(userData, {
-      onSuccess: () => {
-        toast.success("User added successfully!");
-        setIsAddUserModalOpen(false);
-      },
-      onError: () => toast.error("Failed to add user."),
-    });
-  }, [addUserMutation]);
+  const handleAddUser = useCallback(
+    (userData: CreateNewUserInput) => {
+      addUserMutation.mutate(userData, {
+        onSuccess: () => {
+          toast.success("User added successfully!");
+          setIsAddUserModalOpen(false);
+        },
+        onError: () => toast.error("Failed to add user."),
+      });
+    },
+    [addUserMutation],
+  );
 
   const handleViewUser = useCallback((user: User) => {
     setUserIdToView(user.user_id);
     setViewUserModalOpen(true);
   }, []);
+
+  const handleExport = useCallback(() => {
+    if (users.length === 0) {
+      toast.info("No users to export");
+      return;
+    }
+    const headers = ["ID","Name","Email","Role","Status"];
+    const rows = users.map((u) => [
+      u.user_id, `"${u.name}"`, `"${u.email}"`, `"${u.role_name}"`, u.status,
+    ]);
+    const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `users_${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Users exported!");
+  }, [users]);
 
   const handleEditUser = useCallback((userId: number) => {
     setUserToEdit(userId);
@@ -177,16 +171,27 @@ export default function UsersPage() {
     <div className="p-4 px-3 space-y-4 max-w-full overflow-hidden">
       <PageHeader
         title="Users"
-        totalItems={total}
+        totalItems={totalUsers}
         actionButtonText="Add User"
         onActionClick={() => setIsAddUserModalOpen(true)}
       />
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="text-center">
-            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-teal-600 border-r-transparent"></div>
-            <p className="mt-4 text-sm text-gray-600">Loading users...</p>
+        <div className="space-y-4">
+          <div className="flex items-center gap-4">
+            <Skeleton className="h-10 w-[200px]" />
+            <Skeleton className="h-10 w-[120px]" />
+            <Skeleton className="h-10 w-[120px]" />
+          </div>
+          <div className="rounded-lg border border-gray-200 bg-white p-4 space-y-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-4">
+                <Skeleton className="h-8 w-8 rounded-full" />
+                <Skeleton className="h-4 w-[150px]" />
+                <Skeleton className="h-4 w-[120px]" />
+                <Skeleton className="h-4 w-[80px]" />
+              </div>
+            ))}
           </div>
         </div>
       ) : isError ? (
@@ -194,10 +199,16 @@ export default function UsersPage() {
           <div className="flex items-center gap-2">
             <AlertCircle className="h-5 w-5 text-red-500" />
             <p className="text-sm text-red-800">
-              <strong>Error:</strong> {error instanceof Error ? error.message : "Failed to load users"}
+              <strong>Error:</strong>{" "}
+              {error instanceof Error ? error.message : "Failed to load users"}
             </p>
           </div>
-          <Button variant="outline" size="sm" onClick={() => refetch()} className="mt-2 border-red-200 text-red-700 hover:bg-red-100">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => refetch()}
+            className="mt-2 border-red-200 text-red-700 hover:bg-red-100"
+          >
             Try Again
           </Button>
         </div>
@@ -213,7 +224,7 @@ export default function UsersPage() {
               onRoleChange={(val) => setFilter("role", val)}
             />
             <div className="flex items-center gap-2">
-              <Button variant="outline" className="gap-2 border-gray-200">
+              <Button variant="outline" className="gap-2 border-gray-200" onClick={handleExport}>
                 <Download className="h-4 w-4" /> Export
               </Button>
               <Button variant="outline" className="gap-2 border-gray-200">
@@ -233,22 +244,32 @@ export default function UsersPage() {
             page={page}
             totalPages={totalPages}
             perPage={perPage}
-            totalItems={total}
+            totalItems={totalUsers}
             onPageChange={setPage}
             onPerPageChange={setPerPage}
           />
         </>
       )}
 
-      <AddUserModal isOpen={isAddUserModalOpen} onClose={() => setIsAddUserModalOpen(false)} onSubmit={handleAddUser} />
+      <AddUserModal
+        isOpen={isAddUserModalOpen}
+        onClose={() => setIsAddUserModalOpen(false)}
+        onSubmit={handleAddUser}
+      />
 
       <ViewUserModal
         isOpen={viewUserModalOpen}
-        onClose={() => { setViewUserModalOpen(false); setUserIdToView(null); }}
+        onClose={() => {
+          setViewUserModalOpen(false);
+          setUserIdToView(null);
+        }}
         userId={userIdToView || 0}
         onEdit={() => {
           setViewUserModalOpen(false);
-          if (userIdToView) { setUserToEdit(userIdToView); setEditUserModalOpen(true); }
+          if (userIdToView) {
+            setUserToEdit(userIdToView);
+            setEditUserModalOpen(true);
+          }
           setUserIdToView(null);
         }}
         onDelete={() => {
@@ -259,9 +280,14 @@ export default function UsersPage() {
 
       <EditUserModal
         isOpen={editUserModalOpen}
-        onClose={() => { setEditUserModalOpen(false); setUserToEdit(null); }}
+        onClose={() => {
+          setEditUserModalOpen(false);
+          setUserToEdit(null);
+        }}
         userId={userToEdit || 0}
-        onSuccess={() => window.location.reload()}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ["users"] });
+        }}
       />
 
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
@@ -271,12 +297,19 @@ export default function UsersPage() {
               <AlertTriangle className="h-5 w-5" /> Delete User
             </DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this user? This action cannot be undone.
+              Are you sure you want to delete this user? This action cannot be
+              undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleConfirmDelete} disabled={isDeleting}>
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmDelete}
+              disabled={isDeleting}
+            >
               {isDeleting ? "Deleting..." : "Delete"}
             </Button>
           </DialogFooter>
