@@ -17,7 +17,14 @@ export interface DeveloperData {
   is_top: number;
   features: any[];
   project: any[];
+  paymentPlans?: any[];
   userDeveloperRelationships: any[];
+  active_projects_count?: number;
+  active_units_count?: number;
+  available_units_count?: number;
+  booked_units_count?: number;
+  completed_projects_count?: number;
+  total_units_count?: number;
   created_at: string | null;
   updated_at: string | null;
 }

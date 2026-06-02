@@ -87,8 +87,12 @@ export function DevelopersTable({
             </TableRow>
           ) : (
             developers.map((developer) => (
-              <TableRow key={developer.id} className="hover:bg-gray-50/50">
-                <TableCell className="px-2">
+              <TableRow
+                key={developer.id}
+                className="hover:bg-gray-50/50 cursor-pointer"
+                onClick={() => router.push(`/admin/developers/${developer.id}`)}
+              >
+                <TableCell className="px-2" onClick={(e) => e.stopPropagation()}>
                   <Checkbox
                     checked={selectedDevelopers.includes(developer.id)}
                     onCheckedChange={(checked) =>
@@ -98,7 +102,7 @@ export function DevelopersTable({
                 </TableCell>
                 <TableCell className="px-2">
                   <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0 border border-gray-200">
+                    <div className="h-10 w-10 rounded-lg bg-gray-100 hover:text-teal-600 hover-bg-gray-200 hover:border-teal-200 flex items-center justify-center overflow-hidden flex-shrink-0 border border-gray-200">
                       {developer.logo ? (
                         <img
                           src={developer.logo}
@@ -130,7 +134,7 @@ export function DevelopersTable({
                     {developer.projects}
                   </Badge>
                 </TableCell>
-                <TableCell className="px-2">
+                <TableCell className="px-2" onClick={(e) => e.stopPropagation()}>
                   <a
                     href={developer.website}
                     target="_blank"
@@ -146,7 +150,7 @@ export function DevelopersTable({
                 <TableCell className="text-gray-900 px-2 text-sm">
                   {developer.contact}
                 </TableCell>
-                <TableCell className="px-2">
+                <TableCell className="px-2" onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center gap-2">
                     <Switch
                       checked={developer.status}
@@ -167,7 +171,7 @@ export function DevelopersTable({
                     </Badge>
                   </div>
                 </TableCell>
-                <TableCell className="px-2">
+                <TableCell className="px-2" onClick={(e) => e.stopPropagation()}>
                   <TableActions
                     onView={() => router.push(`/admin/developers/${developer.id}`)}
                     onEdit={() => onEdit(developer.id)}

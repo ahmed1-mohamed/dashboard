@@ -2,12 +2,12 @@
 
 import { use, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useQueryClient } from "@tanstack/react-query";
+// import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
-import { EditDeveloperModal } from "@/components/modals/edit-developer-modal";
+// import { EditDeveloperModal } from "@/components/modals/edit-developer-modal";
 import { useDeveloperDetails } from "@/hooks/use-developer-details";
 import {
   MapPin,
@@ -43,8 +43,8 @@ export default function DeveloperDetailsPage({
   const [activeTab, setActiveTab] = useState("projects");
   const [selectedUnits, setSelectedUnits] = useState<number[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const queryClient = useQueryClient();
+  // const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  // const queryClient = useQueryClient();
 
   const { developer, isLoading, isError, error, toggleTop, isTogglingTop } =
     useDeveloperDetails(Number(developerId));
@@ -191,8 +191,8 @@ export default function DeveloperDetailsPage({
                 <div className="flex items-center gap-1">
                   <span
                     className={`inline-flex h-2 w-2 rounded-full ${developer.status === "active"
-                        ? "bg-green-500"
-                        : "bg-gray-400"
+                      ? "bg-green-500"
+                      : "bg-gray-400"
                       }`}
                   />
                   <span className="capitalize">{developer.status}</span>
@@ -211,7 +211,7 @@ export default function DeveloperDetailsPage({
             </Button>
             <Button
               className="bg-teal-600 hover:bg-teal-700 text-white gap-2"
-              onClick={() => setIsEditModalOpen(true)}
+              // onClick={() => setIsEditModalOpen(true)}
             >
               <Edit className="h-4 w-4" />
               Edit
@@ -272,6 +272,7 @@ export default function DeveloperDetailsPage({
               }}
             />
           </div>
+
 
           <div className="bg-white rounded-lg border border-gray-200 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
@@ -341,8 +342,8 @@ export default function DeveloperDetailsPage({
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
                     className={`flex items-center gap-2 px-4 py-3 text-sm font-medium rounded-t-lg transition-all ${activeTab === tab.id
-                        ? "bg-white text-teal-600 border-t-2 border-teal-600 shadow-sm"
-                        : "text-gray-600 hover:text-gray-900 hover:bg-white/50"
+                      ? "bg-white text-teal-600 border-t-2 border-teal-600 shadow-sm"
+                      : "text-gray-600 hover:text-gray-900 hover:bg-white/50"
                       }`}
                   >
                     <tab.icon
@@ -382,10 +383,10 @@ export default function DeveloperDetailsPage({
                               <div className="flex items-center gap-2 mt-2">
                                 <Badge
                                   className={`text-xs ${project.status === "ongoing"
-                                      ? "bg-blue-50 text-blue-700 border-blue-200"
-                                      : project.status === "completed"
-                                        ? "bg-green-50 text-green-700 border-green-200"
-                                        : "bg-gray-50 text-gray-700 border-gray-200"
+                                    ? "bg-blue-50 text-blue-700 border-blue-200"
+                                    : project.status === "completed"
+                                      ? "bg-green-50 text-green-700 border-green-200"
+                                      : "bg-gray-50 text-gray-700 border-gray-200"
                                     }`}
                                 >
                                   {project.status || "Active"}
