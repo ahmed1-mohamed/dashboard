@@ -2,8 +2,8 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { AdminProjectsService } from "@/services/AdminProjectsService";
-import type { CreateProjectWithMediaParams, CreateProjectResult } from "@/services/AdminProjectsService";
+import { AdminProjectsService } from "@/features/projects/services/AdminProjectsService";
+import type { CreateProjectWithMediaParams, CreateProjectResult } from "@/features/projects/services/AdminProjectsService";
 
 export { type CreateProjectWithMediaParams };
 
@@ -20,9 +20,9 @@ export default function useCreateProject() {
       const errorList = error?.response?.data?.errors;
       const flatMessages = errorList
         ? Object.values(errorList)
-            .map((errObj: any) => Object.values(errObj))
-            .flat()
-            .join(", ")
+          .map((errObj: any) => Object.values(errObj))
+          .flat()
+          .join(", ")
         : "";
 
       const fallbackMessage =
