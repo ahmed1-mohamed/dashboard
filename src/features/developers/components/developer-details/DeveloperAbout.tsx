@@ -4,7 +4,7 @@ import { ExternalLink } from "lucide-react";
 
 interface DeveloperAboutProps {
   developer: DeveloperData;
-  handleToggleTopDeveloper: () => void;
+  handleToggleTopDeveloper: (checked: boolean) => void;
   isTogglingTop: boolean;
 }
 

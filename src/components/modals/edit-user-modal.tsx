@@ -85,7 +85,7 @@ export function EditUserModal({
   // Populate form when user data arrives
   useEffect(() => {
     if (!userData) return;
-    const user = (userData as { data?: unknown; [key: string]: unknown }).data ?? userData;
+    const user = (userData as unknown as { data?: unknown; [key: string]: unknown }).data ?? userData;
     const u = user as Record<string, unknown>;
     reset({
       first_name: (u.first_name as string) ?? "",
