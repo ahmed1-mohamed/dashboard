@@ -1,5 +1,5 @@
 import React from "react";
-import { DeveloperData } from "@/features/developers/types";
+import { DeveloperData } from "@/hooks/use-developer-details";
 
 interface DeveloperStatsProps {
   developer: DeveloperData;
@@ -44,7 +44,7 @@ export function DeveloperStats({ developer, totalProjects, totalUnits, available
       <div>
         <p className="text-sm text-gray-600 mb-1">Sold Units</p>
         <p className="text-2xl font-bold text-gray-900">
-          {developer.sold_units_count || 0}
+          {developer.booked_units_count || 0}
         </p>
       </div>
     </div>

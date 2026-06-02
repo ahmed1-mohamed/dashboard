@@ -1,4 +1,4 @@
-import { DeveloperData } from "@/features/developers/types";
+import { DeveloperData } from "@/hooks/use-developer-details";
 import { Switch } from "@/components/ui/switch";
 import { ExternalLink } from "lucide-react";
 

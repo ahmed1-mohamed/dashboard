@@ -1,7 +1,7 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Phone, Download, Edit, Star } from "lucide-react";
-import { DeveloperData } from "@/features/developers/types";
+import { DeveloperData } from "@/hooks/use-developer-details";
 
 interface DeveloperHeaderProps {
   developer: DeveloperData;

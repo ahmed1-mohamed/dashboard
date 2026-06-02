@@ -13,7 +13,7 @@ import {
   MapPin,
   Plus,
 } from "lucide-react";
-import { DeveloperData } from "@/features/developers/types";
+import { DeveloperData } from "@/hooks/use-developer-details";
 
 interface Unit {
   id: string;
