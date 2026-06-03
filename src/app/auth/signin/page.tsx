@@ -66,7 +66,7 @@ export default function SignInPage() {
         const res = await fetch("/api/auth/session");
         const sessionData = await res.json();
 
-        document.cookie = `role=${sessionData.user.role_name}; path=/`;
+        document.cookie = `role_id=${sessionData.user.role_name}; path=/`;
         document.cookie = `token=${sessionData.accessToken}; path=/`;
 
         const role = sessionData?.user?.role_name;

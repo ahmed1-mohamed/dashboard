@@ -1246,7 +1246,7 @@ export const confirmBooking = (
   formData.append("status", "confirmed");
   if (comments) formData.append("comments", comments);
   return postData(
-    `/dashboard/admin/bookings/${bookingId}/confirm`,
+    `/dashboard/admin/reservations/${bookingId}/confirm`,
     formData,
     token,
   );
@@ -1261,7 +1261,7 @@ export const declineBooking = (
   formData.append("status", "cancelled");
   if (comments) formData.append("comments", comments);
   return postData(
-    `/dashboard/admin/bookings/${bookingId}/decline`,
+    `/dashboard/admin/reservations/${bookingId}/decline`,
     formData,
     token,
   );

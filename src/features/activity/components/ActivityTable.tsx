@@ -56,7 +56,7 @@ export function ActivityTable({
             <TableHead className="font-semibold text-gray-900 w-[100px] px-2 text-sm">
               Entity
             </TableHead>
-            <TableHead className="font-semibold text-gray-900 min-w-[200px] px-2 text-sm">
+            <TableHead className="font-semibold text-gray-900 w-[150px] px-2 text-sm">
               Description
             </TableHead>
             <TableHead className="font-semibold text-gray-900 w-[150px] px-2 text-sm">
@@ -105,8 +105,8 @@ export function ActivityTable({
                 <TableCell className="text-gray-900 px-2 text-sm">
                   {activity.entity}
                 </TableCell>
-                <TableCell 
-                  className="text-gray-500 px-2 text-sm truncate max-w-[150px] sm:max-w-[200px] cursor-help" 
+                <TableCell
+                  className="text-gray-500 px-2 text-sm truncate max-w-[150px] sm:max-w-[200px] cursor-help"
                   title={activity.description}
                 >
                   {activity.description}

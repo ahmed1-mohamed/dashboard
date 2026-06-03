@@ -205,7 +205,7 @@ export default function BookingDetailsPage() {
             {error?.message || "Booking not found"}
           </p> */}
           <Button
-            onClick={() => router.push("/admin/bookings")}
+            onClick={() => router.push("/admin/reservations")}
             className="mt-6 bg-teal-600 hover:bg-teal-700"
           >
             Back to Bookings
@@ -234,7 +234,7 @@ export default function BookingDetailsPage() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => router.push("/admin/bookings")}
+            onClick={() => router.push("/admin/reservations")}
           >
             <ChevronLeft className="h-5 w-5" />
           </Button>

@@ -28,7 +28,7 @@ export function useDeveloperData(developerId: number | null) {
       const response = await AdminDevelopersService.getDeveloper(
         Number(developerId),
       );
-      return response.data;
+      return response as DeveloperApiResponse;
     },
     enabled: !!developerId,
     retry: false,

@@ -18,15 +18,16 @@ import {
 import { toast } from "sonner";
 
 import { useUsers } from "@/features/users/hooks/useUsers";
-import { UsersTable } from "@/features/users/components/UsersTable";
-import { UsersFilters } from "@/features/users/components/UsersFilters";
+import dynamic from "next/dynamic";
 import { useServerPagination } from "@/hooks/useServerPagination";
 import { User } from "@/features/users/types";
 import { GetUserDataType } from "@/types";
 
-import { AddUserModal } from "@/components/modals/add-user-modal";
-import { ViewUserModal } from "@/components/modals/view-user-modal";
-import { EditUserModal } from "@/components/modals/edit-user-modal";
+const UsersTable = dynamic(() => import("@/features/users/components/UsersTable").then(mod => mod.UsersTable), { ssr: false });
+const UsersFilters = dynamic(() => import("@/features/users/components/UsersFilters").then(mod => mod.UsersFilters), { ssr: false });
+const AddUserModal = dynamic(() => import("@/components/modals/add-user-modal").then(mod => mod.AddUserModal), { ssr: false });
+const ViewUserModal = dynamic(() => import("@/components/modals/view-user-modal").then(mod => mod.ViewUserModal), { ssr: false });
+const EditUserModal = dynamic(() => import("@/components/modals/edit-user-modal").then(mod => mod.EditUserModal), { ssr: false });
 import { CreateNewUserInput } from "@/validators/create-new-user.schema";
 
 export default function UsersPage() {
@@ -45,7 +46,7 @@ export default function UsersPage() {
   } = useServerPagination({
     initialPage: 1,
     initialPerPage: 15,
-    initialFilters: { status: "all", role: "all" },
+    initialFilters: { status: "all", role_id: "all" },
   });
 
   const { usersData, deleteUserMutation, addUserMutation } = useUsers(
@@ -53,7 +54,7 @@ export default function UsersPage() {
     perPage,
     debouncedSearch || undefined,
     filters.status !== "all" ? filters.status : undefined,
-    filters.role !== "all" ? filters.role : undefined,
+    filters.role_id !== "all" ? filters.role_id : undefined,
   );
 
   const { data, isLoading, isError, error, refetch } = usersData;
@@ -225,8 +226,8 @@ export default function UsersPage() {
               onSearchChange={setSearchQuery}
               statusFilter={filters.status}
               onStatusChange={(val) => setFilter("status", val)}
-              roleFilter={filters.role}
-              onRoleChange={(val) => setFilter("role", val)}
+              roleFilter={filters.role_id}
+              onRoleChange={(val) => setFilter("role_id", val)}
             />
             <div className="flex items-center gap-2">
               <Button variant="outline" className="gap-2 border-gray-200" onClick={handleExport}>

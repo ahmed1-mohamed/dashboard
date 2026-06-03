@@ -53,7 +53,7 @@ export function useUserActions() {
     }) => {
       const token = session?.user?.accessToken;
       if (!token) throw new Error("Not authenticated");
-      return AdminUsersService.updateUser(userId, userData);
+      return AdminUsersService.updateUser(userId, userData as Record<string, unknown>);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });

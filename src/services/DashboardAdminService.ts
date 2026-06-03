@@ -2,7 +2,7 @@ import { apiClient } from "@/lib/apiClient";
 
 export const DashboardAdminService = {
   getBookings: async () => {
-    const response = await apiClient.get("/admin/bookings");
+    const response = await apiClient.get("/admin/reservations");
     return response.data;
   },
   getExperts: async () => {
@@ -90,14 +90,14 @@ export const DashboardAdminService = {
    * Confirm/approve a booking
    */
   confirmBooking: (bookingId: number, formData: FormData) => {
-    return apiClient.post(`/dashboard/admin/bookings/${bookingId}/confirm`, formData);
+    return apiClient.post(`/dashboard/admin/reservations/${bookingId}/confirm`, formData);
   },
 
   /**
    * Decline/reject a booking
    */
   declineBooking: (bookingId: number, formData: FormData) => {
-    return apiClient.post(`/dashboard/admin/bookings/${bookingId}/decline`, formData);
+    return apiClient.post(`/dashboard/admin/reservations/${bookingId}/decline`, formData);
   },
 
   /**

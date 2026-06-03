@@ -24,9 +24,6 @@ export const AdminDevelopersService = {
     return response.data;
   },
 
-  /**
-   * Get developer by ID
-   */
   getDeveloper: async (developerId: number) => {
     const response = await apiClient.get(
       `/dashboard/developers/${developerId}`,
@@ -34,30 +31,18 @@ export const AdminDevelopersService = {
     return response.data;
   },
 
-  /**
-   * Create a new developer
-   */
   createDeveloper: (data: FormData) => {
     return apiClient.post("/dashboard/developers", data);
   },
 
-  /**
-   * Update a developer
-   */
   updateDeveloper: (developerId: number, data: FormData) => {
     return apiClient.put(`/dashboard/developers/${developerId}`, data);
   },
 
-  /**
-   * Delete a developer
-   */
   deleteDeveloper: (developerId: number) => {
     return apiClient.delete(`/dashboard/developers/${developerId}`);
   },
 
-  /**
-   * Toggle developer status
-   */
   toggleStatus: (developerId: number, status: string) => {
     return apiClient.patch(
       `/dashboard/developers/${developerId}/toggle-status`,
@@ -68,9 +53,6 @@ export const AdminDevelopersService = {
     );
   },
 
-  /**
-   * Bulk import developers
-   */
   bulkImportDevelopers: (file: File) => {
     const formData = new FormData();
     formData.append("file", file);

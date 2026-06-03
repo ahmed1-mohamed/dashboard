@@ -40,7 +40,7 @@ export function DevelopersFilters({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Countries</SelectItem>
-            <SelectItem value="UAE">UAE</SelectItem>
+            <SelectItem value="United Arab Emirates">UAE</SelectItem>
             <SelectItem value="Egypt">Egypt</SelectItem>
             <SelectItem value="Oman">Oman</SelectItem>
           </SelectContent>

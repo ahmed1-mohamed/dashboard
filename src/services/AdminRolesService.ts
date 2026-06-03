@@ -5,7 +5,7 @@ export const AdminRolesService = {
    * Get all roles
    */
   getRoles: () => {
-    return apiClient.get("/dashboard/roles");
+    return apiClient.get("/dashboard/roles/all");
   },
 
   /**

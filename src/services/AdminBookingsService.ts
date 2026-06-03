@@ -43,7 +43,7 @@
 //    * Get booking details by ID
 //    */
 //   getBookingDetails: (bookingId: number) => {
-//     return apiClient.get(`/dashboard/admin/bookings/${bookingId}`);
+//     return apiClient.get(`/dashboard/admin/reservations/${bookingId}`);
 //   },
 
 //   /**
@@ -54,7 +54,7 @@
 //     formData.append("status", "confirmed");
 //     if (comments) formData.append("comments", comments);
 //     return apiClient.post(
-//       `/dashboard/admin/bookings/${bookingId}/confirm`,
+//       `/dashboard/admin/reservations/${bookingId}/confirm`,
 //       formData,
 //     );
 //   },
@@ -67,7 +67,7 @@
 //     formData.append("status", "cancelled");
 //     if (comments) formData.append("comments", comments);
 //     return apiClient.post(
-//       `/dashboard/admin/bookings/${bookingId}/decline`,
+//       `/dashboard/admin/reservations/${bookingId}/decline`,
 //       formData,
 //     );
 //   },
@@ -119,7 +119,7 @@ export const AdminBookingsService = {
    * Get booking details by ID
    */
   getBookingDetails: (bookingId: number) => {
-    return apiClient.get(`/dashboard/admin/bookings/${bookingId}`);
+    return apiClient.get(`/dashboard/admin/reservations/${bookingId}`);
   },
 
   /**
@@ -130,7 +130,7 @@ export const AdminBookingsService = {
     formData.append("status", "confirmed");
     if (comments) formData.append("comments", comments);
     return apiClient.post(
-      `/dashboard/admin/bookings/${bookingId}/confirm`,
+      `/dashboard/admin/reservations/${bookingId}/confirm`,
       formData,
     );
   },
@@ -143,7 +143,7 @@ export const AdminBookingsService = {
     formData.append("status", "cancelled");
     if (comments) formData.append("comments", comments);
     return apiClient.post(
-      `/dashboard/admin/bookings/${bookingId}/decline`,
+      `/dashboard/admin/reservations/${bookingId}/decline`,
       formData,
     );
   },

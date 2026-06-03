@@ -42,11 +42,15 @@ export function UsersFilters({
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Roles</SelectItem>
-          {roles.map((role) => (
-            <SelectItem key={role.role_id} value={role.role_name}>
-              {role.role_name}
-            </SelectItem>
-          ))}
+          {roles.map((role: any) => {
+            const rId = role.role_id ?? role.id;
+            const rName = role.role_name ?? role.name;
+            return (
+              <SelectItem key={rId} value={String(rId)}>
+                {rName}
+              </SelectItem>
+            );
+          })}
         </SelectContent>
       </Select>
 

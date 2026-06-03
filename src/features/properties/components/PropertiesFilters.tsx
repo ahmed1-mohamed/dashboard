@@ -56,9 +56,9 @@ export function PropertiesFilters({
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Status</SelectItem>
-          <SelectItem value="available">Available</SelectItem>
-          <SelectItem value="reserved">Reserved</SelectItem>
-          <SelectItem value="sold">Sold</SelectItem>
+          <SelectItem value="Available">Available</SelectItem>
+          <SelectItem value="Reserved">Reserved</SelectItem>
+          <SelectItem value="Sold">Sold</SelectItem>
         </SelectContent>
       </Select>
     </div>

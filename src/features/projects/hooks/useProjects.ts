@@ -4,6 +4,7 @@ import {
   useQuery,
   useMutation,
   useQueryClient,
+  keepPreviousData,
 } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import { AdminProjectsService } from "../services/AdminProjectsService";
@@ -31,6 +32,8 @@ export default function useProjects(
       ),
     retry: false,
     enabled: !!token,
+    staleTime: 5 * 60 * 1000,
+    placeholderData: keepPreviousData,
   });
 
   const deleteProjectMutation = useMutation({

@@ -10,15 +10,15 @@ export function useUsers(
   perPage: number = 15,
   search?: string,
   status: string = "all",
-  role_name: string = "all",
+  role_id: string = "all",
 ) {
   const { data: session } = useSession();
   const token = session?.user?.accessToken;
   const queryClient = useQueryClient();
 
   const usersData = useQuery({
-    queryKey: ["users", page, perPage, search, status, role_name],
-    queryFn: () => AdminUsersService.getUsers(page, perPage, search, status, role_name),
+    queryKey: ["users", page, perPage, search, status, role_id],
+    queryFn: () => AdminUsersService.getUsers(page, perPage, search, status, role_id),
     retry: false,
     enabled: !!token,
     staleTime: 5 * 60 * 1000,

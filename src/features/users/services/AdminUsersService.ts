@@ -9,7 +9,7 @@ export const AdminUsersService = {
     perPage: number = 15,
     search?: string,
     status?: string,
-    role_name?: string,
+    role_id?: string,
   ) => {
     const params = new URLSearchParams({
       page: page.toString(),
@@ -21,45 +21,32 @@ export const AdminUsersService = {
     if (status && status !== "all") {
       params.append("status", status.toLowerCase());
     }
-    if (role_name && role_name !== "all") {
-      params.append("role_name", role_name);
+    if (role_id && role_id !== "all") {
+      params.append("role_id", role_id);
     }
     return apiClient.get<{ data: GetUserDataType[]; total: number }>(
       `/dashboard/users?${params.toString()}`,
     );
   },
 
-
   getUser: (userId: number) => {
     return apiClient.get<GetUserDataType>(`/dashboard/users/${userId}`);
   },
 
-  /**
-   * Get all roles
-   */
   getRoles: () => {
-    return apiClient.get("/dashboard/roles").then((res) => res.data);
+    return apiClient.get("/dashboard/roles/all").then((res) => res.data);
   },
 
-  /**
-   * Create a new user
-   */
   createUser: (data: CreateNewUserInput) => {
     return apiClient.post<GetUserDataType>("/dashboard/users", data);
   },
 
-  /**
-   * Update a user
-   */
   updateUser: (userId: number, data: Record<string, unknown>) => {
     return apiClient
       .put<GetUserDataType>(`/dashboard/users/${userId}`, data)
       .then((res) => res.data);
   },
 
-  /**
-   * Delete a user
-   */
   deleteUser: (userId: number) => {
     return apiClient.delete(`/dashboard/users/${userId}`);
   },

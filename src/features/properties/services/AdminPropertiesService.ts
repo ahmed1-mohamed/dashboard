@@ -20,9 +20,6 @@ export interface PropertiesFilterParams {
 }
 
 export const AdminPropertiesService = {
-  /**
-   * Get properties with pagination and filters
-   */
   getProperties: async (params: PropertiesFilterParams) => {
     const queryParams = new URLSearchParams();
 
@@ -38,7 +35,6 @@ export const AdminPropertiesService = {
       params.sort_order.forEach((s) => queryParams.append("sort_order[]", s));
     }
 
-    // Handle array params
     if (Array.isArray(params.project_id)) {
       params.project_id.forEach((id) =>
         queryParams.append("project_id[]", id.toString()),
@@ -73,25 +69,16 @@ export const AdminPropertiesService = {
     return response.data;
   },
 
-  /**
-   * Get property types
-   */
   getPropertyTypes: async () => {
     const response = await apiClient.get("/dashboard/propertyTypes");
     return response.data as PropertyTypeDataType[];
   },
 
-  /**
-   * Get property subtypes
-   */
   getPropertySubtypes: async () => {
     const response = await apiClient.get("/dashboard/propertySubtypes");
     return response.data as PropertySubtypeDataType[];
   },
 
-  /**
-   * Get projects with search and pagination
-   */
   getProjects: async (page?: number, perPage?: number, search?: string) => {
     const params = new URLSearchParams();
     if (page !== undefined) params.append("page", page.toString());
@@ -102,33 +89,21 @@ export const AdminPropertiesService = {
     return response.data as ProjectsDataType[];
   },
 
-  /**
-   * Create a new property
-   */
   createProperty: async (data: PropertiesInput) => {
     const response = await apiClient.post("/dashboard/properties", data);
     return response.data;
   },
 
-  /**
-   * Delete a property
-   */
   deleteProperty: async (propertyId: number) => {
     const response = await apiClient.delete(`/dashboard/properties/${propertyId}`);
     return response.data;
   },
 
-  /**
-   * Get a single property by ID
-   */
   getProperty: async (propertyId: number) => {
     const response = await apiClient.get(`/dashboard/properties/${propertyId}`);
     return response.data;
   },
 
-  /**
-   * Update a property
-   */
   updateProperty: async (propertyId: number, data: Record<string, unknown>) => {
     const response = await apiClient.put(`/dashboard/properties/${propertyId}`, data);
     return response.data;

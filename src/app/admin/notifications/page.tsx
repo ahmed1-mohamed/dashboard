@@ -62,7 +62,7 @@
 //       case "project":
 //         return `/admin/projects/${item.reference_id}`;
 //       case "reservation":
-//         return `/admin/bookings/${item.reference_id}`;
+//         return `/admin/reservations/${item.reference_id}`;
 //       case "meeting":
 //       case "meeting_request":
 //         return `/admin/meetings`;
@@ -456,7 +456,7 @@
 //       case "project":
 //         return `/admin/projects/${item.reference_id}`;
 //       case "reservation":
-//         return `/admin/bookings/${item.reference_id}`;
+//         return `/admin/reservations/${item.reference_id}`;
 //       case "meeting":
 //       case "meeting_request":
 //         return `/admin/meetings`;

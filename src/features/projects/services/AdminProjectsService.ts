@@ -39,9 +39,6 @@ export interface CreateProjectResult {
 }
 
 export const AdminProjectsService = {
-  /**
-   * Get projects with pagination and filters
-   */
   getProjectsPaginated: async (
     page: number = 1,
     perPage: number = 10,
@@ -60,17 +57,11 @@ export const AdminProjectsService = {
     return response.data;
   },
 
-  /**
-   * Get project by ID
-   */
   getProject: async (projectId: number) => {
     const response = await apiClient.get(`/dashboard/projects/${projectId}`);
     return response.data;
   },
 
-  /**
-   * Create a new project
-   */
   createProject: async (
     data: CreateProjectInput,
   ): Promise<CreateProjectResponse> => {
@@ -78,9 +69,6 @@ export const AdminProjectsService = {
     return response.data as CreateProjectResponse;
   },
 
-  /**
-   * Create project media
-   */
   createProjectMedia: async (formData: FormData) => {
     const response = await apiClient.post(
       "/dashboard/projects/medias/create",
@@ -89,9 +77,6 @@ export const AdminProjectsService = {
     return response.data;
   },
 
-  /**
-   * Create project with media (combines project creation and media upload)
-   */
   createProjectWithMedia: async (
     params: CreateProjectWithMediaParams,
   ): Promise<CreateProjectResult> => {
@@ -161,23 +146,15 @@ export const AdminProjectsService = {
     return { projectId, projectName };
   },
 
-  /**
-   * Update a project
-   * Note: The backend uses POST (not PUT) for project updates
-   */
   updateProject: async (projectId: number, data: Record<string, unknown>) => {
     const response = await apiClient.post(`/dashboard/projects/${projectId}`, data);
     return response.data;
   },
 
-  /**
-   * Delete a project
-   */
   deleteProject: async (projectId: number) => {
     const response = await apiClient.delete(`/dashboard/projects/${projectId}`);
     return response.data;
   },
-
 
   toggleActive: async (projectId: number, isActive: boolean) => {
     const response = await apiClient.post(`/dashboard/projects/${projectId}`, {
