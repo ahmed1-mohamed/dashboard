@@ -19,8 +19,6 @@ export async function middleware(request: NextRequest) {
 
   const isLoggedIn = !!token;
 
-  const AuthUrl = process.env.NEXTAUTH_URL;
-
   const role = token?.role_name;
 
   const isAdminRoute = pathname.startsWith("/admin");
@@ -29,37 +27,37 @@ export async function middleware(request: NextRequest) {
 
   if (!isLoggedIn && !isAuthPage) {
     return NextResponse.redirect(
-      new URL(`${AuthUrl}/auth/signin`, request.url),
+      new URL(`/auth/signin`, request.url),
     );
   }
 
   if (isLoggedIn && pathname === "/auth/signin") {
     if (role === "admin") {
       return NextResponse.redirect(
-        new URL(`${AuthUrl}/admin/home`, request.url),
+        new URL(`/admin/home`, request.url),
       );
     }
     if (role === "expert") {
       return NextResponse.redirect(
-        new URL(`${AuthUrl}/expert/home`, request.url),
+        new URL(`/expert/home`, request.url),
       );
     }
     if (role === "developer") {
       return NextResponse.redirect(
-        new URL(`${AuthUrl}/developer/home`, request.url),
+        new URL(`/developer/home`, request.url),
       );
     }
   }
 
   if (isAdminRoute && role !== "admin") {
     return NextResponse.redirect(
-      new URL(`${AuthUrl}/unauthorized`, request.url),
+      new URL(`/unauthorized`, request.url),
     );
   }
 
   if (isExpertRoute && role !== "expert") {
     return NextResponse.redirect(
-      new URL(`${AuthUrl}/unauthorized`, request.url),
+      new URL(`/unauthorized`, request.url),
     );
   }
 
