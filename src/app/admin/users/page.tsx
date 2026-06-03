@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, Suspense } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Pagination } from "@/components/shared/Pagination";
@@ -31,6 +31,14 @@ const EditUserModal = dynamic(() => import("@/components/modals/edit-user-modal"
 import { CreateNewUserInput } from "@/validators/create-new-user.schema";
 
 export default function UsersPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center">Loading...</div>}>
+      <UsersPageContent />
+    </Suspense>
+  );
+}
+
+function UsersPageContent() {
   const queryClient = useQueryClient();
 
   const {

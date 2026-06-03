@@ -244,7 +244,6 @@ export default function CitiesPage({
 
   return (
     <div className="p-4 px-3 space-y-4 max-w-full overflow-hidden">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <h1 className="text-2xl font-bold text-gray-900">
@@ -268,10 +267,8 @@ export default function CitiesPage({
         </div>
       </div>
 
-      {/* Filters and Actions */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
-          {/* Search */}
           <div className="relative w-full min-w-[200px] max-w-xs">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
@@ -279,13 +276,12 @@ export default function CitiesPage({
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
-                setCurrentPage(1); // Reset to page 1 when searching
+                setCurrentPage(1);
               }}
               className="pl-10 bg-white border-gray-200"
             />
           </div>
 
-          {/* Area Filter */}
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-[100px]">
               <SelectValue placeholder="Area" />
@@ -297,7 +293,6 @@ export default function CitiesPage({
             </SelectContent>
           </Select>
 
-          {/* Status Filter */}
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-[100px]">
               <SelectValue placeholder="Status" />
@@ -310,7 +305,6 @@ export default function CitiesPage({
           </Select>
         </div>
 
-        {/* Action Buttons */}
         <div className="flex items-center gap-2">
           <Button variant="outline" className="gap-2 border-gray-200">
             <Download className="h-4 w-4" />
@@ -323,7 +317,6 @@ export default function CitiesPage({
         </div>
       </div>
 
-      {/* Loading State with Skeletons */}
       {isLoading && (
         <div className="space-y-4">
           <div className="flex items-center gap-4">
@@ -348,7 +341,6 @@ export default function CitiesPage({
         </div>
       )}
 
-      {/* Error State */}
       {isError && !isLoading && (
         <div className="rounded-lg border border-red-200 bg-red-50 p-4">
           <div className="flex items-center gap-2">
@@ -369,7 +361,6 @@ export default function CitiesPage({
         </div>
       )}
 
-      {/* Table */}
       {!isLoading && !isError && (
         <div className="rounded-lg border border-gray-200 bg-white overflow-hidden overflow-x-auto">
           <Table>
@@ -479,7 +470,6 @@ export default function CitiesPage({
         </div>
       )}
 
-      {/* Pagination */}
       {!isLoading && !isError && totalPages > 1 && (
         <div className="flex items-center justify-between">
           <div className="text-sm text-gray-500">
@@ -531,7 +521,6 @@ export default function CitiesPage({
         </div>
       )}
 
-      {/* Add City Modal */}
       <AddCityModal
         isOpen={isAddCityModalOpen}
         onClose={() => setIsAddCityModalOpen(false)}
@@ -585,7 +574,6 @@ export default function CitiesPage({
         />
       )} */}
 
-      {/* Delete Confirmation Dialog */}
       <Dialog
         open={deleteDialogOpen && cityToDelete !== null}
         onOpenChange={(open) => {

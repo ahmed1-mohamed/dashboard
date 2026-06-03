@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Pagination } from "@/components/shared/Pagination";
@@ -25,6 +25,14 @@ import { Property } from "@/features/properties/types";
 import { EditPropertyModal } from "@/components/modals/edit-property-modal";
 
 export default function PropertiesPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center">Loading...</div>}>
+      <PropertiesPageContent />
+    </Suspense>
+  );
+}
+
+function PropertiesPageContent() {
   const router = useRouter();
 
   const {

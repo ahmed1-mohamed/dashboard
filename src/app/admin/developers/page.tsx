@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, Suspense } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Pagination } from "@/components/shared/Pagination";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -38,6 +38,14 @@ interface DeveloperData {
 }
 
 export default function DevelopersPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center">Loading...</div>}>
+      <DevelopersPageContent />
+    </Suspense>
+  );
+}
+
+function DevelopersPageContent() {
   const {
     page,
     perPage,

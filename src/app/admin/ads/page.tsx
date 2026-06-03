@@ -204,39 +204,39 @@ export default function AdsPage({
   // Transform totals data for stats cards
   const adsTotals = totals
     ? [
-        {
-          title: "Total Ads",
-          value: totals.total_ads?.toString() || "0",
-          change: "+ 10%",
-          trend: "up" as const,
-          icon: Megaphone,
-          period: "vs last 3 months",
-        },
-        {
-          title: "Active",
-          value: totals.active_ads?.toString() || "0",
-          change: "↓ 2.4",
-          trend: "down" as const,
-          icon: Bell,
-          period: "vs last 3 months",
-        },
-        {
-          title: "Total Views",
-          value: totals.total_views?.toLocaleString() || "0",
-          change: "↑ 5.6%",
-          trend: "up" as const,
-          icon: Eye,
-          period: "vs last 3 months",
-        },
-        {
-          title: "Total Clicks",
-          value: totals.total_clicks?.toLocaleString() || "0",
-          change: "↑ 8%",
-          trend: "up" as const,
-          icon: MousePointer2,
-          period: "vs last 3 months",
-        },
-      ]
+      {
+        title: "Total Ads",
+        value: totals.total_ads?.toString() || "0",
+        change: "+ 10%",
+        trend: "up" as const,
+        icon: Megaphone,
+        period: "vs last 3 months",
+      },
+      {
+        title: "Active",
+        value: totals.active_ads?.toString() || "0",
+        change: "↓ 2.4",
+        trend: "down" as const,
+        icon: Bell,
+        period: "vs last 3 months",
+      },
+      {
+        title: "Total Views",
+        value: totals.total_views?.toLocaleString() || "0",
+        change: "↑ 5.6%",
+        trend: "up" as const,
+        icon: Eye,
+        period: "vs last 3 months",
+      },
+      {
+        title: "Total Clicks",
+        value: totals.total_clicks?.toLocaleString() || "0",
+        change: "↑ 8%",
+        trend: "up" as const,
+        icon: MousePointer2,
+        period: "vs last 3 months",
+      },
+    ]
     : [];
 
   // Status toggle mutation
@@ -340,7 +340,6 @@ export default function AdsPage({
 
   return (
     <div className="p-6 space-y-6 max-w-[1600px] mx-auto">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Ads</h1>
         <Button
@@ -352,7 +351,6 @@ export default function AdsPage({
         </Button>
       </div>
 
-      {/* Stats Cards */}
       {isLoading && (
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
@@ -400,9 +398,8 @@ export default function AdsPage({
                   </div>
                   <div className="flex items-center text-xs">
                     <span
-                      className={`flex items-center font-medium ${
-                        stat.trend === "up" ? "text-green-600" : "text-red-500"
-                      }`}
+                      className={`flex items-center font-medium ${stat.trend === "up" ? "text-green-600" : "text-red-500"
+                        }`}
                     >
                       {stat.change}
                     </span>
@@ -415,13 +412,10 @@ export default function AdsPage({
         </div>
       )}
 
-      {/* Filters and Table Container */}
       {!isLoading && !isError && (
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-          {/* Filters Toolbar */}
           <div className="p-4 border-b border-gray-200 flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-2 flex-1 min-w-0 overflow-x-auto pb-1 sm:pb-0">
-              {/* Search */}
               <div className="relative w-60">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
@@ -432,7 +426,6 @@ export default function AdsPage({
                 />
               </div>
 
-              {/* Dropdowns */}
               <Select value={filterPlatform} onValueChange={setFilterPlatform}>
                 <SelectTrigger className="w-[140px] bg-gray-50 border-gray-200">
                   <SelectValue placeholder="All Platforms" />
@@ -476,7 +469,6 @@ export default function AdsPage({
               </Select>
             </div>
 
-            {/* Right Actions */}
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
@@ -495,7 +487,6 @@ export default function AdsPage({
             </div>
           </div>
 
-          {/* Table */}
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
@@ -569,30 +560,25 @@ export default function AdsPage({
                       <TableCell className="text-gray-600">{ad.ctr}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          {/* Status Badge */}
                           <Badge
                             variant={
                               ad.status === "active" ? "success" : "secondary"
                             }
-                            className={`${
-                              ad.status === "active"
+                            className={`${ad.status === "active"
                                 ? "bg-green-100 text-green-800 hover:bg-green-100"
                                 : "bg-gray-100 text-gray-800 hover:bg-gray-100"
-                            }`}
+                              }`}
                           >
                             {ad.status === "active" ? "Active" : "Inactive"}
                           </Badge>
-                          {/* Status Indicator Dot */}
                           <div
-                            className={`w-2 h-2 rounded-full ${
-                              ad.status === "active"
+                            className={`w-2 h-2 rounded-full ${ad.status === "active"
                                 ? "bg-green-500"
                                 : "bg-gray-400"
-                            } ${
-                              updatingAdId === ad.creative_id
+                              } ${updatingAdId === ad.creative_id
                                 ? "animate-pulse"
                                 : ""
-                            }`}
+                              }`}
                           />
                           <Switch
                             checked={ad.status === "active"}
@@ -654,7 +640,6 @@ export default function AdsPage({
             </Table>
           </div>
 
-          {/* Pagination */}
           {totalPages > 1 && (
             <div className="p-4 border-t border-gray-200 flex items-center justify-between flex-wrap gap-4">
               <div className="flex items-center gap-4">
@@ -663,9 +648,9 @@ export default function AdsPage({
                   <span className="font-medium">
                     {totalItems > 0
                       ? `${Math.max(startIndex + 1, 0)}-${Math.min(
-                          currentPage * itemsPerPage,
-                          totalItems,
-                        )}`
+                        currentPage * itemsPerPage,
+                        totalItems,
+                      )}`
                       : "0-0"}
                   </span>{" "}
                   of <span className="font-medium">{totalItems}</span>
@@ -678,7 +663,6 @@ export default function AdsPage({
                     )}
                 </div>
 
-                {/* Rows per page select */}
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-gray-500">Rows per page:</span>
                   <Select
@@ -750,7 +734,6 @@ export default function AdsPage({
         </div>
       )}
 
-      {/* Create Ad Modal */}
       <CreateAdModal
         isOpen={createAdModalOpen}
         onClose={() => setCreateAdModalOpen(false)}
@@ -801,7 +784,6 @@ export default function AdsPage({
         }}
       /> */}
 
-      {/* Delete Ad Dialog */}
       <DeleteAdDialog
         ad={selectedAd}
         isOpen={deleteAdDialogOpen}

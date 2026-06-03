@@ -137,7 +137,6 @@ export default function ActivityDetailsPremiumPage({
 
       <div className="px-8 py-8 mx-auto max-w-7xl space-y-8">
 
-        {/* Context Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300">
             <div className="flex items-center gap-4 mb-5">
@@ -195,7 +194,6 @@ export default function ActivityDetailsPremiumPage({
           </div>
         </div>
 
-        {/* Data Changes Payload */}
         <div className="bg-white rounded-3xl border border-gray-200 shadow-sm overflow-hidden">
           <div className="px-8 py-5 border-b border-gray-100 bg-white flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -205,7 +203,6 @@ export default function ActivityDetailsPremiumPage({
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-gray-100 bg-slate-50">
-            {/* Old Values */}
             <div className="p-8">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-8 h-8 rounded-xl bg-red-100 flex items-center justify-center border border-red-200">
@@ -228,7 +225,6 @@ export default function ActivityDetailsPremiumPage({
               )}
             </div>
 
-            {/* New Values */}
             <div className="p-8">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-8 h-8 rounded-xl bg-green-100 flex items-center justify-center border border-green-200">

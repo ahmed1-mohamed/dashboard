@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, Suspense } from "react";
 import useDashboardAdminBookingsData from "@/hooks/use-dashboardAdminBookings";
 import { useSession } from "next-auth/react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
@@ -24,7 +24,15 @@ interface BookingsPageProps {
   itemsPerPage?: number;
 }
 
-export default function BookingsPage({
+export default function BookingsPage(props: BookingsPageProps) {
+  return (
+    <Suspense fallback={<div className="p-8 text-center">Loading...</div>}>
+      <BookingsPageContent {...props} />
+    </Suspense>
+  );
+}
+
+function BookingsPageContent({
   initialPage = 1,
   itemsPerPage = 10,
 }: BookingsPageProps) {

@@ -240,7 +240,6 @@ export default function ChatPage() {
 
   return (
     <div className="h-[calc(100vh-4rem)] flex flex-col max-w-full overflow-hidden">
-      {/* Header with tabs */}
       <div className="bg-white border-b border-gray-200">
         <div className="px-6 py-4">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">Chat</h1>
@@ -251,8 +250,8 @@ export default function ChatPage() {
                 setSelectedClientId(null);
               }}
               className={`pb-3 px-1 relative flex items-center gap-2 ${activeTab === "my"
-                  ? "text-teal-600 font-medium"
-                  : "text-gray-600"
+                ? "text-teal-600 font-medium"
+                : "text-gray-600"
                 }`}
             >
               <MessageSquare className="h-4 w-4" />
@@ -267,8 +266,8 @@ export default function ChatPage() {
                 setSelectedClientId(null);
               }}
               className={`pb-3 px-1 relative flex items-center gap-2 ${activeTab === "admin"
-                  ? "text-teal-600 font-medium"
-                  : "text-gray-600"
+                ? "text-teal-600 font-medium"
+                : "text-gray-600"
                 }`}
             >
               <Shield className="h-4 w-4" />
@@ -282,9 +281,7 @@ export default function ChatPage() {
       </div>
 
       <div className="flex-1 flex overflow-hidden">
-        {/* Chat List Sidebar */}
         <div className="w-80 border-r border-gray-200 bg-white flex flex-col">
-          {/* Search */}
           <div className="p-4 border-b border-gray-200">
             <h3 className="text-sm font-semibold text-gray-900 mb-3">Chats</h3>
             <div className="relative">
@@ -298,7 +295,6 @@ export default function ChatPage() {
             </div>
           </div>
 
-          {/* Chat List */}
           <div className="flex-1 overflow-y-auto">
             {currentLoading ? (
               <div className="p-4 text-center text-gray-500">
@@ -357,10 +353,8 @@ export default function ChatPage() {
           </div>
         </div>
 
-        {/* Chat Area */}
         {selectedContact || selectedAdminContact ? (
           <div className="flex-1 flex flex-col bg-white">
-            {/* Chat Header */}
             <div className="h-16 bg-white border-b border-gray-200 px-6 flex items-center justify-between flex-shrink-0">
               <div className="flex items-center gap-3 min-w-0">
                 <div
@@ -392,7 +386,6 @@ export default function ChatPage() {
               </div>
             </div>
 
-            {/* Messages */}
             <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50">
               {isLoadingMessages ? (
                 <div className="flex items-center justify-center h-full">
@@ -438,8 +431,8 @@ export default function ChatPage() {
                               )}
                               <div
                                 className={`rounded-lg px-4 py-2.5 ${isOwn
-                                    ? "bg-teal-600 text-white"
-                                    : "bg-gray-100 text-gray-900"
+                                  ? "bg-teal-600 text-white"
+                                  : "bg-gray-100 text-gray-900"
                                   }`}
                               >
                                 <p className="text-sm whitespace-pre-wrap break-words">
@@ -467,7 +460,6 @@ export default function ChatPage() {
               )}
             </div>
 
-            {/* Message Input */}
             <div className="bg-white border-t border-gray-200 p-4 flex-shrink-0">
               <form onSubmit={handleSendMessage}>
                 <div className="mb-3">

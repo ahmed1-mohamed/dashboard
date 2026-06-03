@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, Suspense } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Pagination } from "@/components/shared/Pagination";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,14 @@ import { Activity, ActivityLogResponse } from "@/features/activity/types";
 import { activityExportToExcel, activityExportToPDF } from "@/lib/handle-export";
 
 export default function ActivityLogPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center">Loading...</div>}>
+      <ActivityLogPageContent />
+    </Suspense>
+  );
+}
+
+function ActivityLogPageContent() {
   const router = useRouter();
   const {
     page,

@@ -266,7 +266,6 @@ export default function AreasPage({
 
   return (
     <div className="p-4 px-3 space-y-4 max-w-full overflow-hidden">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <h1 className="text-2xl font-bold text-gray-900">Areas</h1>
@@ -288,10 +287,8 @@ export default function AreasPage({
         </div>
       </div>
 
-      {/* Filters and Actions */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
-          {/* Search */}
           <div className="relative w-full min-w-[200px] max-w-xs">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
@@ -303,7 +300,6 @@ export default function AreasPage({
           </div>
         </div>
 
-        {/* Action Buttons */}
         <div className="flex items-center gap-2">
           <Button variant="outline" className="gap-2 border-gray-200">
             <Download className="h-4 w-4" />
@@ -316,7 +312,6 @@ export default function AreasPage({
         </div>
       </div>
 
-      {/* Loading State with Skeletons */}
       {isLoading && (
         <div className="space-y-4">
           <div className="flex items-center gap-4">
@@ -341,7 +336,6 @@ export default function AreasPage({
         </div>
       )}
 
-      {/* Error State */}
       {isError && !isLoading && (
         <div className="rounded-lg border border-red-200 bg-red-50 p-4">
           <div className="flex items-center gap-2">
@@ -362,7 +356,6 @@ export default function AreasPage({
         </div>
       )}
 
-      {/* Table */}
       {!isLoading && !isError && (
         <div className="rounded-lg border border-gray-200 bg-white overflow-hidden overflow-x-auto">
           <Table>
@@ -463,7 +456,6 @@ export default function AreasPage({
         </div>
       )}
 
-      {/* Pagination */}
       {!isLoading && !isError && totalPages > 1 && (
         <div className="flex items-center justify-between">
           <div className="text-sm text-gray-500">
@@ -516,7 +508,6 @@ export default function AreasPage({
         </div>
       )}
 
-      {/* Add Area Modal */}
       <AddAreaModal
         isOpen={isAddAreaModalOpen}
         onClose={() => setIsAddAreaModalOpen(false)}
@@ -569,7 +560,6 @@ export default function AreasPage({
         />
       )} */}
 
-      {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>

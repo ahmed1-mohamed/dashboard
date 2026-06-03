@@ -116,7 +116,7 @@ export default function LocationsManagementPage() {
     if (items.length > 0) {
       const visibilityState = items.reduce(
         (acc: Record<number, boolean>, item: Location) => {
-          const isActive = item.status === "active" || item.status === "1" || item.status === 1 || item.status === true;
+          const isActive = item.status === "active" || String(item.status) === "1" || String(item.status) === "true";
           return { ...acc, [item.location_id]: isActive };
         },
         {},
@@ -325,7 +325,7 @@ export default function LocationsManagementPage() {
             perPage={perPage}
             onPageChange={setPage}
             onPerPageChange={(val) => {
-              setPerPage(val);
+              setPerPage(Number(val));
               setPage(1);
             }}
           />
