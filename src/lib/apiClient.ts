@@ -107,8 +107,10 @@ class ApiClient {
           } catch {
             apiLogger.auth("❌ Refresh failed → redirecting to login");
             this.clearAuthToken();
-            await signOut({ redirect: false });
-            window.location.href = "/";
+            if (typeof window !== "undefined") {
+              await signOut({ redirect: false });
+              window.location.href = "/";
+            }
             return;
           }
         }
@@ -146,8 +148,10 @@ class ApiClient {
 
       if (!res.ok) {
         this.clearAuthToken();
-        await signOut({ redirect: false });
-        window.location.href = "/";
+        if (typeof window !== "undefined") {
+          await signOut({ redirect: false });
+          window.location.href = "/";
+        }
         return;
       }
 

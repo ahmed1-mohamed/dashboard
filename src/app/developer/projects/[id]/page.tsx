@@ -51,7 +51,7 @@
 // import { AddProjectMediaModal } from "@/components/modals/add-project-media-modal";
 // import { EditProjectMediaModal } from "@/components/modals/edit-project-media-modal";
 // import { DeleteProjectMediaModal } from "@/components/modals/delete-project-media-modal";
-// import { Palanquin } from "next/font/google";
+
 
 // interface Property {
 //   property_id: number;
