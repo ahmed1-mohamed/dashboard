@@ -4,7 +4,7 @@ export const AdminLocationsService = {
   /**
    * Get locations with pagination
    */
-  getLocations: (page: number = 1, perPage: number = 10, search?: string) => {
+  getLocations: (page: number = 1, perPage: number = 10, search?: string, city?: string, status?: string) => {
     const params = new URLSearchParams({
       page: page.toString(),
       per_page: perPage.toString(),
@@ -12,6 +12,14 @@ export const AdminLocationsService = {
 
     if (search && search.trim() !== "") {
       params.append("search", search.trim());
+    }
+
+    if (city && city !== "all") {
+      params.append("city_name", city);
+    }
+
+    if (status && status !== "all") {
+      params.append("status", status);
     }
 
     return apiClient.get(`/dashboard/locations?${params.toString()}`);
