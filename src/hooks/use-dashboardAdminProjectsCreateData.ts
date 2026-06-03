@@ -15,12 +15,12 @@ export default function useDashboardAdminProjectsCreateData(
   const developersData = useQuery<DeveloperDataType[]>({
     queryKey: ["developers", countryId],
     queryFn: async () => {
-      const response = (await AdminDevelopersService.getDevelopersByCountry(
+      const response = (await AdminDevelopersService.getDevelopersPaginated(
         1,
         100,
         undefined,
         undefined,
-        countryId,
+        countryId ? countryId.toString() : undefined,
       )) as AxiosResponse<DeveloperDataType[]>;
       return response.data;
     },
