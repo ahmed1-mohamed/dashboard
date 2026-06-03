@@ -2,7 +2,7 @@
 
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
-import { AdminUsersService } from "@/services/AdminUsersService";
+import { AdminUsersService } from "@/features/users/services/AdminUsersService";
 
 export default function useDashboardAdminUsers(
   page: number = 1,
