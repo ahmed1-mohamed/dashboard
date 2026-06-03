@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,10 +24,10 @@ import {
   LocationFormData,
 } from "@/components/modals/add-location-modal";
 import { DeleteLocationModal } from "@/components/modals/delete-location-modal";
-import { ViewLocationModal } from "@/components/modals/view-location-modal";
 
 export default function LocationsManagementPage() {
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   const {
     page,
@@ -55,15 +56,14 @@ export default function LocationsManagementPage() {
   const [locationToDelete, setLocationToDelete] = useState<number | null>(null);
 
   const {
-    paginatedLocationsData,
+    paginatedLocationsData: allLocationsData,
     createLocationMutation,
     deleteLocationMutation,
-  } = useDashboardAdminLocations(page, perPage, debouncedSearch);
+  } = useDashboardAdminLocations(1, 1000, debouncedSearch);
 
-  // Separate query (page 1, per_page 200, no search) to always have the full city list for the dropdown
-  const { paginatedLocationsData: allLocationsData } = useDashboardAdminLocations(1, 200);
   const allRaw = (allLocationsData.data as { data?: any } | undefined)?.data;
   const allItems: any[] = Array.isArray(allRaw) ? allRaw : allRaw?.data ?? [];
+  
   const cities: string[] = Array.from(
     new Set(
       allItems
@@ -72,13 +72,9 @@ export default function LocationsManagementPage() {
     ),
   ).sort() as string[];
 
-  const { data, isLoading, isError, error, refetch } = paginatedLocationsData;
+  const { data, isLoading, isError, error, refetch } = allLocationsData;
 
-  // API returns data as flat array in data.data
-  const rawData = (data as { data?: any } | undefined)?.data;
-  const itemsArray: any[] = Array.isArray(rawData) ? rawData : rawData?.data ?? [];
-
-  const locations: Location[] = itemsArray.map((loc: any) => ({
+  const locations: Location[] = allItems.map((loc: any) => ({
     location_id: loc.location_id,
     location_landmark: loc.location_landmark || "N/A",
     city_name: loc.city_name || "N/A",
@@ -88,13 +84,26 @@ export default function LocationsManagementPage() {
     projects_count: loc.projects_count || 0,
   }));
 
-  // Client-side city filter (API does not support city_name param)
-  const filteredLocations: Location[] = filters.city !== "all"
-    ? locations.filter((loc) => loc.city_name === filters.city)
-    : locations;
+  // Client-side filtering
+  let filteredLocations: Location[] = locations;
+  
+  if (filters.city !== "all") {
+    filteredLocations = filteredLocations.filter((loc) => loc.city_name === filters.city);
+  }
+  
+  if (filters.status !== "all") {
+    const isActiveFilter = filters.status === "active";
+    filteredLocations = filteredLocations.filter((loc) => {
+      const status = locationStatuses[loc.location_id] ?? true;
+      return status === isActiveFilter;
+    });
+  }
 
-  const total: number = (rawData as any)?.total ?? itemsArray.length;
+  const total: number = filteredLocations.length;
   const totalPages = Math.max(1, Math.ceil(total / perPage));
+
+  // Slice for current page
+  const currentLocations = filteredLocations.slice((page - 1) * perPage, page * perPage);
 
   useEffect(() => {
     const items: Location[] = locations;
@@ -258,15 +267,14 @@ export default function LocationsManagementPage() {
       {!isLoading && !isError && (
         <>
           <LocationsTable
-            locations={locations}
+            locations={currentLocations}
             selectedLocations={selectedLocations}
             locationStatuses={locationStatuses}
             onSelectAll={handleSelectAll}
             onSelectLocation={handleSelectLocation}
             onToggleStatus={handleToggleStatus}
             onView={(loc) => {
-              setSelectedLocation(loc);
-              setIsViewModalOpen(true);
+              router.push(`/admin/locations/${loc.location_id}`);
             }}
             onEdit={(loc) => {
               setSelectedLocation(loc);
@@ -297,32 +305,7 @@ export default function LocationsManagementPage() {
         onClose={() => setIsAddLocationModalOpen(false)}
       />
 
-      {selectedLocation && (
-        <ViewLocationModal
-          locationId={selectedLocation.location_id}
-          locationLandmark={selectedLocation.location_landmark}
-          cityName={selectedLocation.city_name}
-          countryName={selectedLocation.country_name}
-          areaName={selectedLocation.area_name}
-          createdAt={selectedLocation.created_at}
-          projectsCount={selectedLocation.projects_count}
-          isActive={locationStatuses[selectedLocation.location_id] ?? true}
-          isOpen={isViewModalOpen}
-          onClose={() => {
-            setIsViewModalOpen(false);
-            setSelectedLocation(null);
-          }}
-          onEdit={() => {
-            setIsViewModalOpen(false);
-            setIsEditModalOpen(true);
-          }}
-          onDelete={() => {
-            setIsViewModalOpen(false);
-            setLocationToDelete(selectedLocation.location_id);
-            setIsDeleteModalOpen(true);
-          }}
-        />
-      )}
+      {/* View Modal removed as per user request to view in new page */}
 
       <DeleteLocationModal
         location={selectedLocation}

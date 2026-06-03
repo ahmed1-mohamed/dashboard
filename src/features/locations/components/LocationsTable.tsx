@@ -34,7 +34,7 @@ function StatusToggle({
       <button
         onClick={handleClick}
         className={`
-          relative w-10 h-6 rounded-full outline-none focus:ring-2 focus:ring-offset-1 transition-all duration-300 ease-in-out
+          relative w-10 h-6 rounded-full outline-none focus:ring-2 focus:ring-offset-1 transition-all duration-300 ease-in-out cursor-pointer
           ${isActive ? "bg-teal-500 focus:ring-teal-400" : "bg-gray-300 focus:ring-gray-400"}
           ${isAnimating ? "scale-95" : "scale-100"}
         `}
