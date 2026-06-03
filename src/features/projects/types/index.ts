@@ -4,6 +4,7 @@ export interface Project {
   developer_name: string;
   total_units: number;
   available_units: number;
+  country_dimension_unit: string;
   launch_date: string;
   completion_date: string;
   price_range: string;

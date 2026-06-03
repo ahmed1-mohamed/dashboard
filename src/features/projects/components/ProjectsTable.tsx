@@ -102,105 +102,104 @@ export function ProjectsTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-            {projects.map((project) => (
-              <TableRow key={project.id} className="hover:bg-gray-50">
-                <TableCell className="px-2">
-                  <Checkbox
-                    checked={selectedProjects.includes(project.id)}
-                    onCheckedChange={(checked) =>
-                      onSelectProject(project.id, checked as boolean)
-                    }
+          {projects.map((project) => (
+            <TableRow key={project.id} className="hover:bg-gray-50">
+              <TableCell className="px-2">
+                <Checkbox
+                  checked={selectedProjects.includes(project.id)}
+                  onCheckedChange={(checked) =>
+                    onSelectProject(project.id, checked as boolean)
+                  }
+                />
+              </TableCell>
+              <TableCell className="text-teal-600 font-medium px-2 text-sm">
+                <button
+                  onClick={() => router.push(`/admin/projects/${project.id}`)}
+                  className="text-gray-900 text-sm font-medium hover:text-teal-600 active:text-teal-800 transition-colors cursor-pointer text-left focus:outline-none"
+                >
+                  {project.name}
+                </button>
+              </TableCell>
+              <TableCell className="text-gray-900 px-2 text-sm truncate max-w-[110px]">
+                {project.developer_name}
+              </TableCell>
+              <TableCell className="px-2">
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium text-gray-900">
+                    {project.country_dimension_unit}
+                  </span>
+                </div>
+              </TableCell>
+              <TableCell className="text-gray-900 px-2 text-sm">
+                {project.city_name}
+              </TableCell>
+              <TableCell className="text-gray-900 px-2 text-sm">
+                {project.projectType}
+              </TableCell>
+              <TableCell className="text-gray-900 px-2 text-sm">
+                {project.price_range}
+              </TableCell>
+              <TableCell className="px-2" onClick={(e) => e.stopPropagation()}>
+                <div className="flex items-center gap-2">
+                  <Switch
+                    disabled
+                    checked={project.is_active ?? false}
+                    onCheckedChange={(checked) => onActiveToggle(project.id, checked)}
+                    className="data-[state=checked]:bg-green-500 transition-colors duration-300 shadow-sm"
                   />
-                </TableCell>
-                <TableCell className="text-teal-600 font-medium px-2 text-sm">
-                  <button
-                    onClick={() => router.push(`/admin/projects/${project.id}`)}
-                    className="text-gray-900 text-sm font-medium hover:text-teal-600 active:text-teal-800 transition-colors cursor-pointer text-left focus:outline-none"
-                  >
-                    {project.name}
-                  </button>
-                </TableCell>
-                <TableCell className="text-gray-900 px-2 text-sm truncate max-w-[110px]">
-                  {project.developer_name}
-                </TableCell>
-                <TableCell className="px-2">
-                  <div className="flex flex-col">
-                    <span className="text-sm font-medium text-gray-900">
-                      {project.available_units} / {project.total_units}
-                    </span>
-                    <span className="text-[10px] text-gray-500">available</span>
-                  </div>
-                </TableCell>
-                <TableCell className="text-gray-900 px-2 text-sm">
-                  {project.city_name}
-                </TableCell>
-                <TableCell className="text-gray-900 px-2 text-sm">
-                  {project.projectType}
-                </TableCell>
-                <TableCell className="text-gray-900 px-2 text-sm">
-                  {project.price_range}
-                </TableCell>
-                <TableCell className="px-2" onClick={(e) => e.stopPropagation()}>
-                  <div className="flex items-center gap-2">
-                    <Switch
-                      disabled
-                      checked={project.is_active ?? false}
-                      onCheckedChange={(checked) => onActiveToggle(project.id, checked)}
-                      className="data-[state=checked]:bg-green-500 transition-colors duration-300 shadow-sm"
-                    />
-                    <Badge
-                      variant={project.is_active ? "default" : "secondary"}
-                      className={`transition-all duration-500 flex items-center justify-center w-6 h-6 p-0 rounded-full shadow-sm ${project.is_active
-                        ? "bg-green-100 border-green-300"
-                        : "bg-gray-100 border-gray-200"
-                        }`}
-                    >
-                      {project.is_active ? (
-                        <CheckCircle2 className="w-4 h-4 text-green-600 animate-in fade-in zoom-in spin-in-12 duration-500" />
-                      ) : (
-                        <XCircle className="w-4 h-4 text-gray-400 animate-in fade-in zoom-in -spin-in-12 duration-500" />
-                      )}
-                    </Badge>
-                  </div>
-                </TableCell>
-                <TableCell className="px-2">
                   <Badge
-                    variant="outline"
-                    className={
-                      project.status.toLowerCase() === "under construction" ||
-                        project.status.toLowerCase() === "upcoming"
-                        ? "bg-blue-50 text-blue-700 border-blue-200 text-[10px] px-1"
-                        : project.status.toLowerCase() === "completed" ||
-                          project.status.toLowerCase() === "ready for handover"
-                          ? "bg-green-50 text-green-700 border-green-200 text-[10px] px-1"
-                          : "bg-gray-50 text-gray-700 border-gray-200 text-[10px] px-1"
-                    }
+                    variant={project.is_active ? "default" : "secondary"}
+                    className={`transition-all duration-500 flex items-center justify-center w-6 h-6 p-0 rounded-full shadow-sm ${project.is_active
+                      ? "bg-green-100 border-green-300"
+                      : "bg-gray-100 border-gray-200"
+                      }`}
                   >
-                    {project.status}
+                    {project.is_active ? (
+                      <CheckCircle2 className="w-4 h-4 text-green-600 animate-in fade-in zoom-in spin-in-12 duration-500" />
+                    ) : (
+                      <XCircle className="w-4 h-4 text-gray-400 animate-in fade-in zoom-in -spin-in-12 duration-500" />
+                    )}
                   </Badge>
-                </TableCell>
-                <TableCell className="text-center px-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onImport?.(project.id);
-                    }}
-                    className="bg-white border-gray-100 shadow-lg hover:bg-teal-50 h-8 py-4 px-3 text-md"
-                  >
-                    <Download className="w-3 h-3 mr-1" /> Import
-                  </Button>
-                </TableCell>
-                <TableCell className="text-center px-2">
-                  <TableActions
-                    onView={() => router.push(`/admin/projects/${project.id}`)}
-                    onEdit={() => onEdit(project.id)}
-                    onDelete={() => onDelete(project.id)}
-                  />
-                </TableCell>
-              </TableRow>
-            ))}
+                </div>
+              </TableCell>
+              <TableCell className="px-2">
+                <Badge
+                  variant="outline"
+                  className={
+                    project.status.toLowerCase() === "under construction" ||
+                      project.status.toLowerCase() === "upcoming"
+                      ? "bg-blue-50 text-blue-700 border-blue-200 text-[10px] px-1"
+                      : project.status.toLowerCase() === "completed" ||
+                        project.status.toLowerCase() === "ready for handover"
+                        ? "bg-green-50 text-green-700 border-green-200 text-[10px] px-1"
+                        : "bg-gray-50 text-gray-700 border-gray-200 text-[10px] px-1"
+                  }
+                >
+                  {project.status}
+                </Badge>
+              </TableCell>
+              <TableCell className="text-center px-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onImport?.(project.id);
+                  }}
+                  className="bg-white border-gray-100 shadow-lg hover:bg-teal-50 h-8 py-4 px-3 text-md"
+                >
+                  <Download className="w-3 h-3 mr-1" /> Import
+                </Button>
+              </TableCell>
+              <TableCell className="text-center px-2">
+                <TableActions
+                  onView={() => router.push(`/admin/projects/${project.id}`)}
+                  onEdit={() => onEdit(project.id)}
+                  onDelete={() => onDelete(project.id)}
+                />
+              </TableCell>
+            </TableRow>
+          ))}
         </TableBody>
       </Table>
     </div>

@@ -108,6 +108,7 @@ export default function ProjectsPage() {
         available_units: Number(p.available_units) || 0,
         launch_date: (p.launch_date as string) || "N/A",
         completion_date: (p.completion_date as string) || "N/A",
+        country_dimension_unit: (p.country_dimension_unit as string) || "N/A",
         price_range: (p.price_range as string) || "N/A",
         slug: (p.slug as string) || "",
         project_size: (p.project_size as string) || "N/A",
@@ -132,6 +133,8 @@ export default function ProjectsPage() {
     });
   }, [itemsArray]);
 
+  const filteredProjects: Project[] = projects;
+
   const totalPages = Math.max(1, Math.ceil(totalProjects / perPage));
 
   const handleImport = useCallback((id: number) => {
@@ -144,7 +147,7 @@ export default function ProjectsPage() {
     const row = [
       p.id, `"${p.name}"`, `"${p.developer_name}"`,
       p.status, p.projectType, p.total_units,
-      p.available_units, p.launch_date, p.completion_date,
+      p.country_dimension_unit, p.launch_date, p.completion_date,
     ];
     const csv = [headers.join(","), row.join(",")].join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -159,9 +162,9 @@ export default function ProjectsPage() {
 
   const handleSelectAll = useCallback(
     (checked: boolean) => {
-      setSelectedProjects(checked ? projects.map((p) => p.id) : []);
+      setSelectedProjects(checked ? filteredProjects.map((p) => p.id) : []);
     },
-    [projects],
+    [filteredProjects],
   );
 
   const handleSelectProject = useCallback((id: number, checked: boolean) => {
@@ -200,12 +203,12 @@ export default function ProjectsPage() {
   }, []);
 
   const handleExport = useCallback(() => {
-    if (projects.length === 0) {
+    if (filteredProjects.length === 0) {
       toast.info("No projects to export");
       return;
     }
     const headers = ["ID", "Name", "Developer", "Status", "Type", "Total Units", "Available", "Launch Date", "Completion Date"];
-    const rows = projects.map((p) => [
+    const rows = filteredProjects.map((p) => [
       p.id, `"${p.name}"`, `"${p.developer_name}"`,
       p.status, p.projectType, p.total_units,
       p.available_units, p.launch_date, p.completion_date,
@@ -219,7 +222,7 @@ export default function ProjectsPage() {
     a.click();
     URL.revokeObjectURL(url);
     toast.success("Projects exported!");
-  }, [projects]);
+  }, [filteredProjects]);
 
   const handleConfirmDelete = useCallback(() => {
     if (!projectToDelete) return;
@@ -271,7 +274,7 @@ export default function ProjectsPage() {
           </div>
 
           <ProjectsTable
-            projects={projects}
+            projects={filteredProjects}
             selectedProjects={selectedProjects}
             onSelectAll={handleSelectAll}
             onSelectProject={handleSelectProject}
@@ -285,8 +288,8 @@ export default function ProjectsPage() {
             page={page}
             totalPages={totalPages}
             perPage={perPage}
-            totalItems={totalProjects}
-            currentItemsCount={projects.length}
+            totalItems={filteredProjects.length}
+            currentItemsCount={filteredProjects.length}
             onPageChange={setPage}
             onPerPageChange={setPerPage}
           />

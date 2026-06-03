@@ -39,9 +39,9 @@ export function ProjectsFilters({
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Status</SelectItem>
-          <SelectItem value="ongoing">Under Construction / Ongoing</SelectItem>
+          <SelectItem value="ongoing">Ongoing</SelectItem>
           <SelectItem value="completed">Completed</SelectItem>
-          <SelectItem value="upcoming">Upcoming / Planned</SelectItem>
+          <SelectItem value="upcoming">Upcoming</SelectItem>
         </SelectContent>
       </Select>
 

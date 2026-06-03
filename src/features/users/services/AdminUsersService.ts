@@ -9,7 +9,7 @@ export const AdminUsersService = {
     perPage: number = 15,
     search?: string,
     status?: string,
-    role?: string,
+    role_name?: string,
   ) => {
     const params = new URLSearchParams({
       page: page.toString(),
@@ -21,17 +21,15 @@ export const AdminUsersService = {
     if (status && status !== "all") {
       params.append("status", status.toLowerCase());
     }
-    if (role && role !== "all") {
-      params.append("role", role);
+    if (role_name && role_name !== "all") {
+      params.append("role_name", role_name);
     }
     return apiClient.get<{ data: GetUserDataType[]; total: number }>(
       `/dashboard/users?${params.toString()}`,
     );
   },
 
-  /**
-   * Get user by ID (admin endpoint)
-   */
+
   getUser: (userId: number) => {
     return apiClient.get<GetUserDataType>(`/dashboard/users/${userId}`);
   },

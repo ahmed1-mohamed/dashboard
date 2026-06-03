@@ -2,7 +2,6 @@
 
 import {
   useQuery,
-  keepPreviousData,
   useMutation,
   useQueryClient,
 } from "@tanstack/react-query";
@@ -32,8 +31,6 @@ export default function useProjects(
       ),
     retry: false,
     enabled: !!token,
-    staleTime: 5 * 60 * 1000,
-    placeholderData: keepPreviousData,
   });
 
   const deleteProjectMutation = useMutation({
