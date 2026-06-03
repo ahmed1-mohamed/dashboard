@@ -11,7 +11,6 @@ import { Plus, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 
 import useDashboardAdminLocations from "@/hooks/use-dashboardAdminLocations";
-import { useServerPagination } from "@/hooks/useServerPagination";
 import { Pagination } from "@/components/shared/Pagination";
 import { locationsExportToPDF, locationsExportToExcel } from "@/lib/handle-export";
 
@@ -29,21 +28,28 @@ export default function LocationsManagementPage() {
   const queryClient = useQueryClient();
   const router = useRouter();
 
-  const {
-    page,
-    perPage,
-    searchQuery,
-    debouncedSearch,
-    filters,
-    setPage,
-    setPerPage,
-    setSearchQuery,
-    setFilter,
-  } = useServerPagination({
-    initialPage: 1,
-    initialPerPage: 10,
-    initialFilters: { city: "all", status: "all" },
-  });
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [filters, setFilters] = useState({ city: "all", status: "all" });
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch((prev) => {
+        if (prev !== searchQuery) {
+          setPage(1);
+        }
+        return searchQuery;
+      });
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
+
+  const setFilter = useCallback((key: string, value: string) => {
+    setFilters((prev) => ({ ...prev, [key]: value }));
+    setPage(1);
+  }, []);
 
   const [selectedLocations, setSelectedLocations] = useState<number[]>([]);
   const [locationStatuses, setLocationStatuses] = useState<Record<number, boolean>>({});
@@ -58,12 +64,13 @@ export default function LocationsManagementPage() {
   const {
     paginatedLocationsData: allLocationsData,
     createLocationMutation,
+    updateLocationMutation,
     deleteLocationMutation,
   } = useDashboardAdminLocations(1, 1000, debouncedSearch);
 
   const allRaw = (allLocationsData.data as { data?: any } | undefined)?.data;
   const allItems: any[] = Array.isArray(allRaw) ? allRaw : allRaw?.data ?? [];
-  
+
   const cities: string[] = Array.from(
     new Set(
       allItems
@@ -82,15 +89,15 @@ export default function LocationsManagementPage() {
     area_name: loc.area_name?.trim() || "N/A",
     created_at: loc.created_at || "N/A",
     projects_count: loc.projects_count || 0,
+    status: loc.status || loc.is_active || "active",
   }));
 
-  // Client-side filtering
   let filteredLocations: Location[] = locations;
-  
+
   if (filters.city !== "all") {
     filteredLocations = filteredLocations.filter((loc) => loc.city_name === filters.city);
   }
-  
+
   if (filters.status !== "all") {
     const isActiveFilter = filters.status === "active";
     filteredLocations = filteredLocations.filter((loc) => {
@@ -102,7 +109,6 @@ export default function LocationsManagementPage() {
   const total: number = filteredLocations.length;
   const totalPages = Math.max(1, Math.ceil(total / perPage));
 
-  // Slice for current page
   const currentLocations = filteredLocations.slice((page - 1) * perPage, page * perPage);
 
   useEffect(() => {
@@ -110,7 +116,8 @@ export default function LocationsManagementPage() {
     if (items.length > 0) {
       const visibilityState = items.reduce(
         (acc: Record<number, boolean>, item: Location) => {
-          return { ...acc, [item.location_id]: true };
+          const isActive = item.status === "active" || item.status === "1" || item.status === 1 || item.status === true;
+          return { ...acc, [item.location_id]: isActive };
         },
         {},
       );
@@ -141,12 +148,37 @@ export default function LocationsManagementPage() {
   );
 
   const handleToggleStatus = useCallback((location_id: number) => {
+    const currentStatus = locationStatuses[location_id] ?? true;
+    const newStatus = !currentStatus;
+
     setLocationStatuses((prev) => ({
       ...prev,
-      [location_id]: !prev[location_id],
+      [location_id]: newStatus,
     }));
-    toast.success(`Location status updated`);
-  }, []);
+
+    const formData = new FormData();
+    formData.append("status", newStatus ? "active" : "inactive");
+    
+    // Some APIs expect _method=PUT when using FormData
+    formData.append("_method", "PUT");
+
+    updateLocationMutation.mutate(
+      { id: location_id, data: formData },
+      {
+        onSuccess: () => {
+          toast.success(`Location status updated to ${newStatus ? 'Active' : 'Inactive'}`);
+        },
+        onError: (error) => {
+          console.error("Error updating status:", error);
+          setLocationStatuses((prev) => ({
+            ...prev,
+            [location_id]: currentStatus,
+          }));
+          toast.error("Failed to update location status");
+        }
+      }
+    );
+  }, [locationStatuses, updateLocationMutation]);
 
   const handleAddLocation = (data: LocationFormData) => {
     const locationData = {
@@ -304,8 +336,6 @@ export default function LocationsManagementPage() {
         isOpen={isAddLocationModalOpen}
         onClose={() => setIsAddLocationModalOpen(false)}
       />
-
-      {/* View Modal removed as per user request to view in new page */}
 
       <DeleteLocationModal
         location={selectedLocation}

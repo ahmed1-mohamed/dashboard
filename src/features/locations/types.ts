@@ -6,6 +6,7 @@ export interface Location {
   area_name: string;
   created_at: string;
   projects_count: number;
+  status?: string;
 }
 
 export interface Project {
