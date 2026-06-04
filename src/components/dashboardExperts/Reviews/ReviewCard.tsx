@@ -13,21 +13,23 @@ export default function ReviewCard({
         review_id: number;
         rating: number;
         comment: string;
-        customer: {
-            first_name: string;
-            last_name: string;
+        customer?: {
+            first_name?: string;
+            last_name?: string;
             profile_picture?: string;
-        };
+        } | null;
         created_at: string;
     };
     className?: string;
 }) {
-    const fullName = `${review.customer.first_name} ${review.customer.last_name}`;
+    const firstName = review.customer?.first_name || "Anonymous";
+    const lastName = review.customer?.last_name || "";
+    const fullName = `${firstName} ${lastName}`.trim();
 
     return (
         <div className={`p-6 bg-[#F9FAFB] border border-[#F3F4F6] rounded-2xl shadow-none flex gap-4 ${className}`}>
             <Avatar className="h-16 w-16 border-2 rounded-lg border-primary/10 flex-shrink-0">
-                {review.customer.profile_picture ? (
+                {review.customer?.profile_picture ? (
                     <img
                         src={review.customer.profile_picture}
                         alt={fullName}

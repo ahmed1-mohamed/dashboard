@@ -727,9 +727,10 @@ export type RolesDataType = {
   role_id: number;
   role_name: string;
   role_type: string;
-  description: string[]; // 👈 UI uses array
+  description: string[] | string | null; // can be string or array or null
   users_count: number;
   is_active: boolean;
+  permissions?: Record<string, Record<string, boolean>> | null;
 };
 
 // Permissions

@@ -137,12 +137,12 @@ export default function DashboardPage() {
     if (session?.user?.accessToken) {
       try {
         const token = session.user.accessToken;
-        const [chartsResponse, reviewsResponse] = await Promise.all([
-          fetchDashboardCharts(token).catch(err => {
+        const [chartsResponse, reviewsResponse] = await Promise.all<any>([
+          fetchDashboardCharts(token).catch((err: any) => {
             console.error("Failed to fetch dashboard charts", err);
             return null;
           }),
-          fetchDashboardReviews(token).catch(err => {
+          fetchDashboardReviews(token).catch((err: any) => {
             console.error("Failed to fetch dashboard reviews", err);
             return null;
           }),

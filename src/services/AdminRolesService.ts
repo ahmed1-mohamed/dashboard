@@ -5,14 +5,14 @@ export const AdminRolesService = {
    * Get all roles
    */
   getRoles: () => {
-    return apiClient.get("/dashboard/roles/all");
+    return apiClient.get("/dashboard/roles");
   },
 
   /**
    * Get role by ID
    */
   getRole: (roleId: number) => {
-    return apiClient.get(`/roles/${roleId}`);
+    return apiClient.get(`/dashboard/roles/${roleId}`);
   },
 
   /**
@@ -26,13 +26,27 @@ export const AdminRolesService = {
    * Update a role
    */
   updateRole: (roleId: number, data: Record<string, unknown>) => {
-    return apiClient.put(`/roles/${roleId}`, data);
+    return apiClient.put(`/dashboard/roles/${roleId}`, data);
   },
 
   /**
    * Delete a role
    */
   deleteRole: (roleId: number) => {
-    return apiClient.delete(`/roles/${roleId}`);
+    return apiClient.delete(`/dashboard/roles/${roleId}`);
+  },
+
+  /**
+   * Add permissions to a role
+   */
+  addPermissions: (data: Record<string, unknown>) => {
+    return apiClient.post("/dashboard/roles/permissions", data);
+  },
+
+  /**
+   * Delete a permission from a role
+   */
+  deletePermission: (roleId: number, permissionId: number) => {
+    return apiClient.delete(`/dashboard/roles/${roleId}/permissions/${permissionId}`);
   },
 };

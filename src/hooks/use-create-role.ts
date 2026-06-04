@@ -31,7 +31,8 @@ export function useCreateRole() {
     },
     onSuccess: () => {
       toast.success("Role created successfully!");
-      queryClient.invalidateQueries({ queryKey: ["Roles"] });
+      queryClient.invalidateQueries({ queryKey: ["roles"] });
+      queryClient.invalidateQueries({ queryKey: ["roles_admin"] });
     },
     onError: (error: unknown) => {
       const axiosError = error as ApiError;

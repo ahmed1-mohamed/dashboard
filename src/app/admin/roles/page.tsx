@@ -42,6 +42,7 @@ export interface Role {
   description: string[];
   users_count: number;
   is_active: boolean;
+  permissions?: Record<string, Record<string, boolean>> | null;
 }
 
 export default function RolesPage() {
@@ -83,6 +84,7 @@ export default function RolesPage() {
       : ["No specific permissions"],
     users_count: role.users_count || 0,
     is_active: role.is_active || false,
+    permissions: role.permissions || null,
   }));
 
   const handleViewRole = (role: Role) => {
@@ -114,7 +116,7 @@ export default function RolesPage() {
   if (rolesData.isLoading) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-[#007A55]" />
       </div>
     );
   }
@@ -136,21 +138,38 @@ export default function RolesPage() {
     );
   }
 
+  const getPermissionBadges = (role: Role) => {
+    if (role.role_type === "admin" || role.role_name.toLowerCase().includes("admin")) {
+      return ["All"];
+    }
+    if (role.permissions) {
+      const actions = new Set<string>();
+      Object.values(role.permissions).forEach(section => {
+        if (section.view) actions.add("View");
+        if (section.create) actions.add("add");
+        if (section.edit) actions.add("edit");
+        if (section.delete) actions.add("delete");
+      });
+      if (actions.size > 0) return Array.from(actions);
+    }
+    return ["View", "add", "edit"]; // Fallback if no permissions object
+  };
+
   return (
-    <div className="p-4 px-3 space-y-4 max-w-full overflow-hidden">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-bold text-gray-900">Roles</h1>
+    <div className="p-6 max-w-full overflow-hidden bg-gray-50/30 min-h-screen">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold text-[#15042B]">Roles</h1>
           <Badge
             variant="outline"
-            className="bg-purple-100 text-purple-700 border-purple-200 rounded-full px-2"
+            className="bg-[#A855F7] text-white border-transparent rounded-full px-2 py-0.5 text-xs font-semibold"
           >
             {roles.length}
           </Badge>
         </div>
         <div className="flex items-center gap-2">
           <Button
-            className="bg-teal-600 hover:bg-teal-700 text-white gap-2"
+            className="bg-[#007A55] hover:bg-[#007a55e0] text-white gap-2 font-medium"
             onClick={() => setIsAddRoleModalOpen(true)}
           >
             <Plus className="h-4 w-4" />
@@ -159,79 +178,73 @@ export default function RolesPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {roles.map((role) => (
           <div
             key={role.role_id}
-            className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-sm transition-shadow"
+            className="bg-white rounded-xl border border-[#E5E7EB] p-5 hover:shadow-sm transition-shadow flex flex-col justify-between"
           >
-            <div className="flex items-start justify-between mb-3">
-              <div>
-                <h3 className="font-semibold text-gray-900 text-base">
-                  {role.role_name}
-                </h3>
-                <p className="text-xs text-gray-500 mt-0.5">
-                  {role.users_count} users
-                </p>
+            <div>
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex flex-col gap-1">
+                  <h3 className="font-medium text-[#15042B] text-lg">
+                    {role.role_name}
+                  </h3>
+                  <p className="text-[13px] text-[#4A5565]">
+                    {role.users_count} users
+                  </p>
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      className="text-gray-400 hover:text-gray-600 p-1 -mr-2"
+                      aria-label="More options"
+                      title="More options"
+                    >
+                      <MoreHorizontal className="h-5 w-5" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-32">
+                    <DropdownMenuItem
+                      onClick={() => handleViewRole(role)}
+                      className="cursor-pointer"
+                    >
+                      <Eye className="mr-2 h-4 w-4" />
+                      View
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => handleEditRole(role)}
+                      className="cursor-pointer"
+                    >
+                      <Edit2 className="mr-2 h-4 w-4" />
+                      Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setSelectedRole(role);
+                        setDeleteDialogOpen(true);
+                      }}
+                      className="cursor-pointer text-red-600 focus:text-red-600"
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    type="button"
-                    className="text-gray-400 hover:text-gray-600 p-1"
-                    aria-label="More options"
-                    title="More options"
-                  >
-                    <MoreHorizontal className="h-5 w-5" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-32">
-                  <DropdownMenuItem
-                    onClick={() => handleViewRole(role)}
-                    className="cursor-pointer"
-                  >
-                    <Eye className="mr-2 h-4 w-4" />
-                    View
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => handleEditRole(role)}
-                    className="cursor-pointer"
-                  >
-                    <Edit2 className="mr-2 h-4 w-4" />
-                    Edit
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => {
-                      setSelectedRole(role);
-                      setDeleteDialogOpen(true);
-                    }}
-                    className="cursor-pointer text-red-600 focus:text-red-600"
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Delete
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
 
-            <div className="flex flex-wrap gap-1.5">
-              {role.description?.slice(0, 5).map((description, index) => (
-                <Badge
-                  key={index}
-                  variant="outline"
-                  className="bg-gray-100 text-gray-700 border-gray-200 text-xs px-2 py-0.5 font-normal"
-                >
-                  {description}
-                </Badge>
-              ))}
-              {role.description.length > 5 && (
-                <Badge
-                  variant="outline"
-                  className="bg-gray-100 text-gray-700 border-gray-200 text-xs px-2 py-0.5 font-normal"
-                >
-                  +{role.description.length - 5}
-                </Badge>
-              )}
+              <div className="flex flex-wrap gap-2 mt-4">
+                {getPermissionBadges(role).map((badge, index) => (
+                  <Badge
+                    key={index}
+                    variant="secondary"
+                    className="bg-[#F3F4F6] text-[#111827] border-transparent text-xs px-2.5 py-0.5 font-medium hover:bg-[#E5E7EB]"
+                  >
+                    {badge}
+                  </Badge>
+                ))}
+              </div>
             </div>
           </div>
         ))}
@@ -241,43 +254,6 @@ export default function RolesPage() {
         isOpen={isAddRoleModalOpen}
         onClose={() => setIsAddRoleModalOpen(false)}
       />
-{/* 
-      {selectedRole && (
-        <ViewRoleModal
-          roleId={selectedRole.role_id}
-          roleName={selectedRole.role_name}
-          roleType={selectedRole.role_type}
-          description={selectedRole.description}
-          usersCount={selectedRole.users_count}
-          isActive={selectedRole.is_active}
-          isOpen={isViewModalOpen}
-          onClose={() => setIsViewModalOpen(false)}
-          onEdit={() => {
-            setIsViewModalOpen(false);
-            setIsEditModalOpen(true);
-          }}
-          onDelete={handleDeleteRole}
-        />
-      )} */}
-
-      {/* {selectedRole && (
-        <EditRoleModal
-          roleId={selectedRole.role_id}
-          roleName={selectedRole.role_name}
-          roleType={selectedRole.role_type}
-          description={selectedRole.description[0] || ""}
-          isOpen={isEditModalOpen}
-          onClose={() => {
-            setIsEditModalOpen(false);
-            setSelectedRole(null);
-          }}
-          onSuccess={() => {
-            setIsEditModalOpen(false);
-            setSelectedRole(null);
-            // refetch();
-          }}
-        />
-      )} */}
 
       <Dialog
         open={deleteDialogOpen}
@@ -299,17 +275,17 @@ export default function RolesPage() {
           </DialogHeader>
           {selectedRole && (
             <div className="py-4">
-              <div className="bg-gray-50 rounded-lg p-3 space-y-2">
-                <p className="font-medium text-gray-900">
+              <div className="bg-gray-50 rounded-lg p-3 space-y-2 border border-gray-100">
+                <p className="font-medium text-[#15042B]">
                   {selectedRole.role_name}
                 </p>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-[#4A5565]">
                   {selectedRole.role_type} • {selectedRole.users_count} users
                 </p>
               </div>
             </div>
           )}
-          <DialogFooter className="sm:justify-end">
+          <DialogFooter className="sm:justify-end gap-2">
             <Button
               variant="outline"
               onClick={() => {
