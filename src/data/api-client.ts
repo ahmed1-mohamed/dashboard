@@ -468,6 +468,9 @@ export const fetchLocations = (
 ) => fetchPaginatedData(`/locations?page=${page}&per_page=${perPage}`, token);
 export const fetchProjects = (token: string) => fetchData("/projects", token);
 
+export const fetchDashboardCharts = (token: string) => fetchData("/dashboard/charts", token);
+export const fetchDashboardReviews = (token: string) => fetchData("/dashboard/reviews", token);
+
 export const fetchProjectsPaginated = (
   token: string,
   page: number = 1,

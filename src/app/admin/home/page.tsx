@@ -1,54 +1,25 @@
 "use client";
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { fetchDashboardStats, fetchBookings, fetchDashboardCharts, fetchDashboardReviews } from "@/data/api-client";
+import { BookingDataType } from "@/types";
+import { DashboardHeader } from "./components/DashboardHeader";
+import { StatsCards } from "./components/StatsCards";
+import { ChartsSection } from "./components/ChartsSection";
+import { BookingsSection } from "./components/BookingsSection";
+import Reviews from "@/components/dashboardExperts/Reviews/Review";
+import { bookingsExportToExcel } from "@/lib/handle-export";
+import { type Booking, type StatsCard } from "./types";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Download,
-  RefreshCw,
-  Calendar,
-  TrendingUp,
-  TrendingDown,
-  Building2,
   FileText,
   Home,
   DollarSign,
   FolderOpen,
+  Building2,
   Eye,
   Megaphone,
-  ChevronDown,
-  ChevronRight,
-  type LucideIcon,
 } from "lucide-react";
-import { useSession } from "next-auth/react";
-import { useEffect } from "react";
-import { fetchDashboardStats, fetchBookings } from "@/data/api-client";
-import { BookingDataType } from "@/types";
-
-interface StatsCard {
-  title: string;
-  value: string;
-  change: string;
-  isPositive: boolean;
-  icon: LucideIcon;
-}
-
-interface Booking {
-  id: number;
-  name: string;
-  avatar: string;
-  property: string;
-  unit: string;
-  lastUpdated: string;
-  amount: string;
-  status: string;
-}
 
 const statsCards: StatsCard[] = [
   {
@@ -118,7 +89,7 @@ const initialBookings: Booking[] = [
     unit: "A-102",
     lastUpdated: "Last updated 22 Mar 2025",
     amount: "1,250,000 AED",
-    status: "Pending",
+    status: "Sales Offer",
   },
   {
     id: 2,
@@ -128,7 +99,7 @@ const initialBookings: Booking[] = [
     unit: "A-102",
     lastUpdated: "Last updated 22 Mar 2025",
     amount: "1,250,000 AED",
-    status: "Pending",
+    status: "Down payment",
   },
   {
     id: 3,
@@ -138,7 +109,7 @@ const initialBookings: Booking[] = [
     unit: "A-102",
     lastUpdated: "Last updated 22 Mar 2025",
     amount: "1,250,000 AED",
-    status: "Pending",
+    status: "Sales Purchase",
   },
   {
     id: 4,
@@ -148,358 +119,99 @@ const initialBookings: Booking[] = [
     unit: "A-102",
     lastUpdated: "Last updated 22 Mar 2025",
     amount: "1,250,000 AED",
-    status: "Pending",
+    status: "Identification",
   },
 ];
 
 export default function DashboardPage() {
   const { data: session } = useSession();
   const [dateRange, setDateRange] = useState("Dec 31 - Jan 31");
-  const [stats, setStats] = useState<StatsCard[]>(statsCards); // Initial static, then replace
+  const [stats, setStats] = useState<StatsCard[]>(statsCards);
   const [bookings, setBookings] = useState<Booking[]>(initialBookings);
   const [loading, setLoading] = useState(true);
+  const [chartData, setChartData] = useState<any>(null);
+  const [reviewsData, setReviewsData] = useState<any>(null);
 
-  // useEffect(() => {
-  //   async function loadDashboardData() {
-  //     if (!session?.user?.accessToken) return;
+  const loadDashboardData = async () => {
+    setLoading(true);
+    if (session?.user?.accessToken) {
+      try {
+        const token = session.user.accessToken;
+        const [chartsResponse, reviewsResponse] = await Promise.all([
+          fetchDashboardCharts(token).catch(err => {
+            console.error("Failed to fetch dashboard charts", err);
+            return null;
+          }),
+          fetchDashboardReviews(token).catch(err => {
+            console.error("Failed to fetch dashboard reviews", err);
+            return null;
+          }),
+        ]);
 
-  //     try {
-  //       setLoading(true);
-  //       const token = session.user.accessToken;
+        console.log("Dashboard Charts API Response:", chartsResponse);
+        console.log("Dashboard Reviews API Response:", reviewsResponse);
 
-  //       // Parallel fetch
-  //       const [statsData, bookingsData] = await Promise.all([
-  //         fetchDashboardStats(token).catch((err) => {
-  //           console.error("Failed to fetch stats", err);
-  //           return null;
-  //         }),
-  //         fetchBookings(token).catch((err) => {
-  //           console.error("Failed to fetch bookings", err);
-  //           return [];
-  //         }),
-  //       ]);
+        if (chartsResponse?.data) {
+          setChartData(chartsResponse.data);
+        } else {
+          setChartData(chartsResponse);
+        }
 
-  //       if (statsData) {
-  //         // Assumes statsData matches structure or map it here
-  //         // For now, if API returns different structure, we might need mapping logic
-  //         // This is a placeholder for mapping if needed
-  //         setStats((prev) => {
-  //           // Example: Update specific values from API if they match keys
-  //           // Or replace entirely if API returns array of stats
-  //           return prev;
-  //         });
-  //         // If API returns key-value pairs, we'd map them to the cards
-  //       }
+        if (reviewsResponse?.data) {
+          setReviewsData(reviewsResponse.data);
+        } else {
+          setReviewsData(reviewsResponse);
+        }
+      } catch (err) {
+        console.error("Failed to load dashboard api data", err);
+      }
+    } else {
+      // Simulate delay if no session
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+    setLoading(false);
+  };
 
-  //       if (bookingsData && Array.isArray(bookingsData)) {
-  //         const mappedBookings = bookingsData
-  //           .slice(0, 5)
-  //           .map((b: BookingDataType) => ({
-  //             id: b.id,
-  //             name: b.tenant?.name || b.user?.name || "Unknown",
-  //             avatar: (b.tenant?.name || b.user?.name || "U")
-  //               .charAt(0)
-  //               .toUpperCase(),
-  //             property: b.property?.name || "Unknown Property",
-  //             unit: b.unit?.unit_number || "N/A",
-  //             lastUpdated: b.updated_at
-  //               ? `Last updated ${new Date(b.updated_at).toLocaleDateString()}`
-  //               : "",
-  //             amount: `${b.amount || 0} AED`,
-  //             status: b.status || "Pending",
-  //           }));
-  //         setBookings(mappedBookings);
-  //       }
-  //     } catch (error) {
-  //       console.error("Dashboard data load error:", error);
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   }
+  useEffect(() => {
+    loadDashboardData();
+  }, [session]);
 
-  //   loadDashboardData();
-  // }, [session]);
+  const handleExport = () => {
+    bookingsExportToExcel(bookings);
+  };
+
+  const handleRefresh = () => {
+    loadDashboardData();
+  };
 
   return (
     <div className="p-6 space-y-6 max-w-full overflow-hidden">
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            Dashboard overview
-          </h1>
+      <DashboardHeader
+        dateRange={dateRange}
+        setDateRange={setDateRange}
+        onExport={handleExport}
+        onRefresh={handleRefresh}
+        isRefreshing={loading}
+      />
+      <StatsCards stats={stats} />
+      <ChartsSection />
+      <BookingsSection bookings={bookings} />
+
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold text-gray-900">
+            Recent Reviews
+          </h3>
           <p className="text-sm text-gray-500 mt-1">
-            Track progress across all sales stages
+            Latest feedback from users
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" className="gap-2 border-gray-200">
-            <Download className="h-4 w-4" />
-            Export
-          </Button>
-          <Button variant="outline" size="icon" className="border-gray-200">
-            <RefreshCw className="h-4 w-4" />
-          </Button>
-          <Select value={dateRange} onValueChange={setDateRange}>
-            <SelectTrigger className="w-[180px]">
-              <Calendar className="h-4 w-4 mr-2" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Dec 31 - Jan 31">Dec 31 - Jan 31</SelectItem>
-              <SelectItem value="Last 7 days">Last 7 days</SelectItem>
-              <SelectItem value="Last 30 days">Last 30 days</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      {/* Stats Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((card, index) => (
-          <div
-            key={index}
-            className="bg-white rounded-lg border border-gray-200 p-4"
-          >
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2 text-gray-600">
-                <card.icon className="h-4 w-4" />
-                <span className="text-sm font-medium">{card.title}</span>
-              </div>
-            </div>
-            <div className="space-y-1">
-              <div className="text-3xl font-bold text-gray-900">
-                {card.value}
-              </div>
-              <div
-                className={`flex items-center gap-1 text-xs ${
-                  card.isPositive ? "text-green-600" : "text-red-600"
-                }`}
-              >
-                {card.isPositive ? (
-                  <TrendingUp className="h-3 w-3" />
-                ) : (
-                  <TrendingDown className="h-3 w-3" />
-                )}
-                <span>{card.change}</span>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Sales Stages Status Overview */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold text-gray-900">
-              Sales Stages Status Overview
-            </h3>
-            <p className="text-sm text-gray-500 mt-1">
-              Track progress across all sales stages
-            </p>
-          </div>
-
-          {/* Stacked Bar Chart */}
-          <div className="space-y-4">
-            <div className="flex items-end justify-around h-64 gap-3">
-              {/* Sales Purchase */}
-              <div className="flex-1 flex flex-col items-center">
-                <div className="w-full bg-gray-100 rounded-t-lg overflow-hidden h-40">
-                  <div className="w-full bg-green-500 h-[40%]"></div>
-                  <div className="w-full bg-cyan-400 h-[35%]"></div>
-                  <div className="w-full bg-pink-500 h-[25%]"></div>
-                </div>
-                <span className="text-xs text-gray-600 mt-2 text-center">
-                  Sales Purchase
-                </span>
-              </div>
-
-              {/* Down Payment */}
-              <div className="flex-1 flex flex-col items-center">
-                <div className="w-full bg-gray-100 rounded-t-lg overflow-hidden h-48">
-                  <div className="w-full bg-green-500 h-[50%]"></div>
-                  <div className="w-full bg-cyan-400 h-[30%]"></div>
-                  <div className="w-full bg-pink-500 h-[20%]"></div>
-                </div>
-                <span className="text-xs text-gray-600 mt-2 text-center">
-                  Down Payment
-                </span>
-              </div>
-
-              {/* Sales Offer */}
-              <div className="flex-1 flex flex-col items-center">
-                <div className="w-full bg-gray-100 rounded-t-lg overflow-hidden h-32">
-                  <div className="w-full bg-green-500 h-[35%]"></div>
-                  <div className="w-full bg-cyan-400 h-[40%]"></div>
-                  <div className="w-full bg-pink-500 h-[25%]"></div>
-                </div>
-                <span className="text-xs text-gray-600 mt-2 text-center">
-                  Sales Offer
-                </span>
-              </div>
-
-              {/* Identification */}
-              <div className="flex-1 flex flex-col items-center">
-                <div className="w-full bg-gray-100 rounded-t-lg overflow-hidden h-56">
-                  <div className="w-full bg-green-500 h-[45%]"></div>
-                  <div className="w-full bg-cyan-400 h-[35%]"></div>
-                  <div className="w-full bg-pink-500 h-[20%]"></div>
-                </div>
-                <span className="text-xs text-gray-600 mt-2 text-center">
-                  Identification
-                </span>
-              </div>
-            </div>
-
-            {/* Legend */}
-            <div className="flex items-center justify-center gap-6 pt-4">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                <span className="text-xs text-gray-600">Completed</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-cyan-400"></div>
-                <span className="text-xs text-gray-600">In Progress</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-pink-500"></div>
-                <span className="text-xs text-gray-600">Rejected</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Sales Stages */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">
-                Sales Stages
-              </h3>
-              <p className="text-sm text-gray-500 mt-1">
-                Overview of all reservation statuses and types
-              </p>
-            </div>
-            <Select defaultValue="last7">
-              <SelectTrigger className="w-[130px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="last7">Last 7 days</SelectItem>
-                <SelectItem value="last30">Last 30 days</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Single Color Bar Chart */}
-          <div className="space-y-4">
-            <div className="flex items-end justify-around h-64 gap-2">
-              <div className="flex-1 flex flex-col items-center">
-                <div className="w-full bg-teal-500 rounded-t-lg h-32"></div>
-                <span className="text-xs text-gray-600 mt-2 text-center">
-                  Sales Purchase
-                </span>
-              </div>
-              <div className="flex-1 flex flex-col items-center">
-                <div className="w-full bg-cyan-400 rounded-t-lg h-48"></div>
-                <span className="text-xs text-gray-600 mt-2 text-center">
-                  Down Payment
-                </span>
-              </div>
-              <div className="flex-1 flex flex-col items-center">
-                <div className="w-full bg-purple-500 rounded-t-lg h-36"></div>
-                <span className="text-xs text-gray-600 mt-2 text-center">
-                  Sales Offer
-                </span>
-              </div>
-              <div className="flex-1 flex flex-col items-center">
-                <div className="w-full bg-orange-400 rounded-t-lg h-56"></div>
-                <span className="text-xs text-gray-600 mt-2 text-center">
-                  Identification
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* In Progress Bookings */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2">
-            <Building2 className="h-5 w-5 text-gray-600" />
-            <h3 className="text-lg font-semibold text-gray-900">
-              In Progress Bookings
-            </h3>
-          </div>
-          <Select defaultValue="stage">
-            <SelectTrigger className="w-[130px]">
-              <SelectValue placeholder="Stage Filter" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="stage">Stage Filter</SelectItem>
-              <SelectItem value="all">All Stages</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Bookings List */}
-        <div className="space-y-3">
-          {bookings.map((booking) => (
-            <div
-              key={booking.id}
-              className="flex items-center justify-between p-4 hover:bg-gray-50 rounded-lg transition-colors"
-            >
-              <div className="flex items-center gap-4">
-                <div className="h-10 w-10 rounded-full bg-pink-500 flex items-center justify-center flex-shrink-0">
-                  <span className="text-white text-sm font-medium">
-                    {booking.avatar}
-                  </span>
-                </div>
-                <div>
-                  <div className="font-medium text-gray-900 text-sm">
-                    {booking.name}
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    {booking.property} - {booking.unit}
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    {booking.lastUpdated}
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-6">
-                <div className="text-right">
-                  <div className="font-semibold text-gray-900">
-                    {booking.amount}
-                  </div>
-                  <div className="text-sm text-orange-600">
-                    {booking.status}
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-100">
-          <Select defaultValue="last7days">
-            <SelectTrigger className="w-[130px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="last7days">Last 7 days</SelectItem>
-              <SelectItem value="last30days">Last 30 days</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button variant="ghost" className="gap-2 text-gray-600">
-            View Bookings
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
+        <Reviews
+          limit={5}
+          reviewsData={reviewsData}
+          isLoading={loading}
+          cardClassName="bg-gray-50 border border-gray-100 rounded-xl"
+        />
       </div>
     </div>
   );

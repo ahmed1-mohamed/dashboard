@@ -7,13 +7,22 @@ import ReviewCard, { SkeletonReview } from "./ReviewCard";
 interface ReviewsProps {
     limit?: number;
     cardClassName?: string;
+    reviewsData?: any[];
+    isLoading?: boolean;
+    isError?: boolean;
 }
 
-export default function Reviews({ limit, cardClassName }: ReviewsProps) {
+export default function Reviews({ limit, cardClassName, reviewsData, isLoading: externalIsLoading, isError: externalIsError }: ReviewsProps) {
     const { expertId } = useToken();
-    const { data, isLoading, isError } = useReview(expertId!);
+    const hasExternalData = reviewsData !== undefined;
+    
+    const { data, isLoading: queryIsLoading, isError: queryIsError } = useReview(expertId, !hasExternalData);
 
-    const reviews = (data?.data?.data ?? []).slice(0, limit);
+    const isLoading = externalIsLoading !== undefined ? externalIsLoading : queryIsLoading;
+    const isError = externalIsError !== undefined ? externalIsError : queryIsError;
+
+    const sourceData = hasExternalData ? reviewsData : (data?.data?.data ?? []);
+    const reviews = sourceData?.slice(0, limit) || [];
 
     return (
         <div className="flex flex-col gap-4">
