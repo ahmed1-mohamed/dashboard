@@ -385,11 +385,7 @@ const editData = async (endpoint: string, data: unknown, token?: string) => {
       apiClientClass.setAuthToken(token, expiresAt);
     }
 
-    const response = endpoint.includes("projects")
-      ? endpoint.includes("features") || endpoint.includes("medias")
-        ? await apiClientClass.put(endpoint, data)
-        : await apiClientClass.post(endpoint, data)
-      : await apiClientClass.put(endpoint, data);
+    const response = await apiClientClass.put(endpoint, data);
     return response.data;
   } catch (error) {
     handleError(error, endpoint);
@@ -1446,7 +1442,7 @@ export const addBadge = (badgeData: BadgeInput, token: string) =>
 export const addProjectMedia = (
   projectMediaData: CreateProjectMediaInput,
   token: string,
-) => postDataImg(`/projects/medias/create`, projectMediaData, token);
+) => postDataImg(`/dashboard/projects/medias`, projectMediaData, token);
 export const addProjectPayment = (
   projectPaymentData: PaymentPlanInput,
   token: string,
@@ -1492,9 +1488,9 @@ export const addDeveloperFeature = (
 // EDIT DATA
 export const editProject = (
   projectId: number,
-  projectData: Record<string, unknown>,
+  projectData: EditProjectInput,
   token: string,
-) => editData(`/projects/${projectId}`, projectData, token);
+) => editData(`/dashboard/projects/${projectId}`, projectData, token);
 
 export const editReferral = (
   referralId: number,
@@ -1617,7 +1613,7 @@ export const editProjectMedia = (
     my_order: boolean;
   },
   token: string,
-) => editData(`/projects/medias/${mediaId}`, projectMediaData, token);
+) => editData(`/dashboard/projects/medias/${mediaId}`, projectMediaData, token);
 
 export const editProjectPayment = (
   paymentId: number,
@@ -1725,7 +1721,7 @@ export const deleteDeveloperFeature = (
 export const deletePropertyMedia = (media_id: number, token: string) =>
   deleteData(`/properties/medias/${media_id}`, token);
 export const deleteProjectMedia = (media_id: number, token: string) =>
-  deleteData(`/projects/medias/${media_id}`, token);
+  deleteData(`/dashboard/projects/medias/${media_id}`, token);
 export const deleteProjectPayment = (
   payment_id: number,
   projectId: number,

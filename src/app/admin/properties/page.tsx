@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Pagination } from "@/components/shared/Pagination";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Download, Settings2, AlertCircle, AlertTriangle } from "lucide-react";
+import { Download, Settings2, AlertCircle, AlertTriangle, Upload } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -23,6 +23,8 @@ import { PropertiesTable } from "@/features/properties/components/PropertiesTabl
 import { PropertiesFilters } from "@/features/properties/components/PropertiesFilters";
 import { Property } from "@/features/properties/types";
 import { EditPropertyModal } from "@/components/modals/edit-property-modal";
+import { propertiesExportToExcel } from "@/lib/exports/export-properties";
+import { BulkImportPropertiesModal } from "@/components/modals/bulk-import-properties-modal";
 
 export default function PropertiesPage() {
   return (
@@ -78,6 +80,7 @@ function PropertiesPageContent() {
   const [propertyToDelete, setPropertyToDelete] = useState<number | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [propertyToEdit, setPropertyToEdit] = useState<number | null>(null);
+  const [importModalOpen, setImportModalOpen] = useState(false);
 
   const totalProperties: number = useMemo(() => {
     return total || (propertiesData || []).length;
@@ -133,26 +136,13 @@ function PropertiesPageContent() {
   }, [propertyToDelete, deletePropertyMutation]);
 
   const handleExport = useCallback(() => {
-    if (properties.length === 0) {
+    if (!propertiesData || propertiesData.length === 0) {
       toast.info("No properties to export");
       return;
     }
-    const headers = ["ID","Unit Number","Property Name","Type","Area","Floor","Price","Project","Status"];
-    const rows = properties.map((p) => [
-      p.id, `"${p.unitNumber}"`, `"${p.property_name}"`,
-      `"${p.type}"`, `"${p.area}"`, p.floor,
-      `"${p.price}"`, `"${p.project_name}"`, p.status,
-    ]);
-    const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `properties_${new Date().toISOString().split("T")[0]}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success("Properties exported!");
-  }, [properties]);
+    propertiesExportToExcel(propertiesData);
+    toast.success("Properties exported successfully!");
+  }, [propertiesData]);
 
   return (
     <div className="p-4 px-3 space-y-4 max-w-full overflow-hidden">
@@ -196,6 +186,13 @@ function PropertiesPageContent() {
             <div className="flex items-center gap-2">
               <Button variant="outline" className="gap-2 border-gray-200" onClick={handleExport}>
                 <Download className="h-4 w-4" /> Export
+              </Button>
+              <Button
+                variant="outline"
+                className="gap-2 border-gray-200"
+                onClick={() => setImportModalOpen(true)}
+              >
+                <Upload className="h-4 w-4" /> Import
               </Button>
               <Button variant="outline" className="gap-2 border-gray-200">
                 <Settings2 className="h-4 w-4" /> Table settings
@@ -247,6 +244,11 @@ function PropertiesPageContent() {
         isOpen={editModalOpen}
         onClose={() => { setEditModalOpen(false); setPropertyToEdit(null); }}
         propertyId={propertyToEdit || 0}
+      />
+      <BulkImportPropertiesModal
+        isOpen={importModalOpen}
+        onClose={() => setImportModalOpen(false)}
+        propertiesData={propertiesData || []}
       />
     </div>
   );

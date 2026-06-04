@@ -7,12 +7,11 @@ import { toast } from "react-hot-toast";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { ChevronLeft, ChevronRight, Edit } from "lucide-react";
-import { editProject } from "@/data/api-client";
+import { AdminProjectsService } from "@/features/projects/services/AdminProjectsService";
 import { ProjectData } from "../types";
 import type { AxiosError } from "axios";
 
-// If you want to use EditProjectModal, uncomment its import and usage
-// import { EditProjectModal } from "@/components/modals/edit-project-modal";
+import { EditProjectModal } from "@/components/modals/edit-project-modal";
 
 interface ProjectHeaderProps {
   projectId: number;
@@ -28,7 +27,54 @@ export function ProjectHeader({ projectId, token, data }: ProjectHeaderProps) {
   const isActive = data.is_active === 1 || data.is_active === "1" as any;
 
   const statusMutation = useMutation({
-    mutationFn: (updatedData: any) => editProject(projectId, updatedData, token),
+    mutationFn: (newIsActive: boolean) => {
+      let mappedProjectType = data.project_type ?? "";
+      const lowerType = mappedProjectType.toLowerCase();
+      if (lowerType === "mixed use" || lowerType === "mixed-use") mappedProjectType = "mixed-use";
+      else if (lowerType === "residential") mappedProjectType = "residential";
+      else if (lowerType === "commercial") mappedProjectType = "commercial";
+
+      const cityId = String(data.location?.city?.id || (data.location as any)?.city_id || "");
+      const areaId = String(data.location?.area?.area_id || (data.location as any)?.area_id || "");
+
+      const payload: Record<string, unknown> = {
+        project_name: data.project_name,
+        status: data.status,
+        project_type: mappedProjectType,
+        total_units: data.total_units,
+        available_units: data.available_units,
+        launch_date: data.launch_date,
+        completion_date: data.completion_date,
+        currency: data.currency,
+        project_size: data.project_size,
+        description: data.description,
+        is_active: newIsActive ? 1 : 0,
+        is_visible: newIsActive ? 1 : 0,
+        developer_id: data.developer?.developer_id || (data as any).developer_id,
+        price_min: data.price_range?.split("-")[0]?.trim() || "0",
+        price_max: data.price_range?.split("-")[1]?.trim() || "0",
+        price_sq_min: data.price_range_SQ?.split("-")[0]?.trim() || "0",
+        price_sq_max: data.price_range_SQ?.split("-")[1]?.trim() || "0",
+      };
+
+      // Only include location if we have valid city_id and area_id
+      if (cityId && areaId) {
+        payload.location = {
+          latitude: String(data.location?.latitude || "0"),
+          longitude: String(data.location?.longitude || "0"),
+          landmark: String(data.location?.landmark || "-"),
+          city_id: cityId,
+          area_id: areaId,
+          north_side: String(data.location?.north_side || "-"),
+          south_side: String(data.location?.south_side || "-"),
+          east_side: String(data.location?.east_side || "-"),
+          west_side: String(data.location?.west_side || "-"),
+          google_map_link: String(data.location?.google_map_link || "-"),
+        };
+      }
+
+      return AdminProjectsService.updateProject(projectId, payload);
+    },
     onSuccess: () => {
       toast.success("Project activation updated successfully!");
       queryClient.invalidateQueries({
@@ -62,94 +108,67 @@ export function ProjectHeader({ projectId, token, data }: ProjectHeaderProps) {
 
   const handleStatusToggle = () => {
     if (!data) return;
-
-    const newIsActive = isActive ? "0" : "1";
-
-    const payload = {
-      available_units: data.available_units,
-      completion_date: data.completion_date,
-      description: data.description,
-      developer_id: data.developer?.developer_id,
-      is_active: newIsActive,
-      launch_date: data.launch_date,
-      location: {
-        area_id: data.location?.area?.area_name,
-        city_id: data.location?.city?.name,
-        east_side: data.location?.east_side,
-        google_map_link: data.location?.google_map_link,
-        landmark: data.location?.landmark,
-        latitude: data.location?.latitude,
-        longitude: data.location?.longitude,
-        north_side: data.location?.north_side,
-        south_side: data.location?.south_side,
-        west_side: data.location?.west_side,
-      },
-      price_range: data.price_range,
-      price_range_SQ: data.price_range_SQ,
-      project_name: data.project_name,
-      project_size: data.project_size,
-      project_type: data.project_type,
-      status: data.status,
-      total_units: data.total_units,
-    };
-
-    statusMutation.mutate(payload);
+    statusMutation.mutate(!isActive);
   };
 
   return (
     <>
       {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
-        <span>Home</span>
-        <ChevronRight className="h-4 w-4" />
-        <span>Projects</span>
-        <ChevronRight className="h-4 w-4" />
-        <span className="text-gray-900">Project Details</span>
-      </div>
+      <nav className="flex items-center text-sm font-medium text-slate-500 mb-6 space-x-2">
+        <button
+          onClick={() => router.push("/admin/projects")}
+          className="hover:text-teal-600 transition-colors"
+        >
+          Projects
+        </button>
+        <ChevronRight className="h-4 w-4 text-slate-400" />
+        <span className="text-slate-800">{data.project_name || "Details"}</span>
+      </nav>
 
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center gap-4">
           <Button
-            variant="ghost"
+            variant="outline"
             size="icon"
-            onClick={() => router.push("/admin/projects")}
+            onClick={() => router.back()}
+            className="rounded-full border-slate-200 hover:bg-slate-100 hover:text-slate-900 transition-colors shadow-sm"
           >
             <ChevronLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-2xl font-bold text-gray-900">
-            {data.project_name}
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+            {data.project_name || "Project Details"}
           </h1>
-          <div className="flex items-center gap-2">
+        </div>
+
+        <div className="flex items-center gap-4 bg-white px-4 py-2 rounded-full border border-slate-200 shadow-sm">
+          <div className="flex items-center gap-2 pr-4 border-r border-slate-200">
+            <span className={`text-sm font-semibold ${isActive ? "text-teal-600" : "text-slate-500"}`}>
+              {isActive ? "Active" : "Inactive"}
+            </span>
             <Switch
               checked={isActive}
               onCheckedChange={handleStatusToggle}
-              disabled={statusMutation.isPending}
+              className="data-[state=checked]:bg-teal-600"
             />
-            <span className="text-sm text-gray-600">
-              {statusMutation.isPending ? "Updating..." : "Active"}
-            </span>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
+
           <Button
-            className="bg-purple-600 hover:bg-purple-700 text-white gap-2"
             onClick={() => setIsEditModalOpen(true)}
+            variant="ghost"
+            className="flex items-center gap-2 text-slate-700 hover:text-teal-700 hover:bg-teal-50 transition-colors rounded-full px-4"
           >
             <Edit className="h-4 w-4" />
-            Edit
+            Edit Project
           </Button>
         </div>
       </div>
 
-      {/* 
-        Uncomment when EditProjectModal is available and imported
-        <EditProjectModal
-          isOpen={isEditModalOpen}
-          onClose={() => setIsEditModalOpen(false)}
-          projectId={projectId}
-        /> 
-      */}
+      <EditProjectModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        projectId={projectId}
+      />
     </>
   );
 }

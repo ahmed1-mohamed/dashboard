@@ -31,7 +31,7 @@ export function DeleteProjectMediaModal({
   const token = session?.user.accessToken;
 
   const mutation = useMutation({
-    mutationFn: () => deleteProjectMedia(media!.media_id, token!),
+    mutationFn: () => deleteProjectMedia((media! as any).id || media!.media_id, token!),
     onSuccess: () => {
       toast.success("Media deleted successfully!");
       queryClient.invalidateQueries({

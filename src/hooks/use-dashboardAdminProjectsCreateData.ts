@@ -25,7 +25,7 @@ export default function useDashboardAdminProjectsCreateData(
       return response.data;
     },
     retry: false,
-    enabled: !!token && !!countryId,
+    enabled: !!token,
   });
 
   return {

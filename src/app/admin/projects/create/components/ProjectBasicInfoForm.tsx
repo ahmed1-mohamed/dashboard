@@ -57,11 +57,15 @@ export function ProjectBasicInfoForm({
             >
               <SelectTrigger className="mt-1"><SelectValue placeholder="Select developer" /></SelectTrigger>
               <SelectContent>
-                {developersData?.map((developer: any) => (
-                  <SelectItem key={developer.developer_id} value={String(developer.developer_id)}>
-                    {developer.name}
-                  </SelectItem>
-                ))}
+                {developersData?.map((developer: any) => {
+                  const id = developer.developer_id || developer.id;
+                  const name = developer.developer_name || developer.name;
+                  return (
+                    <SelectItem key={id} value={String(id)}>
+                      {name}
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
             {errors.developer_id && <p className="text-sm text-red-500 mt-1">{errors.developer_id.message}</p>}

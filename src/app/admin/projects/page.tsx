@@ -8,7 +8,7 @@ import { ProjectsLoading } from "@/features/projects/components/ProjectsLoading"
 import { ProjectsError } from "@/features/projects/components/ProjectsError";
 import { DeleteProjectDialog } from "@/features/projects/components/DeleteProjectDialog";
 import { Button } from "@/components/ui/button";
-import { Download, Settings2, Plus } from "lucide-react";
+import { Download, Settings2, Plus, UploadCloud } from "lucide-react";
 import { toast } from "sonner";
 
 import { useServerPagination } from "@/hooks/useServerPagination";
@@ -17,6 +17,8 @@ import { ProjectsTable } from "@/features/projects/components/ProjectsTable";
 import { ProjectsFilters } from "@/features/projects/components/ProjectsFilters";
 import { Project } from "@/features/projects/types";
 import { EditProjectModal } from "@/components/modals/edit-project-modal";
+import { BulkImportProjectsModal } from "@/components/modals/bulk-import-projects-modal";
+import { projectsExportToExcel } from "@/lib/exports/export-projects";
 
 export default function ProjectsPage() {
   return (
@@ -72,6 +74,7 @@ function ProjectsPageContent() {
   const [projectToDelete, setProjectToDelete] = useState<number | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [projectToEdit, setProjectToEdit] = useState<number | undefined>(undefined);
+  const [importModalOpen, setImportModalOpen] = useState(false);
 
   const itemsArray = useMemo(() => {
     let arr: unknown[] = [];
@@ -145,28 +148,9 @@ function ProjectsPageContent() {
 
   const totalPages = Math.max(1, Math.ceil(totalProjects / perPage));
 
-  const handleImport = useCallback((id: number) => {
-    const p = projects.find(proj => proj.id === id);
-    if (!p) {
-      toast.error("Project not found");
-      return;
-    }
-    const headers = ["ID", "Name", "Developer", "Status", "Type", "Total Units", "Available", "Launch Date", "Completion Date"];
-    const row = [
-      p.id, `"${p.name}"`, `"${p.developer_name}"`,
-      p.status, p.projectType, p.total_units,
-      p.country_dimension_unit, p.launch_date, p.completion_date,
-    ];
-    const csv = [headers.join(","), row.join(",")].join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `project_${id}_${new Date().toISOString().split("T")[0]}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success("Project exported successfully!");
-  }, [projects]);
+  const handleImport = useCallback((id?: number) => {
+    setImportModalOpen(true);
+  }, []);
 
   const handleSelectAll = useCallback(
     (checked: boolean) => {
@@ -211,26 +195,13 @@ function ProjectsPageContent() {
   }, []);
 
   const handleExport = useCallback(() => {
-    if (filteredProjects.length === 0) {
+    if (itemsArray.length === 0) {
       toast.info("No projects to export");
       return;
     }
-    const headers = ["ID", "Name", "Developer", "Status", "Type", "Total Units", "Available", "Launch Date", "Completion Date"];
-    const rows = filteredProjects.map((p) => [
-      p.id, `"${p.name}"`, `"${p.developer_name}"`,
-      p.status, p.projectType, p.total_units,
-      p.available_units, p.launch_date, p.completion_date,
-    ]);
-    const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `projects_${new Date().toISOString().split("T")[0]}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success("Projects exported!");
-  }, [filteredProjects]);
+    projectsExportToExcel(itemsArray);
+    toast.success("Projects exported successfully!");
+  }, [itemsArray]);
 
   const handleConfirmDelete = useCallback(() => {
     if (!projectToDelete) return;
@@ -272,6 +243,9 @@ function ProjectsPageContent() {
               onProjectTypeChange={(val) => setFilter("projectType", val)}
             />
             <div className="flex items-center gap-2">
+              <Button variant="outline" className="gap-2 border-gray-200" onClick={() => handleImport()}>
+                <UploadCloud className="h-4 w-4" /> Import
+              </Button>
               <Button variant="outline" className="gap-2 border-gray-200" onClick={handleExport}>
                 <Download className="h-4 w-4" /> Export
               </Button>
@@ -315,6 +289,12 @@ function ProjectsPageContent() {
         isOpen={editModalOpen}
         onClose={() => { setEditModalOpen(false); setProjectToEdit(undefined); }}
         projectId={projectToEdit}
+      />
+
+      <BulkImportProjectsModal
+        isOpen={importModalOpen}
+        onClose={() => setImportModalOpen(false)}
+        projects={filteredProjects}
       />
     </div>
   );

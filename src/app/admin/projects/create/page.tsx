@@ -51,12 +51,20 @@ export default function CreateProjectPage() {
   // Fetch developers
   const { developersData } = useDashboardAdminProjectsCreateData(countryId);
 
+  const developersList = Array.isArray(developersData.data)
+    ? developersData.data
+    : Array.isArray((developersData.data as any)?.data)
+    ? (developersData.data as any).data
+    : Array.isArray((developersData.data as any)?.developers)
+    ? (developersData.data as any).developers
+    : [];
+
   // Auto-set developer_id based on roleId
   useEffect(() => {
-    if (roleId === 3 && developersData.data?.[0]?.developer_id) {
-      setValue("developer_id", developersData.data[0].developer_id, { shouldValidate: true });
+    if (roleId === 3 && developersList?.[0]?.developer_id) {
+      setValue("developer_id", developersList[0].developer_id, { shouldValidate: true });
     }
-  }, [roleId, developersData.data, setValue]);
+  }, [roleId, developersList, setValue]);
 
   // Real-time date validation
   useEffect(() => {
@@ -128,7 +136,7 @@ export default function CreateProjectPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <ProjectBasicInfoForm
               form={form}
-              developersData={developersData.data || []}
+              developersData={developersList}
               country={country}
               setCountry={setCountry}
             />

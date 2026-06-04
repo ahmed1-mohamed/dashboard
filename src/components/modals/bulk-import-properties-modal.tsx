@@ -6,68 +6,102 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Download, UploadCloud, X } from "lucide-react";
 import { toast } from "sonner";
-import { Project } from "@/features/projects/types";
 
-interface BulkImportProjectsModalProps {
+interface BulkImportPropertiesModalProps {
   isOpen: boolean;
   onClose: () => void;
-  projects?: Project[];
+  propertiesData?: any[];
+  onSubmit?: (file: File) => void;
 }
 
-export function BulkImportProjectsModal({
+export function BulkImportPropertiesModal({
   isOpen,
   onClose,
-  projects = [],
-}: BulkImportProjectsModalProps) {
+  propertiesData = [],
+  onSubmit,
+}: BulkImportPropertiesModalProps) {
   const [replaceExisting, setReplaceExisting] = useState(false);
   const [removeNonExisting, setRemoveNonExisting] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const HEADERS = [
+    "property_name",
+    "property_no",
+    "property_type_id",
+    "property_subtype_id",
+    "project_id",
+    "location_id",
+    "building_id",
+    "plot_size",
+    "bua_size",
+    "maid_room",
+    "status",
+    "furnish_status",
+    "finishing_status",
+    "price",
+    "size",
+    "bedrooms",
+    "bathrooms",
+    "parking_spaces",
+    "availability_status",
+    "construction_status",
+    "description",
+    "reference_listed",
+    "ownership_type",
+    "broker_license",
+    "agent_license",
+    "zone_name",
+    "dld_permit_number",
+    "dld_barcode",
+    "created_at",
+    "updated_at",
+    "deleted_at",
+    "views_count",
+    "is_active",
+    "plan_type",
+    "slug",
+  ];
+
   const handleDownloadEmpty = () => {
-    const headers = [
-      "Name",
-      "Developer",
-      "Status",
-      "Type",
-      "Total Units",
-      "Launch Date",
-      "Completion Date",
-    ];
-    const csv = headers.join("\n");
-    downloadFile(csv, "projects_empty_template.csv");
+    const csv = HEADERS.join(",") + "\n";
+    downloadFile(csv, "properties_empty_template.csv");
   };
 
   const handleDownloadData = () => {
-    const headers = [
-      "Name",
-      "Developer",
-      "Status",
-      "Type",
-      "Total Units",
-      "Launch Date",
-      "Completion Date",
-    ];
-    let csv = headers.join(",") + "\n";
+    let csv = HEADERS.join(",") + "\n";
 
-    if (projects && projects.length > 0) {
-      const rows = projects.map((p) => [
-        `"${p.name || ""}"`,
-        `"${p.developer_name || ""}"`,
-        p.status || "",
-        p.projectType || "",
-        p.total_units || 0,
-        p.launch_date || "",
-        p.completion_date || "",
-      ]);
-      csv += rows.map((r) => r.join(",")).join("\n");
+    if (propertiesData && propertiesData.length > 0) {
+      const rows = propertiesData.map((p) => {
+        return HEADERS.map((header) => {
+          let val = p[header];
+          if (val === null || val === undefined) return '""';
+          if (typeof val === "string") {
+            // Escape double quotes
+            val = val.replace(/"/g, '""');
+            // Wrap in quotes
+            return `"${val}"`;
+          }
+          if (typeof val === "boolean") {
+            return val ? 1 : 0;
+          }
+          return val;
+        }).join(",");
+      });
+      csv += rows.join("\n");
     } else {
-      // Sample data
-      csv += `"Sample Project","Emaar","Under Construction","Apartment",100,"2024-01-01","2026-12-31"`;
+      // Add a dummy sample row if there is no data
+      const sample = HEADERS.map((h) => {
+        if (h === "property_name") return `"Sample Property"`;
+        if (h === "property_no") return `"101"`;
+        if (h === "price") return `1000000`;
+        return `""`;
+      });
+      csv += sample.join(",") + "\n";
     }
 
-    downloadFile(csv, "projects_template_with_data.csv");
+    downloadFile(csv, "properties_template_with_data.csv");
   };
 
   const downloadFile = (content: string, filename: string) => {
@@ -122,13 +156,18 @@ export function BulkImportProjectsModal({
     }
 
     setIsUploading(true);
-    // Simulate upload delay
-    setTimeout(() => {
-      setIsUploading(false);
-      toast.success("Projects imported successfully!");
-      setSelectedFile(null);
-      onClose();
-    }, 1500);
+    
+    if (onSubmit) {
+      await onSubmit(selectedFile);
+    } else {
+      // Simulate upload delay if no submit handler is passed
+      setTimeout(() => {
+        setIsUploading(false);
+        toast.success("Properties imported successfully!");
+        setSelectedFile(null);
+        onClose();
+      }, 1500);
+    }
   };
 
   const resetState = () => {
@@ -147,7 +186,7 @@ export function BulkImportProjectsModal({
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title="Bulk Import Projects"
+      title="Bulk Import Properties"
       size="xl"
       showCloseButton={true}
       footer={
@@ -169,7 +208,7 @@ export function BulkImportProjectsModal({
         {/* Info Alert */}
         <div className="bg-[#f2f7ff] border border-[#d6e5ff] rounded-lg p-4">
           <p className="text-[#3b66c4] text-sm">
-            Upload an Excel or CSV file containing project data to import them in
+            Upload an Excel or CSV file containing property data to import them in
             bulk. Make sure your file follows the required template format.
           </p>
         </div>

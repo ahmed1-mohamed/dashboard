@@ -34,6 +34,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { RoleCard } from "./components/role-card";
 
 export interface Role {
   role_id: number;
@@ -73,19 +74,44 @@ export default function RolesPage() {
   }
 
   // Map API data to component interface
-  const roles: Role[] = rolesArray.map((role: any) => ({
-    role_id: role.role_id,
-    role_name: role.role_name,
-    role_type: role.role_type,
-    description: role.description
-      ? Array.isArray(role.description)
-        ? role.description
-        : [role.description]
-      : ["No specific permissions"],
-    users_count: role.users_count || 0,
-    is_active: role.is_active || false,
-    permissions: role.permissions || null,
-  }));
+  const roles: Role[] = rolesArray.map((role: any) => {
+    let parsedPerms = role.permissions;
+    if (typeof parsedPerms === "string") {
+      try {
+        parsedPerms = JSON.parse(parsedPerms);
+      } catch (e) {
+        parsedPerms = null;
+      }
+    }
+
+    // Coerce all values to strict booleans (handle "0", "1", "true", "false")
+    if (parsedPerms && typeof parsedPerms === "object" && !Array.isArray(parsedPerms)) {
+      Object.keys(parsedPerms).forEach((section) => {
+        if (typeof parsedPerms[section] === "object") {
+          Object.keys(parsedPerms[section]).forEach((action) => {
+            const val = parsedPerms[section][action];
+            parsedPerms[section][action] = val === true || val === "1" || val === 1 || val === "true";
+          });
+        }
+      });
+    } else {
+      parsedPerms = null;
+    }
+
+    return {
+      role_id: role.role_id,
+      role_name: role.role_name,
+      role_type: role.role_type,
+      description: role.description
+        ? Array.isArray(role.description)
+          ? role.description
+          : [role.description]
+        : ["No specific permissions"],
+      users_count: role.users_count || 0,
+      is_active: role.is_active || false,
+      permissions: parsedPerms,
+    };
+  });
 
   const handleViewRole = (role: Role) => {
     setSelectedRole(role);
@@ -138,23 +164,6 @@ export default function RolesPage() {
     );
   }
 
-  const getPermissionBadges = (role: Role) => {
-    if (role.role_type === "admin" || role.role_name.toLowerCase().includes("admin")) {
-      return ["All"];
-    }
-    if (role.permissions) {
-      const actions = new Set<string>();
-      Object.values(role.permissions).forEach(section => {
-        if (section.view) actions.add("View");
-        if (section.create) actions.add("add");
-        if (section.edit) actions.add("edit");
-        if (section.delete) actions.add("delete");
-      });
-      if (actions.size > 0) return Array.from(actions);
-    }
-    return ["View", "add", "edit"]; // Fallback if no permissions object
-  };
-
   return (
     <div className="p-6 max-w-full overflow-hidden bg-gray-50/30 min-h-screen">
       <div className="flex items-center justify-between mb-6">
@@ -180,73 +189,16 @@ export default function RolesPage() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {roles.map((role) => (
-          <div
+          <RoleCard
             key={role.role_id}
-            className="bg-white rounded-xl border border-[#E5E7EB] p-5 hover:shadow-sm transition-shadow flex flex-col justify-between"
-          >
-            <div>
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex flex-col gap-1">
-                  <h3 className="font-medium text-[#15042B] text-lg">
-                    {role.role_name}
-                  </h3>
-                  <p className="text-[13px] text-[#4A5565]">
-                    {role.users_count} users
-                  </p>
-                </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button
-                      type="button"
-                      className="text-gray-400 hover:text-gray-600 p-1 -mr-2"
-                      aria-label="More options"
-                      title="More options"
-                    >
-                      <MoreHorizontal className="h-5 w-5" />
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-32">
-                    <DropdownMenuItem
-                      onClick={() => handleViewRole(role)}
-                      className="cursor-pointer"
-                    >
-                      <Eye className="mr-2 h-4 w-4" />
-                      View
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => handleEditRole(role)}
-                      className="cursor-pointer"
-                    >
-                      <Edit2 className="mr-2 h-4 w-4" />
-                      Edit
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => {
-                        setSelectedRole(role);
-                        setDeleteDialogOpen(true);
-                      }}
-                      className="cursor-pointer text-red-600 focus:text-red-600"
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-
-              <div className="flex flex-wrap gap-2 mt-4">
-                {getPermissionBadges(role).map((badge, index) => (
-                  <Badge
-                    key={index}
-                    variant="secondary"
-                    className="bg-[#F3F4F6] text-[#111827] border-transparent text-xs px-2.5 py-0.5 font-medium hover:bg-[#E5E7EB]"
-                  >
-                    {badge}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          </div>
+            role={role}
+            onView={handleViewRole}
+            onEdit={handleEditRole}
+            onDelete={(r) => {
+              setSelectedRole(r);
+              setDeleteDialogOpen(true);
+            }}
+          />
         ))}
       </div>
 
@@ -307,363 +259,43 @@ export default function RolesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {selectedRole && (
+        <ViewRoleModal
+          roleId={selectedRole.role_id!}
+          roleName={selectedRole.role_name}
+          roleType={selectedRole.role_type}
+          description={selectedRole.description || []}
+          usersCount={selectedRole.users_count || 0}
+          isActive={selectedRole.is_active}
+          permissions={selectedRole.permissions}
+          isOpen={isViewModalOpen}
+          onClose={() => setIsViewModalOpen(false)}
+          onEdit={() => {
+            setIsViewModalOpen(false);
+            setIsEditModalOpen(true);
+          }}
+          onDelete={() => {
+            setIsViewModalOpen(false);
+            setDeleteDialogOpen(true);
+          }}
+        />
+      )}
+
+      {selectedRole && (
+        <EditRoleModal
+          roleId={selectedRole.role_id!}
+          roleName={selectedRole.role_name}
+          roleType={selectedRole.role_type}
+          description={selectedRole.description || []}
+          permissions={selectedRole.permissions}
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          onSuccess={() => {
+            setIsEditModalOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 }
-
-// export default function RolesPage() {
-//   const { data: session } = useSession();
-//   const [roles, setRoles] = useState<Role[]>([]);
-//   const [loading, setLoading] = useState(true);
-//   const [error, setError] = useState<string | null>(null);
-//   const [isAddRoleModalOpen, setIsAddRoleModalOpen] = useState(false);
-
-//   // View/Edit modal state
-//   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
-//   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
-//   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-//   const [isDeleting, setIsDeleting] = useState(false);
-
-//   // Delete dialog state
-//   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-
-//   useEffect(() => {
-//     async function loadRoles() {
-//       if (!session?.user?.accessToken) {
-//         setLoading(false);
-//         return;
-//       }
-
-//       try {
-//         setLoading(true);
-//         setError(null);
-//         const data = await fetchRoles(session.user.accessToken);
-
-//         // Map API data to component interface
-//         const mappedRoles: Role[] = data.map((role: RolesDataType) => ({
-//           role_id: role.role_id,
-//           role_name: role.role_name,
-//           role_type: role.role_type,
-//           users_count: role.users_count,
-//           is_active: role.is_active,
-
-//           // ✅ Normalize description
-//           description: role.description
-//             ? [role.description] // turn string → array
-//             : ["No specific permissions"],
-//         }));
-
-//         setRoles(mappedRoles);
-//       } catch (err) {
-//         console.error("Error loading roles:", err);
-//         setError(err instanceof Error ? err.message : "Failed to load roles");
-//       } finally {
-//         setLoading(false);
-//       }
-//     }
-
-//     loadRoles();
-//   }, [session]);
-
-//   const handleViewRole = (role: Role) => {
-//     setSelectedRole(role);
-//     setIsViewModalOpen(true);
-//   };
-
-//   const handleEditRole = (role: Role) => {
-//     setSelectedRole(role);
-//     setIsEditModalOpen(true);
-//   };
-
-//   const handleDeleteRole = async () => {
-//     if (!selectedRole || !session?.user?.accessToken) return;
-
-//     if (!window.confirm("Are you sure you want to delete this role?")) return;
-
-//     setIsDeleting(true);
-//     try {
-//       await deleteRoles(selectedRole.role_id, session.user.accessToken);
-//       toast.success("Role deleted successfully!");
-//       setIsViewModalOpen(false);
-//       // Reload roles
-//       const data = await fetchRoles(session.user.accessToken);
-//       const mappedRoles: Role[] = data.map((role: RolesDataType) => ({
-//         role_id: role.role_id,
-//         role_name: role.role_name,
-//         role_type: role.role_type,
-//         users_count: role.users_count,
-//         is_active: role.is_active,
-//         description: role.description
-//           ? [role.description]
-//           : ["No specific permissions"],
-//       }));
-//       setRoles(mappedRoles);
-//     } catch (err) {
-//       toast.error("Failed to delete role");
-//     } finally {
-//       setIsDeleting(false);
-//     }
-//   };
-
-//   if (loading) {
-//     return (
-//       <div className="flex min-h-[400px] items-center justify-center">
-//         <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
-//       </div>
-//     );
-//   }
-
-//   if (error) {
-//     return (
-//       <div className="flex min-h-[400px] items-center justify-center flex-col gap-4">
-//         <AlertCircle className="h-12 w-12 text-red-500" />
-//         <p className="text-lg font-medium text-gray-900">Error loading roles</p>
-//         <p className="text-gray-500">{error}</p>
-//         <Button variant="outline" onClick={() => window.location.reload()}>
-//           Try Again
-//         </Button>
-//       </div>
-//     );
-//   }
-
-//   return (
-//     <div className="p-4 px-3 space-y-4 max-w-full overflow-hidden">
-//       {/* Header */}
-//       <div className="flex items-center justify-between">
-//         <div className="flex items-center gap-2">
-//           <h1 className="text-2xl font-bold text-gray-900">Roles</h1>
-//           <Badge
-//             variant="outline"
-//             className="bg-purple-100 text-purple-700 border-purple-200 rounded-full px-2"
-//           >
-//             {roles.length}
-//           </Badge>
-//         </div>
-//         <div className="flex items-center gap-2">
-//           <Button
-//             className="bg-teal-600 hover:bg-teal-700 text-white gap-2"
-//             onClick={() => setIsAddRoleModalOpen(true)}
-//           >
-//             <Plus className="h-4 w-4" />
-//             Add New Role
-//           </Button>
-//         </div>
-//       </div>
-
-//       {/* Roles Grid */}
-//       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-//         {roles.map((role) => (
-//           <div
-//             key={role.role_id}
-//             className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-sm transition-shadow"
-//           >
-//             {/* Role Header */}
-//             <div className="flex items-start justify-between mb-3">
-//               <div>
-//                 <h3 className="font-semibold text-gray-900 text-base">
-//                   {role.role_name}
-//                 </h3>
-//                 <p className="text-xs text-gray-500 mt-0.5">
-//                   {role.users_count} users
-//                 </p>
-//               </div>
-//               <DropdownMenu>
-//                 <DropdownMenuTrigger asChild>
-//                   <button className="text-gray-400 hover:text-gray-600 p-1">
-//                     <MoreHorizontal className="h-5 w-5" />
-//                   </button>
-//                 </DropdownMenuTrigger>
-//                 <DropdownMenuContent align="end" className="w-32">
-//                   <DropdownMenuItem
-//                     onClick={() => handleViewRole(role)}
-//                     className="cursor-pointer"
-//                   >
-//                     <Eye className="mr-2 h-4 w-4" />
-//                     View
-//                   </DropdownMenuItem>
-//                   <DropdownMenuItem
-//                     onClick={() => handleEditRole(role)}
-//                     className="cursor-pointer"
-//                   >
-//                     <Edit2 className="mr-2 h-4 w-4" />
-//                     Edit
-//                   </DropdownMenuItem>
-//                   <DropdownMenuItem
-//                     onClick={() => {
-//                       setSelectedRole(role);
-//                       setDeleteDialogOpen(true);
-//                     }}
-//                     className="cursor-pointer text-red-600 focus:text-red-600"
-//                   >
-//                     <Trash2 className="mr-2 h-4 w-4" />
-//                     Delete
-//                   </DropdownMenuItem>
-//                 </DropdownMenuContent>
-//               </DropdownMenu>
-//             </div>
-
-//             {/* Permissions */}
-//             <div className="flex flex-wrap gap-1.5">
-//               {role.description?.slice(0, 5).map((description, index) => (
-//                 <Badge
-//                   key={index}
-//                   variant="outline"
-//                   className="bg-gray-100 text-gray-700 border-gray-200 text-xs px-2 py-0.5 font-normal"
-//                 >
-//                   {description}
-//                 </Badge>
-//               ))}
-//               {role.description.length > 5 && (
-//                 <Badge
-//                   variant="outline"
-//                   className="bg-gray-100 text-gray-700 border-gray-200 text-xs px-2 py-0.5 font-normal"
-//                 >
-//                   +{role.description.length - 5}
-//                 </Badge>
-//               )}
-//             </div>
-//           </div>
-//         ))}
-//       </div>
-
-//       {/* Add Role Modal */}
-//       <AddRoleModal
-//         isOpen={isAddRoleModalOpen}
-//         onClose={() => setIsAddRoleModalOpen(false)}
-//       />
-
-//       {/* View Role Modal */}
-//       {selectedRole && (
-//         <ViewRoleModal
-//           roleId={selectedRole.role_id}
-//           roleName={selectedRole.role_name}
-//           roleType={selectedRole.role_type}
-//           description={selectedRole.description}
-//           usersCount={selectedRole.users_count}
-//           isActive={selectedRole.is_active}
-//           isOpen={isViewModalOpen}
-//           onClose={() => setIsViewModalOpen(false)}
-//           onEdit={() => {
-//             setIsViewModalOpen(false);
-//             setIsEditModalOpen(true);
-//           }}
-//           onDelete={handleDeleteRole}
-//         />
-//       )}
-
-//       {/* Edit Role Modal */}
-//       {selectedRole && (
-//         <EditRoleModal
-//           roleId={selectedRole.role_id}
-//           roleName={selectedRole.role_name}
-//           roleType={selectedRole.role_type}
-//           description={selectedRole.description[0] || ""}
-//           isOpen={isEditModalOpen}
-//           onClose={() => setIsEditModalOpen(false)}
-//           onSuccess={async () => {
-//             if (session?.user?.accessToken) {
-//               const data = await fetchRoles(session.user.accessToken);
-//               const mappedRoles: Role[] = data.map((role: RolesDataType) => ({
-//                 role_id: role.role_id,
-//                 role_name: role.role_name,
-//                 role_type: role.role_type,
-//                 users_count: role.users_count,
-//                 is_active: role.is_active,
-//                 description: role.description
-//                   ? [role.description]
-//                   : ["No specific permissions"],
-//               }));
-//               setRoles(mappedRoles);
-//             }
-//           }}
-//         />
-//       )}
-
-//       {/* Delete Confirmation Dialog */}
-//       <Dialog
-//         open={deleteDialogOpen}
-//         onOpenChange={(open) => {
-//           setDeleteDialogOpen(open);
-//           if (!open) setSelectedRole(null);
-//         }}
-//       >
-//         <DialogContent className="sm:max-w-md">
-//           <DialogHeader>
-//             <DialogTitle className="flex items-center gap-2 text-red-600">
-//               <AlertTriangle className="h-5 w-5" />
-//               Delete Role
-//             </DialogTitle>
-//             <DialogDescription>
-//               Are you sure you want to delete this role? This action cannot be
-//               undone.
-//             </DialogDescription>
-//           </DialogHeader>
-//           {selectedRole && (
-//             <div className="py-4">
-//               <div className="bg-gray-50 rounded-lg p-3 space-y-2">
-//                 <p className="font-medium text-gray-900">
-//                   {selectedRole.role_name}
-//                 </p>
-//                 <p className="text-sm text-gray-500">
-//                   {selectedRole.role_type} • {selectedRole.users_count} users
-//                 </p>
-//               </div>
-//             </div>
-//           )}
-//           <DialogFooter className="sm:justify-end">
-//             <Button
-//               variant="outline"
-//               onClick={() => {
-//                 setDeleteDialogOpen(false);
-//                 setSelectedRole(null);
-//               }}
-//               disabled={isDeleting}
-//             >
-//               Cancel
-//             </Button>
-//             <Button
-//               variant="destructive"
-//               onClick={async () => {
-//                 if (!selectedRole || !session?.user?.accessToken) return;
-
-//                 setIsDeleting(true);
-//                 try {
-//                   await deleteRoles(
-//                     selectedRole.role_id,
-//                     session.user.accessToken,
-//                   );
-//                   toast.success("Role deleted successfully!");
-//                   setDeleteDialogOpen(false);
-//                   setSelectedRole(null);
-//                   // Reload roles
-//                   const data = await fetchRoles(session.user.accessToken);
-//                   const mappedRoles: Role[] = data.map(
-//                     (role: RolesDataType) => ({
-//                       role_id: role.role_id,
-//                       role_name: role.role_name,
-//                       role_type: role.role_type,
-//                       users_count: role.users_count,
-//                       is_active: role.is_active,
-//                       description: role.description
-//                         ? [role.description]
-//                         : ["No specific permissions"],
-//                     }),
-//                   );
-//                   setRoles(mappedRoles);
-//                 } catch (err) {
-//                   toast.error("Failed to delete role");
-//                 } finally {
-//                   setIsDeleting(false);
-//                 }
-//               }}
-//               disabled={isDeleting}
-//               className="bg-red-600 hover:bg-red-700"
-//             >
-//               {isDeleting ? "Deleting..." : "Delete"}
-//             </Button>
-//           </DialogFooter>
-//         </DialogContent>
-//       </Dialog>
-//     </div>
-//   );
-// }

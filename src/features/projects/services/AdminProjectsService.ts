@@ -147,7 +147,10 @@ export const AdminProjectsService = {
   },
 
   updateProject: async (projectId: number, data: Record<string, unknown>) => {
-    const response = await apiClient.post(`/dashboard/projects/${projectId}`, data);
+    const response = await apiClient.post(`/dashboard/projects/${projectId}`, {
+      ...data,
+      _method: "PUT",
+    });
     return response.data;
   },
 
@@ -158,10 +161,28 @@ export const AdminProjectsService = {
 
   toggleActive: async (projectId: number, isActive: boolean) => {
     const response = await apiClient.post(`/dashboard/projects/${projectId}`, {
+      _method: "PUT",
       is_active: isActive ? 1 : 0,
       is_visible: isActive ? 1 : 0,
-      _method: "PUT",
     });
+    return response.data;
+  },
+
+  updateMilestone: async (
+    milestoneId: number,
+    data: {
+      project_id: number;
+      milestone_name?: string;
+      description?: string;
+      status?: "pending" | "in_progress" | "completed";
+      actual_start_date?: string;
+      actual_end_date?: string;
+      planned_start_date?: string;
+      planned_end_date?: string;
+      completion_percentage?: number;
+    }
+  ) => {
+    const response = await apiClient.put(`/dashboard/milestones/${milestoneId}`, data);
     return response.data;
   },
 };

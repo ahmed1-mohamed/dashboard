@@ -50,7 +50,10 @@ export default function AddRoleModal({ isOpen, onClose }: AddRoleModalProps) {
 
   const handleFormSubmit = async (formData: RolesFormInput) => {
     try {
-      await createRole(formData);
+      await createRole({
+        ...formData,
+        permissions,
+      });
       reset();
       onClose();
     } catch (error: unknown) {

@@ -44,9 +44,9 @@ const statusOptions = [
 ];
 
 const projectTypeOptions = [
-  { label: "Residential", value: "Residential" },
-  { label: "Mixed Use", value: "Mixed Use" },
-  { label: "Commercial", value: "Commercial" },
+  { label: "Residential", value: "residential" },
+  { label: "Mixed Use", value: "mixed-use" },
+  { label: "Commercial", value: "commercial" },
 ];
 
 const currencyOptions = [
@@ -99,17 +99,23 @@ export function EditProjectModal({
     if (!projectData) return;
     const raw = (projectData as { data?: unknown }).data ?? projectData;
     const p = raw as Record<string, unknown>;
+    let mappedProjectType = (p.project_type as string) ?? "";
+    const lowerType = mappedProjectType.toLowerCase();
+    if (lowerType === "mixed use" || lowerType === "mixed-use") mappedProjectType = "mixed-use";
+    else if (lowerType === "residential") mappedProjectType = "residential";
+    else if (lowerType === "commercial") mappedProjectType = "commercial";
+
     reset({
       project_name: (p.project_name as string) ?? "",
       status: (p.status as string) ?? "",
-      project_type: (p.project_type as string) ?? "",
+      project_type: mappedProjectType,
       total_units: p.total_units != null ? String(p.total_units) : "",
       available_units: p.available_units != null ? String(p.available_units) : "",
       launch_date: (p.launch_date as string) ?? "",
       completion_date: (p.completion_date as string) ?? "",
       currency: (p.currency as string) ?? "AED",
       project_size: (p.project_size as string) ?? "",
-      description: (p.description as string) ?? "",
+      description: p.description ? String(p.description).replace(/<[^>]*>?/gm, '') : "",
     });
   }, [projectData, reset]);
 
@@ -122,11 +128,36 @@ export function EditProjectModal({
     if (!projectId) return;
     setIsSubmitting(true);
     try {
-      await AdminProjectsService.updateProject(projectId, {
+      const raw = (projectData as { data?: any }).data ?? projectData;
+      
+      const payload = {
         ...formValues,
         total_units: formValues.total_units ? Number(formValues.total_units) : undefined,
         available_units: formValues.available_units ? Number(formValues.available_units) : undefined,
-      });
+        
+        developer_id: raw?.developer?.developer_id || raw?.developer_id,
+        is_active: raw?.is_active ?? 1,
+        is_visible: raw?.is_visible ?? 1,
+        location: {
+          latitude: String(raw?.location?.latitude || "0"),
+          longitude: String(raw?.location?.longitude || "0"),
+          landmark: String(raw?.location?.landmark || "-"),
+          city_id: String(raw?.location?.city?.id || (raw?.location as any)?.city_id || ""),
+          area_id: String(raw?.location?.area?.area_id || (raw?.location as any)?.area_id || ""),
+          north_side: String(raw?.location?.north_side || "-"),
+          south_side: String(raw?.location?.south_side || "-"),
+          east_side: String(raw?.location?.east_side || "-"),
+          west_side: String(raw?.location?.west_side || "-"),
+          google_map_link: String(raw?.location?.google_map_link || "-"),
+        },
+        
+        price_min: raw?.price_range?.split('-')[0]?.trim() || "0",
+        price_max: raw?.price_range?.split('-')[1]?.trim() || "0",
+        price_sq_min: raw?.price_range_SQ?.split('-')[0]?.trim() || "0",
+        price_sq_max: raw?.price_range_SQ?.split('-')[1]?.trim() || "0",
+      };
+
+      await AdminProjectsService.updateProject(projectId, payload);
       toast.success("Project updated successfully!");
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       queryClient.invalidateQueries({ queryKey: ["project-detail-edit", projectId] });
