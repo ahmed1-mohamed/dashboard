@@ -41,8 +41,8 @@ export function ProjectHeader({ projectId, token, data }: ProjectHeaderProps) {
         project_name: data.project_name,
         status: data.status,
         project_type: mappedProjectType,
-        total_units: data.total_units,
-        available_units: data.available_units,
+        total_units: String(data.total_units ?? ""),
+        available_units: String(data.available_units ?? ""),
         launch_date: data.launch_date,
         completion_date: data.completion_date,
         currency: data.currency,
@@ -50,26 +50,22 @@ export function ProjectHeader({ projectId, token, data }: ProjectHeaderProps) {
         description: data.description,
         is_active: newIsActive ? 1 : 0,
         is_visible: newIsActive ? 1 : 0,
-        developer_id: data.developer?.developer_id || (data as any).developer_id,
-        price_min: data.price_range?.split("-")[0]?.trim() || "0",
-        price_max: data.price_range?.split("-")[1]?.trim() || "0",
-        price_sq_min: data.price_range_SQ?.split("-")[0]?.trim() || "0",
-        price_sq_max: data.price_range_SQ?.split("-")[1]?.trim() || "0",
+        developer_id: String(data.developer?.developer_id || (data as any).developer_id || ""),
       };
 
       // Only include location if we have valid city_id and area_id
       if (cityId && areaId) {
         payload.location = {
-          latitude: String(data.location?.latitude || "0"),
-          longitude: String(data.location?.longitude || "0"),
-          landmark: String(data.location?.landmark || "-"),
+          latitude: data.location?.latitude ?? 0,
+          longitude: data.location?.longitude ?? 0,
+          landmark: data.location?.landmark || "",
           city_id: cityId,
           area_id: areaId,
-          north_side: String(data.location?.north_side || "-"),
-          south_side: String(data.location?.south_side || "-"),
-          east_side: String(data.location?.east_side || "-"),
-          west_side: String(data.location?.west_side || "-"),
-          google_map_link: String(data.location?.google_map_link || "-"),
+          north_side: data.location?.north_side || "",
+          south_side: data.location?.south_side || "",
+          east_side: data.location?.east_side || "",
+          west_side: data.location?.west_side || "",
+          google_map_link: data.location?.google_map_link || "",
         };
       }
 
@@ -92,9 +88,9 @@ export function ProjectHeader({ projectId, token, data }: ProjectHeaderProps) {
       const errorList = axiosError?.response?.data?.errors;
       const flatMessages = errorList
         ? Object.values(errorList)
-            .map((errObj) => Object.values(errObj))
-            .flat()
-            .join(", ")
+          .map((errObj) => Object.values(errObj))
+          .flat()
+          .join(", ")
         : "";
 
       const fallbackMessage =

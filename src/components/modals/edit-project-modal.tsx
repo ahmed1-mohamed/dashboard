@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { AdminProjectsService } from "@/features/projects/services/AdminProjectsService";
+import useDashboardAdminProjectsCreateData from "@/hooks/use-dashboardAdminProjectsCreateData";
 
 interface EditProjectFormValues {
   project_name: string;
@@ -29,6 +30,7 @@ interface EditProjectFormValues {
   currency: string;
   project_size: string;
   description: string;
+  developer_id: string;
 }
 
 interface EditProjectModalProps {
@@ -84,6 +86,7 @@ export function EditProjectModal({
       currency: "AED",
       project_size: "",
       description: "",
+      developer_id: "",
     },
   });
 
@@ -93,6 +96,16 @@ export function EditProjectModal({
     queryFn: () => AdminProjectsService.getProject(projectId!),
     enabled: !!token && !!projectId && isOpen,
   });
+
+  // Fetch developers
+  const { developersData } = useDashboardAdminProjectsCreateData();
+  const developersList = Array.isArray(developersData?.data)
+    ? developersData.data
+    : Array.isArray((developersData?.data as any)?.data)
+      ? (developersData.data as any).data
+      : Array.isArray((developersData?.data as any)?.developers)
+        ? (developersData.data as any).developers
+        : [];
 
   // Populate form when data arrives
   useEffect(() => {
@@ -116,6 +129,7 @@ export function EditProjectModal({
       currency: (p.currency as string) ?? "AED",
       project_size: (p.project_size as string) ?? "",
       description: p.description ? String(p.description).replace(/<[^>]*>?/gm, '') : "",
+      developer_id: String((p.developer as any)?.developer_id || p.developer_id || ""),
     });
   }, [projectData, reset]);
 
@@ -129,33 +143,41 @@ export function EditProjectModal({
     setIsSubmitting(true);
     try {
       const raw = (projectData as { data?: any }).data ?? projectData;
-      
-      const payload = {
-        ...formValues,
-        total_units: formValues.total_units ? Number(formValues.total_units) : undefined,
-        available_units: formValues.available_units ? Number(formValues.available_units) : undefined,
-        
-        developer_id: raw?.developer?.developer_id || raw?.developer_id,
+      const cityId = String(raw?.location?.city?.id || (raw?.location as any)?.city_id || "");
+      const areaId = String(raw?.location?.area?.area_id || (raw?.location as any)?.area_id || "");
+
+      const payload: Record<string, unknown> = {
+        project_name: formValues.project_name,
+        status: formValues.status,
+        project_type: formValues.project_type,
+        total_units: formValues.total_units || "",
+        available_units: formValues.available_units || "",
+        launch_date: formValues.launch_date,
+        completion_date: formValues.completion_date,
+        project_size: formValues.project_size,
+        description: formValues.description,
+        developer_id: formValues.developer_id || String(raw?.developer?.developer_id || raw?.developer_id || ""),
         is_active: raw?.is_active ?? 1,
         is_visible: raw?.is_visible ?? 1,
-        location: {
-          latitude: String(raw?.location?.latitude || "0"),
-          longitude: String(raw?.location?.longitude || "0"),
-          landmark: String(raw?.location?.landmark || "-"),
-          city_id: String(raw?.location?.city?.id || (raw?.location as any)?.city_id || ""),
-          area_id: String(raw?.location?.area?.area_id || (raw?.location as any)?.area_id || ""),
-          north_side: String(raw?.location?.north_side || "-"),
-          south_side: String(raw?.location?.south_side || "-"),
-          east_side: String(raw?.location?.east_side || "-"),
-          west_side: String(raw?.location?.west_side || "-"),
-          google_map_link: String(raw?.location?.google_map_link || "-"),
-        },
-        
-        price_min: raw?.price_range?.split('-')[0]?.trim() || "0",
-        price_max: raw?.price_range?.split('-')[1]?.trim() || "0",
-        price_sq_min: raw?.price_range_SQ?.split('-')[0]?.trim() || "0",
-        price_sq_max: raw?.price_range_SQ?.split('-')[1]?.trim() || "0",
+        price_range: raw?.price_range || "",
+        price_range_SQ: raw?.price_range_SQ || "",
       };
+
+      // Only include location if city_id and area_id are present
+      if (cityId && areaId) {
+        payload.location = {
+          latitude: raw?.location?.latitude ?? 0,
+          longitude: raw?.location?.longitude ?? 0,
+          landmark: raw?.location?.landmark || "",
+          city_id: cityId,
+          area_id: areaId,
+          north_side: raw?.location?.north_side || "",
+          south_side: raw?.location?.south_side || "",
+          east_side: raw?.location?.east_side || "",
+          west_side: raw?.location?.west_side || "",
+          google_map_link: raw?.location?.google_map_link || "",
+        };
+      }
 
       await AdminProjectsService.updateProject(projectId, payload);
       toast.success("Project updated successfully!");
@@ -231,6 +253,32 @@ export function EditProjectModal({
                         {statusOptions.map((o) => (
                           <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
                         ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
+
+              <div>
+                <Label>Developer</Label>
+                <Controller
+                  name="developer_id"
+                  control={control}
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="Select Developer" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {developersList?.map((developer: any) => {
+                          const id = String(developer.developer_id || developer.id);
+                          const name = developer.developer_name || developer.name;
+                          return (
+                            <SelectItem key={id} value={id}>
+                              {name}
+                            </SelectItem>
+                          );
+                        })}
                       </SelectContent>
                     </Select>
                   )}

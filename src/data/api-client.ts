@@ -1442,7 +1442,7 @@ export const addBadge = (badgeData: BadgeInput, token: string) =>
 export const addProjectMedia = (
   projectMediaData: CreateProjectMediaInput,
   token: string,
-) => postDataImg(`/dashboard/projects/medias`, projectMediaData, token);
+) => postDataImg(`/dashboard/projects/medias/create`, projectMediaData, token);
 export const addProjectPayment = (
   projectPaymentData: PaymentPlanInput,
   token: string,
