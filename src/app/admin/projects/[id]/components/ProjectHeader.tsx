@@ -10,7 +10,14 @@ import { ChevronLeft, ChevronRight, Edit } from "lucide-react";
 import { AdminProjectsService } from "@/features/projects/services/AdminProjectsService";
 import { ProjectData } from "../types";
 import type { AxiosError } from "axios";
-
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import useDashboardAdminProjectsCreateData from "@/hooks/use-dashboardAdminProjectsCreateData";
 import { EditProjectModal } from "@/components/modals/edit-project-modal";
 
 interface ProjectHeaderProps {
@@ -24,7 +31,19 @@ export function ProjectHeader({ projectId, token, data }: ProjectHeaderProps) {
   const queryClient = useQueryClient();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
+  const initialDeveloperId = String(data.developer?.developer_id || (data as any).developer_id || "");
+  const [selectedDeveloperId, setSelectedDeveloperId] = useState<string>(initialDeveloperId);
+
   const isActive = data.is_active === 1 || data.is_active === "1" as any;
+
+  const { developersData } = useDashboardAdminProjectsCreateData();
+  const developersList = Array.isArray(developersData?.data)
+    ? developersData.data
+    : Array.isArray((developersData?.data as any)?.data)
+    ? (developersData.data as any).data
+    : Array.isArray((developersData?.data as any)?.developers)
+    ? (developersData.data as any).developers
+    : [];
 
   const statusMutation = useMutation({
     mutationFn: (newIsActive: boolean) => {
@@ -41,17 +60,18 @@ export function ProjectHeader({ projectId, token, data }: ProjectHeaderProps) {
         project_name: data.project_name,
         status: data.status,
         project_type: mappedProjectType,
-        total_units: String(data.total_units ?? ""),
-        available_units: String(data.available_units ?? ""),
-        launch_date: data.launch_date,
-        completion_date: data.completion_date,
-        currency: data.currency,
-        project_size: data.project_size,
-        description: data.description,
-        is_active: newIsActive ? 1 : 0,
-        is_visible: newIsActive ? 1 : 0,
-        developer_id: String(data.developer?.developer_id || (data as any).developer_id || ""),
+        developer_id: String(selectedDeveloperId),
       };
+
+      if (data.total_units != null) payload.total_units = String(data.total_units);
+      if (data.available_units != null) payload.available_units = String(data.available_units);
+      if (data.launch_date) payload.launch_date = data.launch_date;
+      if (data.completion_date) payload.completion_date = data.completion_date;
+      if (data.currency) payload.currency = data.currency;
+      if (data.project_size) payload.project_size = String(data.project_size);
+      if (data.description) payload.description = data.description;
+      if (data.price_range) payload.price_range = String(data.price_range);
+      if (data.price_range_SQ) payload.price_range_SQ = String(data.price_range_SQ);
 
       // Only include location if we have valid city_id and area_id
       if (cityId && areaId) {
@@ -104,6 +124,10 @@ export function ProjectHeader({ projectId, token, data }: ProjectHeaderProps) {
 
   const handleStatusToggle = () => {
     if (!data) return;
+    if (!selectedDeveloperId) {
+      toast.error("Please select a developer before updating the project status.");
+      return;
+    }
     statusMutation.mutate(!isActive);
   };
 
@@ -138,6 +162,29 @@ export function ProjectHeader({ projectId, token, data }: ProjectHeaderProps) {
         </div>
 
         <div className="flex items-center gap-4 bg-white px-4 py-2 rounded-full border border-slate-200 shadow-sm">
+          {/* Developer Selection */}
+          <div className="flex items-center gap-2 pr-4 border-r border-slate-200 min-w-[150px]">
+            <Select 
+              value={selectedDeveloperId} 
+              onValueChange={setSelectedDeveloperId}
+            >
+              <SelectTrigger className="h-8 border-none shadow-none focus:ring-0">
+                <SelectValue placeholder="Select Developer" />
+              </SelectTrigger>
+              <SelectContent>
+                {developersList?.map((developer: any) => {
+                  const id = String(developer.developer_id || developer.id);
+                  const name = developer.developer_name || developer.name;
+                  return (
+                    <SelectItem key={id} value={id}>
+                      {name}
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="flex items-center gap-2 pr-4 border-r border-slate-200">
             <span className={`text-sm font-semibold ${isActive ? "text-teal-600" : "text-slate-500"}`}>
               {isActive ? "Active" : "Inactive"}

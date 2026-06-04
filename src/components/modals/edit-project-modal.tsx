@@ -145,23 +145,23 @@ export function EditProjectModal({
       const raw = (projectData as { data?: any }).data ?? projectData;
       const cityId = String(raw?.location?.city?.id || (raw?.location as any)?.city_id || "");
       const areaId = String(raw?.location?.area?.area_id || (raw?.location as any)?.area_id || "");
+      const finalDeveloperId = formValues.developer_id || String(raw?.developer?.developer_id || raw?.developer_id || "");
 
       const payload: Record<string, unknown> = {
         project_name: formValues.project_name,
         status: formValues.status,
         project_type: formValues.project_type,
-        total_units: formValues.total_units || "",
-        available_units: formValues.available_units || "",
-        launch_date: formValues.launch_date,
-        completion_date: formValues.completion_date,
-        project_size: formValues.project_size,
-        description: formValues.description,
-        developer_id: formValues.developer_id || String(raw?.developer?.developer_id || raw?.developer_id || ""),
-        is_active: raw?.is_active ?? 1,
-        is_visible: raw?.is_visible ?? 1,
-        price_range: raw?.price_range || "",
-        price_range_SQ: raw?.price_range_SQ || "",
+        developer_id: String(finalDeveloperId),
       };
+
+      if (formValues.total_units != null && formValues.total_units !== "") payload.total_units = String(formValues.total_units);
+      if (formValues.available_units != null && formValues.available_units !== "") payload.available_units = String(formValues.available_units);
+      if (formValues.launch_date) payload.launch_date = formValues.launch_date;
+      if (formValues.completion_date) payload.completion_date = formValues.completion_date;
+      if (formValues.project_size) payload.project_size = String(formValues.project_size);
+      if (formValues.description) payload.description = formValues.description;
+      if (raw?.price_range) payload.price_range = String(raw.price_range);
+      if (raw?.price_range_SQ) payload.price_range_SQ = String(raw.price_range_SQ);
 
       // Only include location if city_id and area_id are present
       if (cityId && areaId) {
