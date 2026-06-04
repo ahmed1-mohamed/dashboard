@@ -25,7 +25,7 @@ interface ProjectsTableProps {
   onActiveToggle: (id: number, checked: boolean) => void;
   onEdit: (id: number) => void;
   onDelete: (id: number) => void;
-  onImport?: (id: number) => void;
+  onImport?: (id: number, name: string) => void;
 }
 
 export function ProjectsTable({
@@ -184,7 +184,7 @@ export function ProjectsTable({
                   size="sm"
                   onClick={(e) => {
                     e.stopPropagation();
-                    onImport?.(project.id);
+                    onImport?.(project.id, project.name);
                   }}
                   className="bg-white border-gray-100 shadow-lg hover:bg-teal-50 h-8 py-4 px-3 text-md"
                 >

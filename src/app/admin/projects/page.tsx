@@ -75,6 +75,8 @@ function ProjectsPageContent() {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [projectToEdit, setProjectToEdit] = useState<number | undefined>(undefined);
   const [importModalOpen, setImportModalOpen] = useState(false);
+  const [bulkImportProjectId, setBulkImportProjectId] = useState<number | undefined>(undefined);
+  const [bulkImportProjectName, setBulkImportProjectName] = useState<string | undefined>(undefined);
 
   const itemsArray = useMemo(() => {
     let arr: unknown[] = [];
@@ -148,7 +150,9 @@ function ProjectsPageContent() {
 
   const totalPages = Math.max(1, Math.ceil(totalProjects / perPage));
 
-  const handleImport = useCallback((id?: number) => {
+  const handleImport = useCallback((id?: number, name?: string) => {
+    setBulkImportProjectId(id);
+    setBulkImportProjectName(name);
     setImportModalOpen(true);
   }, []);
 
@@ -293,8 +297,13 @@ function ProjectsPageContent() {
 
       <BulkImportProjectsModal
         isOpen={importModalOpen}
-        onClose={() => setImportModalOpen(false)}
-        projects={filteredProjects}
+        projectId={bulkImportProjectId}
+        projectName={bulkImportProjectName}
+        onClose={() => {
+          setImportModalOpen(false);
+          setBulkImportProjectId(undefined);
+          setBulkImportProjectName(undefined);
+        }}
       />
     </div>
   );

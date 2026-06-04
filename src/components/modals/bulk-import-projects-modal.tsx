@@ -1,145 +1,163 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Download, UploadCloud, X } from "lucide-react";
+import { Upload, Info, Download, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
-import { Project } from "@/features/projects/types";
+import {
+  PropertiesTemplate,
+  PropertiesFilledTemplate,
+} from "@/lib/handle-export";
 
 interface BulkImportProjectsModalProps {
   isOpen: boolean;
+  projectId?: number;
+  projectName?: string;
   onClose: () => void;
-  projects?: Project[];
+  projects?: unknown[];
 }
 
 export function BulkImportProjectsModal({
   isOpen,
+  projectId,
+  projectName,
   onClose,
-  projects = [],
 }: BulkImportProjectsModalProps) {
-  const [replaceExisting, setReplaceExisting] = useState(false);
-  const [removeNonExisting, setRemoveNonExisting] = useState(false);
+  const router = useRouter();
+  const { data: session } = useSession();
+  const token = session?.user.accessToken;
+
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isUploaded, setIsUploaded] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [isChecked, setIsChecked] = useState(false);
+  const [isChecked2, setIsChecked2] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
-  const handleDownloadEmpty = () => {
-    const headers = [
-      "Name",
-      "Developer",
-      "Status",
-      "Type",
-      "Total Units",
-      "Launch Date",
-      "Completion Date",
-    ];
-    const csv = headers.join("\n");
-    downloadFile(csv, "projects_empty_template.csv");
+  // Reset state when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setSelectedFile(null);
+      setIsUploaded(false);
+      setIsUploading(false);
+      setIsChecked(false);
+      setIsChecked2(false);
+    }
+  }, [isOpen]);
+
+  const isValidFile = (file: File) => {
+    const validExtensions = [".xlsx", ".xls", ".csv"];
+    return validExtensions.some((ext) => file.name.endsWith(ext));
   };
 
-  const handleDownloadData = () => {
-    const headers = [
-      "Name",
-      "Developer",
-      "Status",
-      "Type",
-      "Total Units",
-      "Launch Date",
-      "Completion Date",
-    ];
-    let csv = headers.join(",") + "\n";
-
-    if (projects && projects.length > 0) {
-      const rows = projects.map((p) => [
-        `"${p.name || ""}"`,
-        `"${p.developer_name || ""}"`,
-        p.status || "",
-        p.projectType || "",
-        p.total_units || 0,
-        p.launch_date || "",
-        p.completion_date || "",
-      ]);
-      csv += rows.map((r) => r.join(",")).join("\n");
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && isValidFile(file)) {
+      setSelectedFile(file);
+      setIsUploaded(false);
     } else {
-      // Sample data
-      csv += `"Sample Project","Emaar","Under Construction","Apartment",100,"2024-01-01","2026-12-31"`;
-    }
-
-    downloadFile(csv, "projects_template_with_data.csv");
-  };
-
-  const downloadFile = (content: string, filename: string) => {
-    const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success("Template downloaded successfully");
-  };
-
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-  };
-
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      const file = e.dataTransfer.files[0];
-      validateAndSetFile(file);
+      toast.error("Please upload a valid Excel (.xlsx), (.xls) or (.csv) file.");
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      validateAndSetFile(e.target.files[0]);
+  const handleDragOver = (event: React.DragEvent) => {
+    event.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => setIsDragging(false);
+
+  const handleDrop = (event: React.DragEvent) => {
+    event.preventDefault();
+    setIsDragging(false);
+    const file = event.dataTransfer.files?.[0];
+    if (file && isValidFile(file)) {
+      setSelectedFile(file);
+      setIsUploaded(false);
+    } else {
+      toast.error("Please upload a valid Excel (.xlsx), (.xls) or (.csv) file.");
     }
   };
 
-  const validateAndSetFile = (file: File) => {
-    const validTypes = [
-      "text/csv",
-      "application/vnd.ms-excel",
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    ];
-    if (!validTypes.includes(file.type) && !file.name.endsWith(".csv") && !file.name.endsWith(".xlsx")) {
-      toast.error("Please upload a valid CSV or Excel file");
-      return;
-    }
-    setSelectedFile(file);
+  const prepareFormData = () => {
+    if (!selectedFile) return null;
+    const formData = new FormData();
+    formData.append("file", selectedFile);
+    if (projectId != null) formData.append("project_id", String(projectId));
+    formData.append("replace", isChecked ? "true" : "false");
+    formData.append("remove", isChecked2 ? "true" : "false");
+    return formData;
   };
 
   const handleUpload = async () => {
-    if (!selectedFile) {
-      toast.error("Please select a file to upload");
-      return;
-    }
+    if (!selectedFile) { toast.error("Please select a file first"); return; }
+    if (projectId == null || projectId === 0) { toast.error("Project ID is not valid"); return; }
+
+    const formData = prepareFormData();
+    if (!formData) { toast.error("No file selected"); return; }
 
     setIsUploading(true);
-    // Simulate upload delay
-    setTimeout(() => {
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL_IMPORTS;
+      const response = await fetch(`${apiUrl}/dashboard/import/properties`, {
+        method: "POST",
+        body: formData,
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+      });
+
+      const result = await response.json();
+
+      localStorage.setItem("projectName", JSON.stringify({ projectName }));
+      localStorage.setItem("report", JSON.stringify({
+        success: result.success,
+        message: result.message,
+        data: result.data,
+      }));
+
+      if (response.ok) {
+        toast.success("File uploaded successfully!");
+        setIsUploaded(true);
+      } else {
+        toast.error(`Upload error: ${result.message || "Something went wrong"}`);
+        setIsUploaded(false);
+      }
+
+      router.push("/admin/reports");
+    } catch (error) {
+      toast.error(`Upload error: ${error instanceof Error ? error.message : "Network error"}`);
+      setIsUploaded(false);
+    } finally {
       setIsUploading(false);
-      toast.success("Projects imported successfully!");
-      setSelectedFile(null);
-      onClose();
-    }, 1500);
+    }
   };
 
-  const resetState = () => {
-    setSelectedFile(null);
-    setReplaceExisting(false);
-    setRemoveNonExisting(false);
-    setIsUploading(false);
+  const downloadTemplate = () => {
+    setIsDownloading(true);
+    PropertiesTemplate();
+    toast.success("Template downloaded successfully!");
+    setIsDownloading(false);
+  };
+
+  const downloadFilledFile = async () => {
+    if (projectId == null || projectId === 0) { toast.error("Project ID is not valid"); return; }
+    setIsDownloading(true);
+    await PropertiesFilledTemplate(projectId, token!);
+    setIsDownloading(false);
   };
 
   const handleClose = () => {
-    resetState();
+    setSelectedFile(null);
+    setIsUploaded(false);
+    setIsUploading(false);
+    setIsChecked(false);
+    setIsChecked2(false);
     onClose();
   };
 
@@ -147,75 +165,59 @@ export function BulkImportProjectsModal({
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title="Bulk Import Projects"
-      size="xl"
+      title="Bulk Import Properties"
+      size="lg"
       showCloseButton={true}
       footer={
-        <div className="flex justify-end gap-3 w-full border-t border-gray-100 pt-4">
-          <Button variant="outline" onClick={handleClose} className="w-24">
-            Close
-          </Button>
+        <div className="flex gap-3 justify-end w-full">
+          <Button variant="outline" onClick={handleClose}>Close</Button>
           <Button
+            className="bg-teal-600 hover:bg-teal-700 text-white"
             onClick={handleUpload}
-            disabled={!selectedFile || isUploading}
-            className="bg-[#59AFA8] hover:bg-[#4d9a93] text-white w-24"
+            disabled={!selectedFile || isUploading || isUploaded}
           >
             {isUploading ? "Uploading..." : "Upload"}
           </Button>
         </div>
       }
     >
-      <div className="space-y-6">
-        {/* Info Alert */}
-        <div className="bg-[#f2f7ff] border border-[#d6e5ff] rounded-lg p-4">
-          <p className="text-[#3b66c4] text-sm">
-            Upload an Excel or CSV file containing project data to import them in
-            bulk. Make sure your file follows the required template format.
+      <div className="space-y-6 max-h-[70vh] overflow-y-auto">
+        {/* Info */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <p className="text-sm text-blue-800">
+            Upload an Excel or CSV file containing property data to import them in bulk.
+            Make sure your file follows the required template format.
           </p>
         </div>
 
-        {/* Download Templates Section */}
-        <div className="border border-gray-200 rounded-xl p-5">
-          <div className="flex gap-3 mb-2">
-            <div className="mt-1 text-gray-500">
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                <polyline points="14 2 14 8 20 8" />
-                <line x1="16" y1="13" x2="8" y2="13" />
-                <line x1="16" y1="17" x2="8" y2="17" />
-                <polyline points="10 9 9 9 8 9" />
-              </svg>
-            </div>
-            <div>
-              <h3 className="font-semibold text-gray-900">Download Templates</h3>
-              <p className="text-sm text-gray-500 mt-1 mb-4">
-                Download the appropriate template to ensure your data is formatted
-                correctly.
+        {/* Download Templates */}
+        <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+          <div className="flex items-start gap-3 mb-4">
+            <FileSpreadsheet className="h-5 w-5 text-gray-600 mt-0.5 shrink-0" />
+            <div className="flex-1">
+              <h3 className="font-semibold text-gray-900 text-sm mb-2">Download Templates</h3>
+              <p className="text-xs text-gray-600 mb-3">
+                Download the appropriate template to ensure your data is formatted correctly.
               </p>
-              <div className="flex flex-wrap gap-3">
+              <div className="flex gap-3">
                 <Button
                   variant="outline"
-                  className="bg-white"
-                  onClick={handleDownloadEmpty}
+                  size="sm"
+                  onClick={downloadTemplate}
+                  disabled={isDownloading}
+                  className="gap-2"
                 >
-                  <Download className="w-4 h-4 mr-2" />
+                  <Download className="h-4 w-4" />
                   Empty Template
                 </Button>
                 <Button
                   variant="outline"
-                  className="bg-white"
-                  onClick={handleDownloadData}
+                  size="sm"
+                  onClick={downloadFilledFile}
+                  disabled={isDownloading || !projectId}
+                  className="gap-2"
                 >
-                  <Download className="w-4 h-4 mr-2" />
+                  <Download className="h-4 w-4" />
                   Template with Data
                 </Button>
               </div>
@@ -223,110 +225,130 @@ export function BulkImportProjectsModal({
           </div>
         </div>
 
-        {/* Options Section */}
-        <div className="border border-gray-200 rounded-xl p-5 bg-gray-50/50">
-          <h3 className="font-semibold text-gray-900 mb-4">Options</h3>
-          <div className="space-y-4">
-            <div className="flex items-center space-x-2">
+        {/* Options */}
+        <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+          <h3 className="font-semibold text-gray-900 text-sm mb-3">Options</h3>
+          <div className="space-y-3">
+            <div className="flex items-center space-x-3">
               <Checkbox
-                id="replace-data"
-                checked={replaceExisting}
-                onCheckedChange={(checked) => setReplaceExisting(checked as boolean)}
+                id="replace"
+                checked={isChecked}
+                onCheckedChange={(checked) => setIsChecked(checked as boolean)}
               />
-              <label
-                htmlFor="replace-data"
-                className="text-sm font-medium text-gray-700 leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
+              <Label htmlFor="replace" className="text-sm text-gray-700 cursor-pointer">
                 Replace existing data
-              </label>
+              </Label>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-3">
               <Checkbox
-                id="remove-data"
-                checked={removeNonExisting}
-                onCheckedChange={(checked) => setRemoveNonExisting(checked as boolean)}
+                id="remove"
+                checked={isChecked2}
+                onCheckedChange={(checked) => setIsChecked2(checked as boolean)}
               />
-              <label
-                htmlFor="remove-data"
-                className="text-sm font-medium text-gray-700 leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
+              <Label htmlFor="remove" className="text-sm text-gray-700 cursor-pointer">
                 Remove non-existing data
-              </label>
+              </Label>
             </div>
           </div>
         </div>
 
-        {/* Upload Section */}
+        {/* Upload File */}
         <div>
-          <label className="text-sm font-medium text-gray-900 mb-2 block">
-            Upload file <span className="text-red-500">*</span>{" "}
-            <span className="text-gray-400 cursor-help" title="Accepted formats: .csv, .xlsx">
-              ⓘ
-            </span>
-          </label>
+          <div className="flex items-center gap-1 mb-2">
+            <Label>Upload file <span className="text-red-500">*</span></Label>
+            <Info className="h-3 w-3 text-gray-400" />
+          </div>
+
           <div
             onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
             onDrop={handleDrop}
-            onClick={() => fileInputRef.current?.click()}
-            className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${
-              selectedFile
-                ? "border-[#59AFA8] bg-[#f2faf9]"
-                : "border-gray-300 hover:bg-gray-50 bg-gray-50/30"
-            }`}
+            className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${isDragging
+                ? "border-teal-500 bg-teal-50"
+                : selectedFile
+                  ? "border-green-500 bg-green-50"
+                  : "border-gray-300 bg-gray-50"
+              }`}
+            onClick={() => document.getElementById("proj-file-upload")?.click()}
           >
-            <input
-              type="file"
-              className="hidden"
-              ref={fileInputRef}
-              onChange={handleFileChange}
-              accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
-            />
-            {selectedFile ? (
-              <div className="flex flex-col items-center justify-center space-y-2">
-                <div className="w-12 h-12 bg-[#59AFA8]/10 rounded-full flex items-center justify-center text-[#59AFA8]">
-                  <svg
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                    <polyline points="14 2 14 8 20 8" />
-                    <line x1="16" y1="13" x2="8" y2="13" />
-                    <line x1="16" y1="17" x2="8" y2="17" />
-                    <polyline points="10 9 9 9 8 9" />
-                  </svg>
-                </div>
-                <div className="font-medium text-gray-900">{selectedFile.name}</div>
-                <div className="text-sm text-gray-500">
-                  {(selectedFile.size / 1024).toFixed(2)} KB
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-red-500 hover:text-red-700 hover:bg-red-50 mt-2"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedFile(null);
-                  }}
-                >
-                  <X className="w-4 h-4 mr-1" /> Remove file
-                </Button>
+            <label htmlFor="proj-file-upload" className="cursor-pointer">
+              <span className="sr-only">Upload CSV or Excel file</span>
+              <input
+                id="proj-file-upload"
+                type="file"
+                accept=".csv,.xlsx,.xls"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+            </label>
+
+            <div className="flex flex-col items-center gap-3">
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center ${selectedFile ? "bg-green-100" : "bg-gray-200"}`}>
+                <Upload className={`h-6 w-6 ${selectedFile ? "text-green-600" : "text-gray-600"}`} />
               </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center space-y-4">
-                <p className="text-gray-900 font-medium">Upload CSV or Excel file</p>
-                <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 shadow-sm">
-                  <UploadCloud className="w-6 h-6" />
-                </div>
+              <div>
+                {selectedFile ? (
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-gray-900">{selectedFile.name}</p>
+                    <p className="text-xs text-gray-500">{(selectedFile.size / 1024).toFixed(2)} KB</p>
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-sm text-gray-600 mb-1">Click to upload or drag and drop</p>
+                    <p className="text-xs text-gray-500">Supported formats: CSV, Excel (.xlsx, .xls)</p>
+                  </>
+                )}
               </div>
-            )}
+            </div>
           </div>
+
+          {selectedFile && (
+            <div className="flex items-center justify-between mt-3 p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center gap-2">
+                <FileSpreadsheet className="h-5 w-5 text-green-600" />
+                <span className="text-sm text-gray-700">{selectedFile.name}</span>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => { e.stopPropagation(); setSelectedFile(null); }}
+                className="text-red-600 hover:text-red-700"
+              >
+                Remove
+              </Button>
+            </div>
+          )}
         </div>
+
+        {/* Uploading */}
+        {isUploading && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex items-center gap-3">
+              <div className="h-5 w-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-blue-800">Uploading file...</p>
+                <p className="text-xs text-blue-600">Please wait while your file is being processed</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Success */}
+        {isUploaded && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <div className="flex items-center gap-3">
+              <div className="h-5 w-5 rounded-full bg-green-600 flex items-center justify-center">
+                <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-green-800">File uploaded successfully!</p>
+                <p className="text-xs text-green-600">Redirecting to reports page...</p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </Modal>
   );
