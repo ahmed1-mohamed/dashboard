@@ -129,24 +129,24 @@ export default function FeaturesManagementPage() {
 
   return (
     <div className="p-4 px-3 space-y-4 max-w-full overflow-hidden">
-      <FeaturesHeader 
-        featuresCount={features.length} 
-        onAddFeature={() => setIsAddFeatureModal2Open(true)} 
+      <FeaturesHeader
+        featuresCount={features.length}
+        onAddFeature={() => setIsAddFeatureModal2Open(true)}
       />
 
-      <FeaturesFilters 
+      <FeaturesFilters
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         statusFilter={statusFilter}
         setStatusFilter={setStatusFilter}
       >
-        <TableSettings 
-          settings={tableSettings} 
-          onExportExcel={() => handleExport("excel")} 
+        <TableSettings
+          settings={tableSettings}
+          onExportExcel={() => handleExport("excel")}
         />
       </FeaturesFilters>
 
-      <FeaturesTable 
+      <FeaturesTable
         settings={tableSettings}
         features={paginatedFeatures}
         selectedFeatures={selectedFeatures}
@@ -157,7 +157,6 @@ export default function FeaturesManagementPage() {
         onDelete={handleDelete}
       />
 
-      {/* Pagination */}
       <div className="flex items-center justify-between">
         <div className="text-sm text-gray-500">
           Showing {startIndex + 1}-{Math.min(endIndex, filteredFeatures.length)}{" "}
@@ -200,7 +199,6 @@ export default function FeaturesManagementPage() {
         </div>
       </div>
 
-      {/* Modals */}
       {isViewModalOpen && selectedFeature && (
         <ViewFeatureModal
           feature={selectedFeature}
@@ -229,7 +227,6 @@ export default function FeaturesManagementPage() {
         />
       )}
 
-      {/* Edit Feature Modal 2 */}
       {isEditModalOpen && selectedFeature && (
         <EditFeatureModal2
           isOpen={isEditModalOpen}

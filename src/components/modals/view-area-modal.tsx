@@ -181,6 +181,7 @@ export function ViewAreaModal({
           </Button>
         </div>
       </div>
+      )}
     </Modal>
   );
 }

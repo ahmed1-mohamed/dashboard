@@ -50,7 +50,6 @@ export function BookingsSection({ bookings }: BookingsSectionProps) {
         </Select>
       </div>
 
-      {/* Bookings List */}
       <div className="space-y-3">
         {filteredBookings.length > 0 ? (
           filteredBookings.map((booking) => (
@@ -95,7 +94,6 @@ export function BookingsSection({ bookings }: BookingsSectionProps) {
         )}
       </div>
 
-      {/* Footer */}
       <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-100">
         <Select value={dateFilter} onValueChange={setDateFilter}>
           <SelectTrigger className="w-[130px]">

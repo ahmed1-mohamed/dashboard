@@ -7,24 +7,28 @@ export const AdminSubscriptionsService = {
   },
 
   getCustomerPlanById: (id: number | string) => {
-    return apiClient.get(`/subs/customerPlans/${id}`);
+    return apiClient.get(`/dashboard/subs/customerPlans/${id}`);
   },
 
   getPackages: () => {
-    return apiClient.get("/ad-credit-packages");
+    return apiClient.get("/dashboard/ad-credit-packages");
   },
 
 
   createCustomerPlan: (data: Record<string, unknown>) => {
-    return apiClient.post("/subs/customerPlans", data);
+    return apiClient.post("/dashboard/subs/customerPlans", data);
   },
 
   updateCustomerPlan: (id: number | string, data: Record<string, unknown>) => {
-    return apiClient.put(`/subs/customerPlans/${id}`, data);
+    return apiClient.put(`/dashboard/subs/customerPlans/${id}`, data);
   },
 
 
   deletePackage: (packageId: number) => {
-    return apiClient.delete(`/ad-credit-packages/${packageId}`);
+    return apiClient.delete(`/dashboard/ad-credit-packages/${packageId}`);
+  },
+
+  deleteCustomerPlan: (id: number | string) => {
+    return apiClient.delete(`/dashboard/subs/customerPlans/${id}`);
   },
 };

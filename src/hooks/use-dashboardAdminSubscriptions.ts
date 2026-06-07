@@ -43,11 +43,19 @@ export default function useDashboardAdminSubscriptions(activeTab?: string) {
     },
   });
 
+  const deleteCustomerPlanMutation = useMutation({
+    mutationFn: (id: number | string) => AdminSubscriptionsService.deleteCustomerPlan(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["subscriptions", "customerPlans"] });
+    },
+  });
+
   return {
     packagesQuery,
     customerPlansQuery,
     deletePackageMutation,
     createCustomerPlanMutation,
     updateCustomerPlanMutation,
+    deleteCustomerPlanMutation,
   };
 }

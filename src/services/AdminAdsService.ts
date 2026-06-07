@@ -1,9 +1,7 @@
 import { apiClient } from "@/lib/apiClient";
 
 export const AdminAdsService = {
-  /**
-   * Get ads with pagination and filters
-   */
+
   getAds: async (
     page: number = 1,
     perPage: number = 15,
@@ -36,46 +34,34 @@ export const AdminAdsService = {
     return response;
   },
 
-  /**
-   * Get ads totals
-   */
+
   getAdsTotals: async () => {
     const response = await apiClient.get("/dashboard/ads/totals");
     return response.data;
   },
 
-  /**
-   * Get ad by ID
-   */
+
   getAd: async (adId: string, token: string) => {
-    return apiClient.get(`/ads/${adId}`, token);
+    return apiClient.get(`/dashboard/ads/${adId}`, token);
   },
 
-  /**
-   * Create a new ad
-   */
+
   createAd: (data: FormData, token: string) => {
-    return apiClient.post("/ads", data, token);
+    return apiClient.post("/dashboard/ads", data, token);
   },
 
-  /**
-   * Update an ad
-   */
+
   updateAd: (adId: number, data: FormData, token: string) => {
-    return apiClient.put(`/ads/${adId}`, data, token);
+    return apiClient.put(`/dashboard/ads/${adId}`, data, token);
   },
 
-  /**
-   * Delete an ad
-   */
+
   deleteAd: (adId: number) => {
-    return apiClient.delete(`/ads/${adId}`);
+    return apiClient.delete(`/dashboard/ads/${adId}`);
   },
 
-  /**
-   * Toggle ad status
-   */
+
   toggleStatus: (adId: number, status: string) => {
-    return apiClient.post(`/ads/${adId}/toggle-status`, status);
+    return apiClient.post(`/dashboard/ads/${adId}/toggle-status`, status);
   },
 };

@@ -538,24 +538,23 @@ export const fetchAds = (
   return fetchAdsData(`/ads?${params.toString()}`, token);
 };
 export const fetchAdsTotals = (token: string) =>
-  fetchDataTotals("/ads/totals", token);
+  fetchDataTotals("/dashboard/ads/totals", token);
 export const fetchAd = (adId: string, token: string) =>
-  fetchData(`/ads/${adId}`, token);
+  fetchData(`/dashboard/ads/${adId}`, token);
 export const updateAd = (adId: number, adData: FormData, token: string) =>
-  postDataImg(`/ads/${adId}`, adData, token);
+  postDataImg(`/dashboard/ads/${adId}`, adData, token);
 export const deleteAd = (adId: number, token: string) =>
-  deleteData(`/ads/${adId}`, token);
+  deleteData(`/dashboard/ads/${adId}`, token);
 export const createAd = (adData: FormData, token: string) =>
-  postDataImg("/ads", adData, token);
+  postDataImg("/dashboard/ads", adData, token);
 export const updateAdStatus = (adId: number, status: boolean, token: string) =>
-  editData(`/ads/${adId}`, { is_active: status }, token);
+  editData(`/dashboard/ads/${adId}`, { is_active: status }, token);
 
 export const updateAdStatusUsingCreateEndpoint = (
   adId: number,
   status: string,
   token: string,
 ) => {
-  // Send complete AdData object with status field updated
   const adData: AdData = {
     campaign: {
       start_at: null,
@@ -575,7 +574,7 @@ export const updateAdStatusUsingCreateEndpoint = (
     title: null, // Set status to active or inactive
     weight: null,
   };
-  return editData(`/ads/${adId}`, adData, token);
+  return editData(`/dashboard/ads/${adId}`, adData, token);
 };
 
 export const toggleAdStatus = (
@@ -583,7 +582,7 @@ export const toggleAdStatus = (
   newStatus: string,
   token: string,
 ) => {
-  return patchData(`/ads/${adId}/toggle-status`, newStatus, token);
+  return patchData(`/dashboard/ads/${adId}/toggle-status`, newStatus, token);
 };
 
 // ============================================
@@ -1208,7 +1207,7 @@ export const fetchDevelopers = (
   if (search) params.append("search", search);
   if (status) params.append("status", status);
   if (country_id) params.append("country_id", country_id);
-  return fetchData(`/developers/all?${params.toString()}`, token);
+  return fetchData(`/dashboard/developers?${params.toString()}`, token);
 };
 export const fetchReservations = (token: string) => fetchDataReserve(token);
 export const fetchBuildings = (token: string) => fetchData("/buildings", token);

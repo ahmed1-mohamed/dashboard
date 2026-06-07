@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Modal } from "@/components/ui/modal";
@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { AdminSubscriptionsService } from "@/services/AdminSubscriptionsService";
+import { AdminFeaturesService } from "@/services/AdminFeaturesService";
 
 interface UpdateCustomerPlanModalProps {
   open: boolean;
@@ -24,6 +25,7 @@ export default function UpdateCustomerPlanModal({
   onSuccess,
 }: UpdateCustomerPlanModalProps) {
   const queryClient = useQueryClient();
+  const [selectedFeatures, setSelectedFeatures] = useState<{feature_id: number, limit: number | null}[]>([]);
 
   const {
     register,
@@ -40,12 +42,10 @@ export default function UpdateCustomerPlanModal({
       currency: "USD",
       is_active: "true",
       sort_order: 1,
-      max_users: 10,
-      storage_gb: 10,
     },
   });
 
-  const { data: queryData, isLoading, isError } = useQuery({
+  const { data: queryData, isLoading, isError, refetch } = useQuery({
     queryKey: ["subscriptions", "customerPlan", planId],
     queryFn: () => {
       if (planId == null) return null;
@@ -53,6 +53,21 @@ export default function UpdateCustomerPlanModal({
     },
     enabled: planId != null && open,
   });
+
+  const { data: featuresQuery, isLoading: loadingFeatures } = useQuery({
+    queryKey: ["dashboard", "features"],
+    queryFn: AdminFeaturesService.getFeatures,
+    enabled: open,
+  });
+
+  const featuresResponse = (featuresQuery as any)?.data;
+  const availableFeatures = Array.isArray(featuresResponse) ? featuresResponse : (featuresResponse?.data || []);
+
+  useEffect(() => {
+    if (open && planId != null) {
+      refetch();
+    }
+  }, [open, planId, refetch]);
 
   const responsePayload = (queryData as any)?.data || queryData;
   const plan = responsePayload?.data || responsePayload || null;
@@ -68,9 +83,18 @@ export default function UpdateCustomerPlanModal({
         currency: plan.currency || "USD",
         is_active: plan.is_active ? "true" : "false",
         sort_order: plan.sort_order || 1,
-        max_users: plan.features?.max_users || 10,
-        storage_gb: plan.features?.storage_gb || 10,
       });
+
+      if (Array.isArray(plan.features)) {
+        setSelectedFeatures(
+          plan.features.filter((f: any) => f.enabled).map((f: any) => ({
+            feature_id: f.feature_id,
+            limit: f.limit !== undefined && f.limit !== null ? Number(f.limit) : null,
+          }))
+        );
+      } else {
+        setSelectedFeatures([]);
+      }
     }
   }, [plan, reset]);
 
@@ -92,10 +116,33 @@ export default function UpdateCustomerPlanModal({
 
   const handleClose = () => {
     reset();
+    setSelectedFeatures([]);
     onClose();
   };
 
+  const toggleFeature = (featureId: number, isChecked: boolean) => {
+    if (isChecked) {
+      setSelectedFeatures([...selectedFeatures, { feature_id: featureId, limit: null }]);
+    } else {
+      setSelectedFeatures(selectedFeatures.filter(f => f.feature_id !== featureId));
+    }
+  };
+
+  const updateFeatureLimit = (featureId: number, limitVal: string) => {
+    setSelectedFeatures(
+      selectedFeatures.map(f => 
+        f.feature_id === featureId ? { ...f, limit: limitVal ? Number(limitVal) : null } : f
+      )
+    );
+  };
+
   const onSubmit = (formData: any) => {
+    const formattedFeatures = selectedFeatures.map(f => {
+      const obj: any = { feature_id: f.feature_id };
+      if (f.limit !== null) obj.limit = f.limit;
+      return obj;
+    });
+
     const apiData = {
       code: formData.code,
       name: formData.name,
@@ -105,11 +152,7 @@ export default function UpdateCustomerPlanModal({
       currency: formData.currency,
       is_active: formData.is_active === "true",
       sort_order: Number(formData.sort_order),
-      features: Array.isArray(plan?.features) ? plan.features : {
-        ...(plan?.features || {}),
-        max_users: Number(formData.max_users),
-        storage_gb: Number(formData.storage_gb),
-      },
+      features: formattedFeatures,
     };
     mutation.mutate(apiData);
   };
@@ -119,7 +162,7 @@ export default function UpdateCustomerPlanModal({
       isOpen={open}
       onClose={handleClose}
       title="Update Customer Plan"
-      size="md"
+      size="lg"
     >
       {isLoading ? (
         <div className="flex flex-col items-center justify-center py-12">
@@ -132,7 +175,7 @@ export default function UpdateCustomerPlanModal({
           <Button variant="outline" onClick={handleClose}>Cancel</Button>
         </div>
       ) : (
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-2 max-h-[75vh] overflow-y-auto px-1">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Plan Code</Label>
@@ -189,25 +232,66 @@ export default function UpdateCustomerPlanModal({
               <Label>Sort Order</Label>
               <Input type="number" {...register("sort_order")} />
             </div>
-            <div className="space-y-1.5"></div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label>Max Users</Label>
-              <Input type="number" {...register("max_users", { required: true })} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Storage (GB)</Label>
-              <Input type="number" {...register("storage_gb", { required: true })} />
-            </div>
+          <div className="space-y-3 mt-6 border-t pt-4">
+            <Label className="text-base font-semibold">Included Features</Label>
+            {loadingFeatures ? (
+              <div className="flex items-center gap-2 text-sm text-gray-500">
+                <Loader2 className="h-4 w-4 animate-spin" /> Loading features...
+              </div>
+            ) : availableFeatures.length === 0 ? (
+              <p className="text-sm text-gray-500 italic">No features found in the system.</p>
+            ) : (
+              <div className="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-100 max-h-60 overflow-y-auto">
+                {availableFeatures.map((feature: any) => {
+                  const fId = feature.feature_id || feature.badge_id || feature.id;
+                  const isSelected = selectedFeatures.some(f => f.feature_id === fId);
+                  const selectedData = selectedFeatures.find(f => f.feature_id === fId);
+
+                  return (
+                    <div key={fId} className={`flex flex-col gap-2 p-3 rounded-lg border ${isSelected ? 'border-teal-200 bg-teal-50/30' : 'border-gray-200 bg-white'}`}>
+                      <label className="flex items-start gap-3 cursor-pointer">
+                        <div className="flex h-5 items-center">
+                          <input
+                            type="checkbox"
+                            className="h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-600 cursor-pointer"
+                            checked={isSelected}
+                            onChange={(e) => toggleFeature(fId, e.target.checked)}
+                          />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium text-gray-900">{feature.name || feature.code}</span>
+                          <span className="text-xs text-gray-500">{feature.description || feature.applies_to}</span>
+                        </div>
+                      </label>
+
+                      {isSelected && (
+                        <div className="ml-7 pl-1">
+                          <div className="flex items-center gap-2">
+                            <Label className="text-xs text-gray-500">Limit (optional):</Label>
+                            <Input
+                              type="number"
+                              className="h-7 w-24 text-xs"
+                              placeholder="Unlimited"
+                              value={selectedData?.limit || ''}
+                              onChange={(e) => updateFeatureLimit(fId, e.target.value)}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
-          <div className="flex gap-2 justify-end pt-4">
+          <div className="flex gap-2 justify-end pt-4 sticky bottom-0 bg-white border-t mt-4 py-2">
             <Button type="button" variant="outline" onClick={handleClose} disabled={mutation.isPending}>
               Cancel
             </Button>
-            <Button type="submit" disabled={mutation.isPending}>
+            <Button type="submit" disabled={mutation.isPending} className="bg-teal-600 hover:bg-teal-700 text-white">
               {mutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Save Changes
             </Button>

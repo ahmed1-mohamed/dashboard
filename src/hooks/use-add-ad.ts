@@ -101,7 +101,8 @@ export function useAddAdData(isOpen: boolean) {
           "100",
           debouncedPropertySearch || "",
         );
-        const mappedProperties = data.map((prop: any) => ({
+        const propItems = Array.isArray(data) ? data : (data?.data || data?.properties || []);
+        const mappedProperties = propItems.map((prop: any) => ({
           id: prop.property_no || prop.property_name || prop.id,
           name: prop.property_name || prop.title || prop.property_no,
         }));

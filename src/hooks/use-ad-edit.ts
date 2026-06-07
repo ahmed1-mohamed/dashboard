@@ -162,8 +162,10 @@ export function useAdEditData(
 
       setLoadingAd(true);
       try {
-        const adData = await fetchAd(ad.creative_id, session.user.accessToken);
-        return adData;
+        const response = await fetchAd(ad.creative_id, session.user.accessToken);
+        const actualAdData = response?.data || response;
+        setAdData(actualAdData);
+        return actualAdData;
       } catch (e: any) {
         console.error(e);
         throw e;
@@ -197,7 +199,8 @@ export function useAdEditData(
           countryId,
         );
 
-        const mappedDevelopers = data.map((dev: any) => ({
+        const devItems = Array.isArray(data) ? data : (data?.data || data?.developers || []);
+        const mappedDevelopers = devItems.map((dev: any) => ({
           id: dev.developer_id,
           name: dev.developer_name || dev.name,
         }));
@@ -231,7 +234,8 @@ export function useAdEditData(
           "100",
           search,
         );
-        const mappedProjects = data.map((proj: any) => ({
+        const projItems = Array.isArray(data) ? data : (data?.data || data?.projects || []);
+        const mappedProjects = projItems.map((proj: any) => ({
           id: proj.project_id || proj.id,
           name: proj.project_name || proj.name || proj.title,
         }));
@@ -258,7 +262,8 @@ export function useAdEditData(
           "100",
           search,
         );
-        const mappedProperties = data.map((prop: any) => ({
+        const propItems = Array.isArray(data) ? data : (data?.data || data?.properties || []);
+        const mappedProperties = propItems.map((prop: any) => ({
           id: prop.property_no || prop.property_name || prop.id,
           name: prop.property_name || prop.title || prop.property_no,
         }));

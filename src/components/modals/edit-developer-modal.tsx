@@ -154,7 +154,7 @@ export function EditDeveloperModal({
       isOpen={isOpen}
       onClose={handleClose}
       title="Edit Developer"
-      size="3xl"
+      size="xl"
       showCloseButton={false}
       footer={
         <div className="flex gap-3">

@@ -9,7 +9,6 @@ import {
 export function ChartsSection() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {/* Sales Stages Status Overview */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <div className="mb-6">
           <h3 className="text-lg font-semibold text-gray-900">
@@ -20,10 +19,8 @@ export function ChartsSection() {
           </p>
         </div>
 
-        {/* Stacked Bar Chart */}
         <div className="space-y-4">
           <div className="flex items-end justify-around h-64 gap-3">
-            {/* Sales Purchase */}
             <div className="flex-1 flex flex-col items-center">
               <div className="w-full bg-gray-100 rounded-t-lg overflow-hidden h-40">
                 <div className="w-full bg-green-500 h-[40%]"></div>

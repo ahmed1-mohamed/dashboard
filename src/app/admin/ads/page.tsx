@@ -1,108 +1,49 @@
 "use client";
 
-import { useState, useCallback, useEffect, useMemo } from "react";
-import useDashboardAdminAdsData from "@/hooks/use-dashboardAdminAds";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
+import { TableSettings } from "@/components/table/table-settings";
+import { useTableSettings } from "@/hooks/use-table-settings";
+import { adsExportToPDF, adsExportToExcel } from "@/lib/exports/export-ads";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Switch } from "@/components/ui/switch";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Search,
-  Plus,
-  Download,
-  Settings2,
-  ChevronLeft,
-  ChevronRight,
-  AlertCircle,
-  AlertTriangle,
-  Trash2,
-  MoreHorizontal,
-  Megaphone,
-  Bell,
-  Eye,
-  MousePointer2,
-  Edit,
-} from "lucide-react";
-import { toast } from "sonner";
-import { toggleAdStatus } from "@/data/api-client";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Plus, TrendingUp, Users, MousePointerClick, Percent, AlertCircle } from "lucide-react";
 import { CreateAdModal } from "@/components/modals/create-ad-modal";
-import { ViewAdModal } from "@/components/modals/view-ad-modal";
-import { EditAdModal } from "@/components/modals/edit-ad-modal";
 import { DeleteAdDialog } from "@/components/modals/delete-ad-dialog";
+import useDashboardAdminAdsData from "@/hooks/use-dashboardAdminAds";
+import { toast } from "sonner";
+import { apiClient } from "@/lib/apiClient";
+import { AdminAdsService } from "@/services/AdminAdsService";
 
-// Type definitions matching the actual API response
-interface AdApiResponse {
-  creative_id: string;
-  creative_title: string;
-  type: string;
-  platform: "Web" | "Mobile" | "Both";
-  country: string;
-  location: string;
-  views: number;
-  clicks: number;
-  ctr: string;
-  status: string;
-}
+import { AdsTable } from "@/features/ads/components/AdsTable";
+import { AdsFilters } from "@/features/ads/components/AdsFilters";
 
-type Ad = AdApiResponse;
-
-interface PaginatedAdsResponse {
-  status: boolean;
-  data: AdApiResponse[];
-  current_page: number;
-  per_page: number;
-  total: number;
-  last_page?: number;
-}
-
-interface AdsTotalsResponse {
-  total_ads?: number;
-  active_ads?: number;
-  total_views?: number;
-  total_clicks?: number;
-}
-
-interface AdsPageProps {
-  initialPage?: number;
-  itemsPerPage?: number;
-}
+const DEFAULT_COLUMNS = [
+  { id: "type", label: "Type", visible: true },
+  { id: "platform", label: "Platform", visible: true },
+  { id: "country", label: "Country", visible: true },
+  { id: "location", label: "Locations", visible: true },
+  { id: "views", label: "Views", visible: true },
+  { id: "clicks", label: "Clicks", visible: true },
+  { id: "ctr", label: "CTR", visible: true },
+  { id: "status", label: "Status", visible: true },
+];
 
 export default function AdsPage({
   initialPage = 1,
-  itemsPerPage: initialItemsPerPage = 15,
-}: AdsPageProps) {
+  initialItemsPerPage = 15,
+}: {
+  initialPage?: number;
+  initialItemsPerPage?: number;
+}) {
   const router = useRouter();
   const { data: session } = useSession();
   const token = session?.user?.accessToken;
   const queryClient = useQueryClient();
 
-  // State for filters and UI
   const [searchQuery, setSearchQuery] = useState("");
   const [filterPlatform, setFilterPlatform] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
@@ -110,17 +51,23 @@ export default function AdsPage({
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [itemsPerPage, setItemsPerPage] = useState(initialItemsPerPage);
   const [selectedAds, setSelectedAds] = useState<string[]>([]);
-  const [selectedAd, setSelectedAd] = useState<Ad | null>(null);
   const [createAdModalOpen, setCreateAdModalOpen] = useState(false);
-  const [viewAdModalOpen, setViewAdModalOpen] = useState(false);
-  const [editAdModalOpen, setEditAdModalOpen] = useState(false);
   const [deleteAdDialogOpen, setDeleteAdDialogOpen] = useState(false);
+  const [selectedAd, setSelectedAd] = useState<any | null>(null);
   const [updatingAdId, setUpdatingAdId] = useState<string | null>(null);
 
-  // Debounced search
   const [debouncedSearch, setDebouncedSearch] = useState(searchQuery);
 
-  // Debounce search input
+  const tableSettings = useTableSettings("ads", DEFAULT_COLUMNS);
+
+  useEffect(() => {
+    setItemsPerPage(tableSettings.settings.itemsPerPage);
+  }, [tableSettings.settings.itemsPerPage]);
+
+  const isColVisible = (colId: string) => {
+    return tableSettings.settings.columns.find((c) => c.id === colId)?.visible !== false;
+  };
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchQuery);
@@ -128,12 +75,10 @@ export default function AdsPage({
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
   }, [filterStatus, filterPlatform, filterType, debouncedSearch]);
 
-  // Memoize filters to prevent unnecessary refetches
   const adsFilters = useMemo(
     () => ({
       status: filterStatus,
@@ -144,176 +89,139 @@ export default function AdsPage({
     [filterStatus, filterPlatform, filterType, debouncedSearch],
   );
 
-  // Fetch ads data using custom hook
   const { adsData, totalsData } = useDashboardAdminAdsData(
     currentPage,
     itemsPerPage,
     adsFilters,
   );
 
-  const { data, isLoading, isError, error, isFetching, refetch } = adsData;
-  const { data: totals } = totalsData as { data?: AdsTotalsResponse };
+  const { data, isLoading, isError, error, refetch } = adsData;
+  const { data: totals } = totalsData as { data?: any };
 
-  // Debug: inspect raw response
-  useEffect(() => {
-    if (data) {
-      console.log("Ads Data type:", typeof data);
-      console.log("Ads Data keys:", Object.keys(data as object));
-      console.log("Ads Data value:", data);
-    }
-  }, [data]);
-
-  // Development debug: show raw response in UI
-  const showDebug = process.env.NODE_ENV === "development";
-
-  // Map API data to component interface
-  // Handle both response formats: { data: [...] } or direct array
-  const rawData = Array.isArray(data)
-    ? data
-    : data && typeof data === "object" && "data" in data
-      ? data?.data
-      : undefined;
-  const itemsArray = Array.isArray(rawData) ? rawData : [];
-  // if (Array.isArray(rawData)) {
-  //   itemsArray = rawData;
-  // } else if (rawData && Array.isArray(rawData.data)) {
-  //   itemsArray = rawData.data;
-  // }
-
-  const ads: Ad[] = itemsArray.map((ad: any) => {
-    const a = ad.data || ad;
-    return {
-      creative_id: a.creative_id?.toString() || "",
-      creative_title: a.creative_title || "N/A",
-      type: a.type || "N/A",
-      platform: a.platform || "N/A",
-      country: a.country || "N/A",
-      location: a.location || "N/A",
-      views: a.views || 0,
-      clicks: a.clicks || 0,
-      ctr: a.ctr || "0%",
-      status: a.status || "inactive",
-    };
-  });
-  console.log("Mapped Ads:", ads);
-  console.log("Totals Data:", data);
-  const totalItems = (data as any)?.total || (data as any)?.data?.total;
-  const totalPages = Math.ceil(Number(totalItems) / itemsPerPage);
+  const ads = ((data as any)?.data || data || []) as any[];
+  const totalItems = (data as any)?.meta?.total || (data as any)?.total || ads.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
   const startIndex = (currentPage - 1) * itemsPerPage;
 
-  // Transform totals data for stats cards
-  const adsTotals = totals
-    ? [
+  const adsTotals = useMemo(() => {
+    if (!totals) return [];
+    return [
       {
-        title: "Total Ads",
-        value: totals.total_ads?.toString() || "0",
-        change: "+ 10%",
-        trend: "up" as const,
-        icon: Megaphone,
-        period: "vs last 3 months",
-      },
-      {
-        title: "Active",
+        title: "Total Active Ads",
         value: totals.active_ads?.toString() || "0",
-        change: "↓ 2.4",
-        trend: "down" as const,
-        icon: Bell,
-        period: "vs last 3 months",
+        icon: TrendingUp,
+        trend: "+12.5%",
+        trendUp: true,
       },
       {
         title: "Total Views",
         value: totals.total_views?.toLocaleString() || "0",
-        change: "↑ 5.6%",
-        trend: "up" as const,
-        icon: Eye,
-        period: "vs last 3 months",
+        icon: Users,
+        trend: "+5.2%",
+        trendUp: true,
       },
       {
         title: "Total Clicks",
         value: totals.total_clicks?.toLocaleString() || "0",
-        change: "↑ 8%",
-        trend: "up" as const,
-        icon: MousePointer2,
-        period: "vs last 3 months",
+        icon: MousePointerClick,
+        trend: "+2.1%",
+        trendUp: true,
       },
-    ]
-    : [];
+      {
+        title: "Average CTR",
+        value: totals.average_ctr || "0%",
+        icon: Percent,
+        trend: "-0.4%",
+        trendUp: false,
+      },
+    ];
+  }, [totals]);
 
-  // Status toggle mutation
-  const mutationToggleStatus = useMutation({
-    mutationFn: async ({
-      adId,
-      newStatus,
-    }: {
-      adId: string;
-      newStatus: boolean;
-    }) => {
-      await toggleAdStatus(
-        parseInt(adId),
-        newStatus ? "active" : "paused",
-        token!,
-      );
-    },
-    onMutate: async ({ adId }) => {
-      setUpdatingAdId(adId);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["ads"] });
-      toast.success("Ad status updated successfully!");
-    },
-    onError: (error) => {
+  const handleExportExcel = async () => {
+    try {
+      toast.loading("Fetching all ads for export...", { id: "export" });
+      const response: any = await AdminAdsService.getAds(1, 10000, adsFilters);
+      const dataToExport = response.data?.data || response.data || [];
+      if (dataToExport.length > 0) {
+        adsExportToExcel(dataToExport);
+        toast.success("Ads exported to Excel successfully", { id: "export" });
+      } else {
+        toast.error("No data to export", { id: "export" });
+      }
+    } catch (error) {
       console.error(error);
-      toast.error("Failed to update ad status");
+      toast.error("Failed to fetch ads for export", { id: "export" });
+    }
+  };
+
+  const handleExportPdf = async () => {
+    try {
+      toast.loading("Fetching all ads for export...", { id: "export" });
+      const response: any = await AdminAdsService.getAds(1, 10000, adsFilters);
+      const dataToExport = response.data?.data || response.data || [];
+      if (dataToExport.length > 0) {
+        adsExportToPDF(dataToExport);
+        toast.success("Ads exported to PDF successfully", { id: "export" });
+      } else {
+        toast.error("No data to export", { id: "export" });
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to fetch ads for export", { id: "export" });
+    }
+  };
+
+  const statusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: "active" | "inactive" }) => {
+      const response = await apiClient.post(`/dashboard/ads/update-status/${id}`, { status });
+      return response.data;
+    },
+    onMutate: () => {
+      toast.loading("Updating status...", { id: "status-update" });
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["adminAds"] });
+      queryClient.invalidateQueries({ queryKey: ["adminAdsTotals"] });
+      toast.success(`Ad status updated to ${variables.status}`, { id: "status-update" });
+    },
+    onError: (err: any) => {
+      console.error("Status update error:", err);
+      toast.error(err?.response?.data?.message || "Failed to update ad status", { id: "status-update" });
     },
     onSettled: () => {
       setUpdatingAdId(null);
     },
   });
 
-  // Handle page changes
-  const handlePageChange = useCallback(
-    (page: number) => {
-      if (page >= 1 && page <= totalPages) {
-        setCurrentPage(page);
-      }
-    },
-    [totalPages],
-  );
+  const handleStatusToggle = (adId: string, checked: boolean) => {
+    setUpdatingAdId(adId);
+    statusMutation.mutate({
+      id: adId,
+      status: checked ? "active" : "inactive",
+    });
+  };
 
-  const handleSelectAll = useCallback(
-    (checked: boolean) => {
-      if (checked) {
-        setSelectedAds(ads.map((a) => a.creative_id));
-      } else {
-        setSelectedAds([]);
-      }
-    },
-    [ads],
-  );
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedAds(ads.map((ad: any) => ad.creative_id));
+    } else {
+      setSelectedAds([]);
+    }
+  };
 
-  const handleSelectOne = useCallback(
-    (id: string, checked: boolean) => {
-      if (checked) {
-        setSelectedAds([...selectedAds, id]);
-      } else {
-        setSelectedAds(selectedAds.filter((aid) => aid !== id));
-      }
-    },
-    [selectedAds],
-  );
+  const handleSelectOne = (id: string, checked: boolean) => {
+    if (checked) {
+      setSelectedAds([...selectedAds, id]);
+    } else {
+      setSelectedAds(selectedAds.filter((adId) => adId !== id));
+    }
+  };
 
-  const handleStatusToggle = useCallback(
-    (adId: string, newStatus: boolean) => {
-      mutationToggleStatus.mutate({ adId, newStatus });
-    },
-    [mutationToggleStatus],
-  );
+  const handleDeleteClick = (ad: any) => {
+    setSelectedAd(ad);
+    setDeleteAdDialogOpen(true);
+  };
 
-  const handleRetry = useCallback(() => {
-    refetch();
-  }, [refetch]);
-
-  // Generate page numbers for pagination
   const getPageNumbers = useCallback(() => {
     const pages: (number | string)[] = [];
     const maxVisible = 5;
@@ -340,15 +248,15 @@ export default function AdsPage({
 
   return (
     <div className="p-6 space-y-6 max-w-[1600px] mx-auto">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <h1 className="text-2xl font-bold text-gray-900">Ads</h1>
-        <Button
-          className="bg-teal-600 hover:bg-teal-700 text-white gap-2"
-          onClick={() => setCreateAdModalOpen(true)}
-        >
-          <Plus className="h-4 w-4" />
-          Create Ad
-        </Button>
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          <TableSettings settings={tableSettings} onExportExcel={handleExportExcel} onExportPdf={handleExportPdf} />
+          <Button className="bg-teal-600 hover:bg-teal-700 text-white gap-2" onClick={() => setCreateAdModalOpen(true)}>
+            <Plus className="h-4 w-4" />
+            Create Ad
+          </Button>
+        </div>
       </div>
 
       {isLoading && (
@@ -365,16 +273,10 @@ export default function AdsPage({
           <div className="flex items-center gap-2">
             <AlertCircle className="h-5 w-5 text-red-500" />
             <p className="text-sm text-red-800">
-              <strong>Error:</strong>{" "}
-              {error instanceof Error ? error.message : "Failed to load ads"}
+              <strong>Error:</strong> {error instanceof Error ? error.message : "Failed to load ads"}
             </p>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRetry}
-            className="mt-2 border-red-200 text-red-700 hover:bg-red-100"
-          >
+          <Button variant="outline" size="sm" onClick={() => refetch()} className="mt-2 border-red-200 text-red-700 hover:bg-red-100">
             Try Again
           </Button>
         </div>
@@ -385,26 +287,18 @@ export default function AdsPage({
           {adsTotals.map((stat, index) => {
             const Icon = stat.icon;
             return (
-              <Card key={index} className="shadow-none border-gray-200">
-                <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                  <div className="flex items-center gap-2 text-gray-500">
-                    <Icon className="h-4 w-4" />
-                    <span className="text-sm font-medium">{stat.title}</span>
+              <Card key={index} className="bg-white border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-gray-500">{stat.title}</CardTitle>
+                  <div className={`p-2 rounded-full ${stat.trendUp ? "bg-teal-50" : "bg-red-50"}`}>
+                    <Icon className={`h-4 w-4 ${stat.trendUp ? "text-teal-600" : "text-red-600"}`} />
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-gray-900 mb-1">
-                    {stat.value}
-                  </div>
-                  <div className="flex items-center text-xs">
-                    <span
-                      className={`flex items-center font-medium ${stat.trend === "up" ? "text-green-600" : "text-red-500"
-                        }`}
-                    >
-                      {stat.change}
-                    </span>
-                    <span className="text-gray-500 ml-1">{stat.period}</span>
-                  </div>
+                  <div className="text-2xl font-bold text-gray-900">{stat.value}</div>
+                  <p className={`text-xs mt-1 ${stat.trendUp ? "text-teal-600" : "text-red-600"}`}>
+                    {stat.trend} from last month
+                  </p>
                 </CardContent>
               </Card>
             );
@@ -413,232 +307,32 @@ export default function AdsPage({
       )}
 
       {!isLoading && !isError && (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-          <div className="p-4 border-b border-gray-200 flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-2 flex-1 min-w-0 overflow-x-auto pb-1 sm:pb-0">
-              <div className="relative w-60">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="Search ads by title"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 bg-gray-50 border-gray-200"
-                />
-              </div>
-
-              <Select value={filterPlatform} onValueChange={setFilterPlatform}>
-                <SelectTrigger className="w-[140px] bg-gray-50 border-gray-200">
-                  <SelectValue placeholder="All Platforms" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Platforms</SelectItem>
-                  <SelectItem value="web">Web</SelectItem>
-                  <SelectItem value="mobile">Mobile</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select
-                value={filterStatus}
-                onValueChange={(val) => {
-                  setFilterStatus(val);
-                }}
-              >
-                <SelectTrigger className="w-[120px] bg-gray-50 border-gray-200">
-                  <SelectValue placeholder="All Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                  <SelectItem value="paused">Paused</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={filterType} onValueChange={setFilterType}>
-                <SelectTrigger className="w-[120px] bg-gray-50 border-gray-200">
-                  <SelectValue placeholder="All Types" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="banner">Banner</SelectItem>
-                  <SelectItem value="card">Card</SelectItem>
-                  <SelectItem value="slider">Slider</SelectItem>
-                  <SelectItem value="native">Native</SelectItem>
-                  <SelectItem value="pop-up">Pop-up</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                className="gap-2 border-gray-200 text-gray-700"
-              >
-                <Download className="h-4 w-4" />
-                Export
-              </Button>
-              <Button
-                variant="outline"
-                className="gap-2 border-gray-200 text-gray-700"
-              >
-                <Settings2 className="h-4 w-4" />
-                Table settings
-              </Button>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col">
+          <div className="p-4 border-b border-gray-200 bg-gray-50/50">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <AdsFilters
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                statusFilter={filterStatus}
+                onStatusChange={setFilterStatus}
+                platformFilter={filterPlatform}
+                onPlatformChange={setFilterPlatform}
+                typeFilter={filterType}
+                onTypeChange={setFilterType}
+              />
             </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-gray-50/50 hover:bg-gray-50/50">
-                  <TableHead className="w-12 px-4">
-                    <Checkbox
-                      checked={
-                        ads.length > 0 && selectedAds.length === ads.length
-                      }
-                      onCheckedChange={(checked) =>
-                        handleSelectAll(checked as boolean)
-                      }
-                    />
-                  </TableHead>
-                  <TableHead className="min-w-[250px]">Ad</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Platform</TableHead>
-                  <TableHead>Country</TableHead>
-                  <TableHead>Locations</TableHead>
-                  <TableHead>Views</TableHead>
-                  <TableHead>Clicks</TableHead>
-                  <TableHead>CTR</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-12"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {ads.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={11}
-                      className="text-center py-8 text-gray-500"
-                    >
-                      No ads found.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  ads.map((ad) => (
-                    <TableRow key={ad.creative_id} className="hover:bg-gray-50">
-                      <TableCell className="px-4">
-                        <Checkbox
-                          checked={selectedAds.includes(ad.creative_id)}
-                          onCheckedChange={(checked) =>
-                            handleSelectOne(ad.creative_id, checked as boolean)
-                          }
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <span className="font-medium text-gray-900 text-sm">
-                            {ad.creative_title}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-gray-600">{ad.type}</TableCell>
-                      <TableCell className="text-gray-600">
-                        {ad.platform}
-                      </TableCell>
-                      <TableCell className="text-gray-600">
-                        {ad.country}
-                      </TableCell>
-                      <TableCell className="text-gray-600">
-                        {ad.location}
-                      </TableCell>
-                      <TableCell className="text-gray-600">
-                        {ad.views.toLocaleString()}
-                      </TableCell>
-                      <TableCell className="text-gray-600">
-                        {ad.clicks.toLocaleString()}
-                      </TableCell>
-                      <TableCell className="text-gray-600">{ad.ctr}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Badge
-                            variant={
-                              ad.status === "active" ? "success" : "secondary"
-                            }
-                            className={`${ad.status === "active"
-                                ? "bg-green-100 text-green-800 hover:bg-green-100"
-                                : "bg-gray-100 text-gray-800 hover:bg-gray-100"
-                              }`}
-                          >
-                            {ad.status === "active" ? "Active" : "Inactive"}
-                          </Badge>
-                          <div
-                            className={`w-2 h-2 rounded-full ${ad.status === "active"
-                                ? "bg-green-500"
-                                : "bg-gray-400"
-                              } ${updatingAdId === ad.creative_id
-                                ? "animate-pulse"
-                                : ""
-                              }`}
-                          />
-                          <Switch
-                            checked={ad.status === "active"}
-                            onCheckedChange={(checked) =>
-                              handleStatusToggle(ad.creative_id, checked)
-                            }
-                            disabled={updatingAdId === ad.creative_id}
-                            className="data-[state=checked]:bg-green-600 data-[state=unchecked]:bg-gray-300"
-                          />
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-gray-400 hover:text-gray-600"
-                            >
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onClick={() => {
-                                setSelectedAd(ad);
-                                setViewAdModalOpen(true);
-                              }}
-                            >
-                              <Eye className="mr-2 h-4 w-4" />
-                              View
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => {
-                                setSelectedAd(ad);
-                                setEditAdModalOpen(true);
-                              }}
-                            >
-                              <Edit className="mr-2 h-4 w-4" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => {
-                                setSelectedAd(ad);
-                                setDeleteAdDialogOpen(true);
-                              }}
-                              className="text-red-600"
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
+          <AdsTable
+            ads={ads}
+            selectedAds={selectedAds}
+            handleSelectAll={handleSelectAll}
+            handleSelectOne={handleSelectOne}
+            isColVisible={isColVisible}
+            updatingAdId={updatingAdId}
+            handleStatusToggle={handleStatusToggle}
+            onDeleteClick={handleDeleteClick}
+          />
 
           {totalPages > 1 && (
             <div className="p-4 border-t border-gray-200 flex items-center justify-between flex-wrap gap-4">
@@ -646,21 +340,9 @@ export default function AdsPage({
                 <div className="text-sm text-gray-500">
                   Showing{" "}
                   <span className="font-medium">
-                    {totalItems > 0
-                      ? `${Math.max(startIndex + 1, 0)}-${Math.min(
-                        currentPage * itemsPerPage,
-                        totalItems,
-                      )}`
-                      : "0-0"}
+                    {totalItems > 0 ? `${Math.max(startIndex + 1, 0)}-${Math.min(currentPage * itemsPerPage, totalItems)}` : "0-0"}
                   </span>{" "}
                   of <span className="font-medium">{totalItems}</span>
-                  {totalItems > 0 &&
-                    currentPage === totalPages &&
-                    totalItems % itemsPerPage !== 0 && (
-                      <span className="text-xs text-gray-400">
-                        ({totalItems % itemsPerPage} items on this page)
-                      </span>
-                    )}
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -687,46 +369,36 @@ export default function AdsPage({
               <div className="flex items-center gap-1">
                 <Button
                   variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1 || isFetching}
+                  size="sm"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="h-8"
                 >
-                  <ChevronLeft className="h-4 w-4" />
+                  Previous
                 </Button>
-                {getPageNumbers().map((page, index) =>
-                  typeof page === "string" ? (
-                    <span
-                      key={`ellipsis-${index}`}
-                      className="px-2 text-gray-400"
-                    >
-                      {page}
-                    </span>
-                  ) : (
+                <div className="flex items-center gap-1 hidden sm:flex">
+                  {getPageNumbers().map((pageNum, idx) => (
                     <Button
-                      key={`page-${page}`}
-                      variant={currentPage === page ? "default" : "outline"}
-                      size="icon"
-                      onClick={() => handlePageChange(page)}
-                      disabled={currentPage === page || isFetching}
-                      className={
-                        currentPage === page
-                          ? "h-8 w-8 bg-gray-900 hover:bg-gray-800 text-white"
-                          : "h-8 w-8 border-gray-200"
-                      }
+                      key={idx}
+                      variant={pageNum === currentPage ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => typeof pageNum === "number" && setCurrentPage(pageNum)}
+                      disabled={pageNum === "..."}
+                      className={`h-8 w-8 p-0 ${pageNum === currentPage ? "bg-teal-600 text-white hover:bg-teal-700" : "text-gray-600 border-gray-200"
+                        }`}
                     >
-                      {page}
+                      {pageNum}
                     </Button>
-                  ),
-                )}
+                  ))}
+                </div>
                 <Button
                   variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage >= totalPages || isFetching}
+                  size="sm"
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="h-8"
                 >
-                  <ChevronRight className="h-4 w-4" />
+                  Next
                 </Button>
               </div>
             </div>
@@ -734,70 +406,18 @@ export default function AdsPage({
         </div>
       )}
 
-      <CreateAdModal
-        isOpen={createAdModalOpen}
-        onClose={() => setCreateAdModalOpen(false)}
-        onSuccess={() => {
-          queryClient.invalidateQueries({ queryKey: ["ads"] });
-          queryClient.invalidateQueries({ queryKey: ["adsTotals"] });
-          setCreateAdModalOpen(false);
-        }}
-      />
+      {createAdModalOpen && (
+        <CreateAdModal isOpen={createAdModalOpen} onClose={() => setCreateAdModalOpen(false)} />
+      )}
 
-      {/* View Ad Modal */}
-      {/* <ViewAdModal
-        ad={selectedAd}
-        isOpen={viewAdModalOpen}
-        onClose={() => {
-          setViewAdModalOpen(false);
-          setSelectedAd(null);
-        }}
-        onEdit={() => {
-          setViewAdModalOpen(false);
-          setEditAdModalOpen(true);
-        }}
-        onDelete={() => {
-          setViewAdModalOpen(false);
-          setDeleteAdDialogOpen(true);
-        }}
-        onSuccess={() => {
-          queryClient.invalidateQueries({ queryKey: ["ads"] });
-          queryClient.invalidateQueries({ queryKey: ["adsTotals"] });
-          setViewAdModalOpen(false);
-          setSelectedAd(null);
-        }}
-      /> */}
-
-      {/* Edit Ad Modal */}
-      {/* <EditAdModal
-        ad={selectedAd}
-        isOpen={editAdModalOpen}
-        onClose={() => {
-          setEditAdModalOpen(false);
-          setSelectedAd(null);
-        }}
-        onSuccess={() => {
-          queryClient.invalidateQueries({ queryKey: ["ads"] });
-          queryClient.invalidateQueries({ queryKey: ["adsTotals"] });
-          setEditAdModalOpen(false);
-          setSelectedAd(null);
-        }}
-      /> */}
-
-      <DeleteAdDialog
-        ad={selectedAd}
-        isOpen={deleteAdDialogOpen}
-        onClose={() => {
-          setDeleteAdDialogOpen(false);
-          setSelectedAd(null);
-        }}
-        onSuccess={() => {
-          queryClient.invalidateQueries({ queryKey: ["ads"] });
-          queryClient.invalidateQueries({ queryKey: ["adsTotals"] });
-          setDeleteAdDialogOpen(false);
-          setSelectedAd(null);
-        }}
-      />
+      {deleteAdDialogOpen && selectedAd && (
+        <DeleteAdDialog
+          isOpen={deleteAdDialogOpen}
+          onClose={() => setDeleteAdDialogOpen(false)}
+          ad={selectedAd}
+          onSuccess={() => refetch()}
+        />
+      )}
     </div>
   );
 }
