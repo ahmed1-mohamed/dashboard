@@ -42,26 +42,28 @@ export const AdminAdsService = {
 
 
   getAd: async (adId: string, token: string) => {
-    return apiClient.get(`/dashboard/ads/${adId}`, token);
+    return apiClient.get(`/dashboard/ads/${adId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
   },
-
 
   createAd: (data: FormData, token: string) => {
-    return apiClient.post("/dashboard/ads", data, token);
+    return apiClient.post("/dashboard/ads", data, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
   },
-
 
   updateAd: (adId: number, data: FormData, token: string) => {
-    return apiClient.put(`/dashboard/ads/${adId}`, data, token);
+    return apiClient.post(`/dashboard/ads/${adId}`, data, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
   },
-
 
   deleteAd: (adId: number) => {
     return apiClient.delete(`/dashboard/ads/${adId}`);
   },
 
-
   toggleStatus: (adId: number, status: string) => {
-    return apiClient.post(`/dashboard/ads/${adId}/toggle-status`, status);
+    return apiClient.patch(`/dashboard/ads/${adId}/toggle-status`, { status });
   },
 };

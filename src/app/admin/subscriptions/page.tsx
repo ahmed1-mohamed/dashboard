@@ -118,7 +118,25 @@ export default function SubscriptionsPage() {
     packagesQuery,
     customerPlansQuery,
     deletePackageMutation,
+    deleteCustomerPlanMutation,
   } = useDashboardAdminSubscriptions(activeTab);
+
+  // Delete Customer Plan
+  const handleDeleteCustomerPlan = useCallback(
+    (planId: number | string) => {
+      deleteCustomerPlanMutation.mutate(planId, {
+        onSuccess: () => {
+          toast.success("Customer plan deleted successfully");
+        },
+        onError: (error) => {
+          const message =
+            error instanceof Error ? error.message : "Failed to delete customer plan";
+          toast.error(message);
+        },
+      });
+    },
+    [deleteCustomerPlanMutation],
+  );
 
   // Delete Package
   const handleDeletePackage = useCallback(
@@ -202,6 +220,7 @@ export default function SubscriptionsPage() {
                 plan={plan}
                 onView={(id) => setViewPlanId(id)}
                 onEdit={(id) => setUpdatePlanId(id)}
+                onDelete={handleDeleteCustomerPlan}
               />
             ))}
           </div>

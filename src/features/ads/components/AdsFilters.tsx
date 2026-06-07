@@ -46,7 +46,9 @@ export function AdsFilters({
           <SelectContent>
             <SelectItem value="all">All Status</SelectItem>
             <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="inactive">Inactive</SelectItem>
+            <SelectItem value="paused">Paused</SelectItem>
+            <SelectItem value="draft">Draft</SelectItem>
+            <SelectItem value="ended">Ended</SelectItem>
           </SelectContent>
         </Select>
 
@@ -56,14 +58,10 @@ export function AdsFilters({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Platforms</SelectItem>
-            <SelectItem value="facebook">Facebook</SelectItem>
-            <SelectItem value="instagram">Instagram</SelectItem>
-            <SelectItem value="google">Google</SelectItem>
-            <SelectItem value="tiktok">TikTok</SelectItem>
-            <SelectItem value="snapchat">Snapchat</SelectItem>
-            <SelectItem value="linkedin">LinkedIn</SelectItem>
-            <SelectItem value="twitter">Twitter</SelectItem>
-            <SelectItem value="other">Other</SelectItem>
+            <SelectItem value="mobile">Mobile App Only</SelectItem>
+            <SelectItem value="web">Web</SelectItem>
+            <SelectItem value="android">Android</SelectItem>
+            <SelectItem value="ios">IOS</SelectItem>
           </SelectContent>
         </Select>
 
@@ -73,12 +71,15 @@ export function AdsFilters({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Formats</SelectItem>
-            <SelectItem value="image">Image</SelectItem>
-            <SelectItem value="video">Video</SelectItem>
-            <SelectItem value="carousel">Carousel</SelectItem>
-            <SelectItem value="story">Story</SelectItem>
-            <SelectItem value="reels">Reels</SelectItem>
-            <SelectItem value="text">Text</SelectItem>
+            <SelectItem value="card">Card</SelectItem>
+            <SelectItem value="banner">Banner</SelectItem>
+            <SelectItem value="native">Native</SelectItem>
+            <SelectItem value="pop_up">Pop-up</SelectItem>
+            <SelectItem value="slider">Slider</SelectItem>
+            <SelectItem value="half_page">Half Page</SelectItem>
+            <SelectItem value="full_page">Full Page</SelectItem>
+            <SelectItem value="badge">Badge</SelectItem>
+            <SelectItem value="status">Status</SelectItem>
           </SelectContent>
         </Select>
       </div>

@@ -171,7 +171,6 @@ export function EditAdModal({
     setProjectSearch,
     propertySearch,
     setPropertySearch,
-    developerHasMore,
   }: {
     adData: AdData | null;
     developers: any[];
@@ -186,9 +185,8 @@ export function EditAdModal({
     setProjectSearch: (value: string) => void;
     propertySearch: string;
     setPropertySearch: (value: string) => void;
-    developerHasMore: boolean;
   } = useAdEditData(
-    ad,
+    ad?.creative_id || null,
     isOpen,
     watch("country"),
     watch("developerId"),

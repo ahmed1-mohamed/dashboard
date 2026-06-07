@@ -29,7 +29,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { createAd } from "@/data/api-client";
+import { useAdActions } from "@/hooks/use-ad-actions";
 import { useCreateAdData } from "@/hooks/use-create-ad";
 import { toast } from "sonner";
 
@@ -57,7 +57,8 @@ export function CreateAdModal({
   onClose,
   onSuccess,
 }: CreateAdModalProps) {
-    const [step, setStep] = useState(1);
+  const { createAd, isCreating } = useAdActions();
+  const [step, setStep] = useState(1);
   const [adImage, setAdImage] = useState<File | null>(null);
   const [adImagePreview, setAdImagePreview] = useState<string>("");
   const [developerSearch, setDeveloperSearch] = useState("");
@@ -463,16 +464,13 @@ export function CreateAdModal({
       }
 
       console.log("Sending FormData:", formData);
-      await createAd(formData, session.user.accessToken);
+      await createAd(formData);
 
       toast.success("Advertisement created successfully!");
       onSuccess?.();
       onClose();
     } catch (error: any) {
       console.error("Error creating ad:", error);
-      toast.error(
-        error?.response?.data?.message || "Failed to create advertisement",
-      );
     }
   };
 
@@ -499,10 +497,14 @@ export function CreateAdModal({
             </Button>
           ) : (
             <Button
-              className="bg-teal-600 hover:bg-teal-700 text-white"
+              className="bg-teal-600 hover:bg-teal-700 text-white gap-2"
               onClick={handleSubmit(onSubmit)}
+              disabled={isCreating}
             >
-              Create Ad
+              {isCreating && (
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-solid border-white border-r-transparent" />
+              )}
+              {isCreating ? "Creating..." : "Create Ad"}
             </Button>
           )}
         </div>

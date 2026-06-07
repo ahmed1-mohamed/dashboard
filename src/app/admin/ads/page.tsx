@@ -17,6 +17,7 @@ import useDashboardAdminAdsData from "@/hooks/use-dashboardAdminAds";
 import { toast } from "sonner";
 import { apiClient } from "@/lib/apiClient";
 import { AdminAdsService } from "@/services/AdminAdsService";
+import { useAdActions } from "@/hooks/use-ad-actions";
 
 import { AdsTable } from "@/features/ads/components/AdsTable";
 import { AdsFilters } from "@/features/ads/components/AdsFilters";
@@ -171,34 +172,21 @@ export default function AdsPage({
     }
   };
 
-  const statusMutation = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: "active" | "inactive" }) => {
-      const response = await apiClient.post(`/dashboard/ads/update-status/${id}`, { status });
-      return response.data;
-    },
-    onMutate: () => {
-      toast.loading("Updating status...", { id: "status-update" });
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["adminAds"] });
-      queryClient.invalidateQueries({ queryKey: ["adminAdsTotals"] });
-      toast.success(`Ad status updated to ${variables.status}`, { id: "status-update" });
-    },
-    onError: (err: any) => {
-      console.error("Status update error:", err);
-      toast.error(err?.response?.data?.message || "Failed to update ad status", { id: "status-update" });
-    },
-    onSettled: () => {
-      setUpdatingAdId(null);
-    },
-  });
+  const { toggleAdStatus } = useAdActions();
 
-  const handleStatusToggle = (adId: string, checked: boolean) => {
+  const handleStatusToggle = async (adId: string, checked: boolean) => {
     setUpdatingAdId(adId);
-    statusMutation.mutate({
-      id: adId,
-      status: checked ? "active" : "inactive",
-    });
+    try {
+      await toggleAdStatus({
+        adId: Number(adId),
+        status: checked ? "active" : "inactive",
+      });
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setUpdatingAdId(null);
+      refetch();
+    }
   };
 
   const handleSelectAll = (checked: boolean) => {
@@ -407,7 +395,11 @@ export default function AdsPage({
       )}
 
       {createAdModalOpen && (
-        <CreateAdModal isOpen={createAdModalOpen} onClose={() => setCreateAdModalOpen(false)} />
+        <CreateAdModal 
+          isOpen={createAdModalOpen} 
+          onClose={() => setCreateAdModalOpen(false)} 
+          onSuccess={() => refetch()}
+        />
       )}
 
       {deleteAdDialogOpen && selectedAd && (
