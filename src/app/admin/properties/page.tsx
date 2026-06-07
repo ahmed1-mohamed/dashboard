@@ -22,9 +22,15 @@ import useProperties from "@/features/properties/hooks/useProperties";
 import { PropertiesTable } from "@/features/properties/components/PropertiesTable";
 import { PropertiesFilters } from "@/features/properties/components/PropertiesFilters";
 import { Property } from "@/features/properties/types";
-import { EditPropertyModal } from "@/components/modals/edit-property-modal";
 import { propertiesExportToExcel } from "@/lib/exports/export-properties";
-import { BulkImportPropertiesModal } from "@/components/modals/bulk-import-properties-modal";
+import { AdminPropertiesService } from "@/features/properties/services/AdminPropertiesService";
+import { TableSettings } from "@/components/table/table-settings";
+import { useTableSettings } from "@/hooks/use-table-settings";
+import dynamic from "next/dynamic";
+
+const EditPropertyModal = dynamic(() => import("@/components/modals/edit-property-modal").then((mod) => mod.EditPropertyModal));
+const BulkImportPropertiesModal = dynamic(() => import("@/components/modals/bulk-import-properties-modal").then((mod) => mod.BulkImportPropertiesModal));
+
 
 export default function PropertiesPage() {
   return (
@@ -36,6 +42,20 @@ export default function PropertiesPage() {
 
 function PropertiesPageContent() {
   const router = useRouter();
+
+  const DEFAULT_COLUMNS = [
+    { id: "unitNumber", label: "Unit Number", visible: true },
+    { id: "propertyName", label: "Property Name", visible: true },
+    { id: "type", label: "Type", visible: true },
+    { id: "area", label: "Area", visible: true },
+    { id: "floor", label: "Floor", visible: true },
+    { id: "price", label: "Price", visible: true },
+    { id: "projectName", label: "Project Name", visible: true },
+    { id: "status", label: "Status", visible: true },
+    { id: "actions", label: "Actions", visible: true },
+  ];
+
+  const tableSettings = useTableSettings("properties", DEFAULT_COLUMNS);
 
   const {
     page,
@@ -49,14 +69,17 @@ function PropertiesPageContent() {
     setFilter,
   } = useServerPagination({
     initialPage: 1,
-    initialPerPage: 15,
+    initialPerPage: tableSettings.settings.itemsPerPage,
     initialFilters: {
       type: "all",
       status: "all",
     },
   });
 
-  // Construct filters for API
+  React.useEffect(() => {
+    setPerPage(String(tableSettings.settings.itemsPerPage));
+  }, [tableSettings.settings.itemsPerPage, setPerPage]);
+
   const apiFilters = useMemo(() => {
     return {
       search: debouncedSearch,
@@ -66,8 +89,8 @@ function PropertiesPageContent() {
   }, [debouncedSearch, filters]);
 
   const {
-    data: propertiesData,
-    total,
+    properties,
+    totalProperties,
     isLoading,
     isError,
     error,
@@ -81,24 +104,6 @@ function PropertiesPageContent() {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [propertyToEdit, setPropertyToEdit] = useState<number | null>(null);
   const [importModalOpen, setImportModalOpen] = useState(false);
-
-  const totalProperties: number = useMemo(() => {
-    return total || (propertiesData || []).length;
-  }, [total, propertiesData]);
-
-  const properties: Property[] = useMemo(() => {
-    return (propertiesData || []).map((prop: any) => ({
-      id: prop.property_id,
-      unitNumber: prop.property_no || prop.property_name || "N/A",
-      project_name: prop.project_name?.toString() || "N/A",
-      type: prop.type || prop.property_subtype || "N/A",
-      area: prop.size ? `${prop.size} sqm` : prop.plot_size ? `${prop.plot_size} sqm` : "N/A",
-      floor: "N/A",
-      price: prop.price ? `${Number(prop.price).toLocaleString()} AED` : "N/A",
-      property_name: prop.property_name?.toString() || "N/A",
-      status: prop.availability_status === "available" ? "Available" : "Reserved",
-    }));
-  }, [propertiesData]);
 
   const totalPages = Math.max(1, Math.ceil(totalProperties / perPage));
 
@@ -135,14 +140,61 @@ function PropertiesPageContent() {
     });
   }, [propertyToDelete, deletePropertyMutation]);
 
-  const handleExport = useCallback(() => {
-    if (!propertiesData || propertiesData.length === 0) {
-      toast.info("No properties to export");
-      return;
+  const handleExport = useCallback(async () => {
+    toast.info("Preparing export... This might take a moment.", { duration: 3000 });
+    try {
+      let allExportedProperties: unknown[] = [];
+      let currentPage = 1;
+      let totalPagesToFetch = 1;
+      const batchSize = 100;
+
+      do {
+        const response = await AdminPropertiesService.getProperties({
+          page: currentPage,
+          per_page: batchSize,
+          ...apiFilters,
+        });
+
+        let batch: unknown[] = [];
+        let currentTotal = 0;
+
+        const rawData = (response as any)?.data || response;
+        if (Array.isArray(rawData)) {
+          batch = rawData;
+          totalPagesToFetch = 1;
+        } else {
+          const nested = rawData as { data?: unknown; total?: number; meta?: any } | undefined;
+          if (Array.isArray(nested?.data)) {
+            batch = nested.data;
+            currentTotal = nested.total ?? nested.meta?.total ?? batch.length;
+          } else {
+            const doublyNested = (nested?.data as { data?: unknown; total?: number } | undefined);
+            if (Array.isArray(doublyNested?.data)) {
+              batch = doublyNested.data;
+              currentTotal = doublyNested.total ?? batch.length;
+            }
+          }
+          if (currentTotal > 0) {
+            totalPagesToFetch = Math.ceil(currentTotal / batchSize);
+          } else {
+            totalPagesToFetch = 1;
+          }
+        }
+
+        allExportedProperties = [...allExportedProperties, ...batch];
+        currentPage++;
+      } while (currentPage <= totalPagesToFetch);
+
+      if (allExportedProperties.length === 0) {
+        toast.info("No properties to export");
+        return;
+      }
+      propertiesExportToExcel(allExportedProperties);
+      toast.success("Properties exported successfully!");
+    } catch (error) {
+      toast.error("Failed to export properties");
     }
-    propertiesExportToExcel(propertiesData);
-    toast.success("Properties exported successfully!");
-  }, [propertiesData]);
+  }, [apiFilters]);
 
   return (
     <div className="p-4 px-3 space-y-4 max-w-full overflow-hidden">
@@ -184,9 +236,6 @@ function PropertiesPageContent() {
               onStatusChange={(val) => setFilter("status", val)}
             />
             <div className="flex items-center gap-2">
-              <Button variant="outline" className="gap-2 border-gray-200" onClick={handleExport}>
-                <Download className="h-4 w-4" /> Export
-              </Button>
               <Button
                 variant="outline"
                 className="gap-2 border-gray-200"
@@ -194,13 +243,15 @@ function PropertiesPageContent() {
               >
                 <Upload className="h-4 w-4" /> Import
               </Button>
-              <Button variant="outline" className="gap-2 border-gray-200">
-                <Settings2 className="h-4 w-4" /> Table settings
-              </Button>
+              <TableSettings
+                settings={tableSettings}
+                onExportExcel={handleExport}
+              />
             </div>
           </div>
 
           <PropertiesTable
+            settings={tableSettings}
             properties={properties}
             selectedProperties={selectedProperties}
             onSelectAll={handleSelectAll}
@@ -240,16 +291,20 @@ function PropertiesPageContent() {
         </DialogContent>
       </Dialog>
 
-      <EditPropertyModal
-        isOpen={editModalOpen}
-        onClose={() => { setEditModalOpen(false); setPropertyToEdit(null); }}
-        propertyId={propertyToEdit || 0}
-      />
-      <BulkImportPropertiesModal
-        isOpen={importModalOpen}
-        onClose={() => setImportModalOpen(false)}
-        propertiesData={propertiesData || []}
-      />
+      {editModalOpen && (
+        <EditPropertyModal
+          isOpen={editModalOpen}
+          onClose={() => { setEditModalOpen(false); setPropertyToEdit(null); }}
+          propertyId={propertyToEdit || 0}
+        />
+      )}
+      {importModalOpen && (
+        <BulkImportPropertiesModal
+          isOpen={importModalOpen}
+          onClose={() => setImportModalOpen(false)}
+          propertiesData={properties || []}
+        />
+      )}
     </div>
   );
 }

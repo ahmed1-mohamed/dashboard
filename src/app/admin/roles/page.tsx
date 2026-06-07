@@ -14,9 +14,11 @@ import {
   Edit2,
   Trash2,
 } from "lucide-react";
-import AddRoleModal from "@/components/modals/add-role-modal";
-import { ViewRoleModal } from "@/components/modals/view-role-modal";
-import { EditRoleModal } from "@/components/modals/edit-role-modal";
+import dynamic from "next/dynamic";
+
+const AddRoleModal = dynamic(() => import("@/components/modals/add-role-modal"));
+const ViewRoleModal = dynamic(() => import("@/components/modals/view-role-modal").then(mod => mod.ViewRoleModal));
+const EditRoleModal = dynamic(() => import("@/components/modals/edit-role-modal").then(mod => mod.EditRoleModal));
 import useDashboardAdminRolesData from "@/hooks/use-dashboardAdminRoles";
 import { RolesDataType } from "@/types";
 import { toast } from "sonner";
@@ -55,63 +57,8 @@ export default function RolesPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   // Fetch roles with custom hook
-  const { rolesData, deleteRoleMutation } = useDashboardAdminRolesData();
-  const { data } = rolesData;
+  const { rolesData, roles, deleteRoleMutation } = useDashboardAdminRolesData();
   const isDeleting = deleteRoleMutation.isPending;
-
-  // Handle both response formats: direct array or { data: array }
-  const rawData = data as unknown;
-  let rolesArray: any[] = [];
-  if (Array.isArray(rawData)) {
-    rolesArray = rawData;
-  } else if (
-    rawData &&
-    typeof rawData === "object" &&
-    "data" in rawData &&
-    Array.isArray((rawData as { data?: unknown }).data)
-  ) {
-    rolesArray = (rawData as { data?: unknown }).data as any[];
-  }
-
-  // Map API data to component interface
-  const roles: Role[] = rolesArray.map((role: any) => {
-    let parsedPerms = role.permissions;
-    if (typeof parsedPerms === "string") {
-      try {
-        parsedPerms = JSON.parse(parsedPerms);
-      } catch (e) {
-        parsedPerms = null;
-      }
-    }
-
-    // Coerce all values to strict booleans (handle "0", "1", "true", "false")
-    if (parsedPerms && typeof parsedPerms === "object" && !Array.isArray(parsedPerms)) {
-      Object.keys(parsedPerms).forEach((section) => {
-        if (typeof parsedPerms[section] === "object") {
-          Object.keys(parsedPerms[section]).forEach((action) => {
-            const val = parsedPerms[section][action];
-            parsedPerms[section][action] = val === true || val === "1" || val === 1 || val === "true";
-          });
-        }
-      });
-    } else {
-      parsedPerms = null;
-    }
-
-    return {
-      role_id: role.role_id,
-      role_name: role.role_name,
-      role_type: role.role_type,
-      description: role.description
-        ? Array.isArray(role.description)
-          ? role.description
-          : [role.description]
-        : ["No specific permissions"],
-      users_count: role.users_count || 0,
-      is_active: role.is_active || false,
-      permissions: parsedPerms,
-    };
-  });
 
   const handleViewRole = (role: Role) => {
     setSelectedRole(role);
@@ -202,10 +149,12 @@ export default function RolesPage() {
         ))}
       </div>
 
-      <AddRoleModal
-        isOpen={isAddRoleModalOpen}
-        onClose={() => setIsAddRoleModalOpen(false)}
-      />
+      {isAddRoleModalOpen && (
+        <AddRoleModal
+          isOpen={isAddRoleModalOpen}
+          onClose={() => setIsAddRoleModalOpen(false)}
+        />
+      )}
 
       <Dialog
         open={deleteDialogOpen}
@@ -260,7 +209,7 @@ export default function RolesPage() {
         </DialogContent>
       </Dialog>
 
-      {selectedRole && (
+      {isViewModalOpen && selectedRole && (
         <ViewRoleModal
           roleId={selectedRole.role_id!}
           roleName={selectedRole.role_name}
@@ -282,7 +231,7 @@ export default function RolesPage() {
         />
       )}
 
-      {selectedRole && (
+      {isEditModalOpen && selectedRole && (
         <EditRoleModal
           roleId={selectedRole.role_id!}
           roleName={selectedRole.role_name}

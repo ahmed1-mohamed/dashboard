@@ -8,6 +8,8 @@ import {
 } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import { AdminProjectsService } from "../services/AdminProjectsService";
+import { unpackProjectsResponse, mapProject } from "../utils/map-project";
+import { useMemo } from "react";
 
 export default function useProjects(
   page: number = 1,
@@ -59,8 +61,16 @@ export default function useProjects(
     },
   });
 
+  const { itemsArray, totalItems } = useMemo(() => {
+    return unpackProjectsResponse(paginatedProjectsData.data);
+  }, [paginatedProjectsData.data]);
+
+  const projects = useMemo(() => itemsArray.map(mapProject), [itemsArray]);
+
   return {
     paginatedProjectsData,
+    projects,
+    totalProjects: totalItems,
     deleteProjectMutation,
     toggleActiveMutation,
     updateProjectMutation,

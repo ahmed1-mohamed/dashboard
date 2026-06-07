@@ -16,8 +16,10 @@ import { TableActions } from "@/components/table/table-actions";
 import { useRouter } from "next/navigation";
 import { Project } from "../types";
 import { Eye, EyeOff, CheckCircle2, XCircle, Download } from "lucide-react";
+import { useTableSettings } from "@/hooks/use-table-settings";
 
 interface ProjectsTableProps {
+  settings: ReturnType<typeof useTableSettings>;
   projects: Project[];
   selectedProjects: number[];
   onSelectAll: (checked: boolean) => void;
@@ -29,6 +31,7 @@ interface ProjectsTableProps {
 }
 
 export function ProjectsTable({
+  settings,
   projects,
   selectedProjects,
   onSelectAll,
@@ -39,6 +42,17 @@ export function ProjectsTable({
   onImport,
 }: ProjectsTableProps) {
   const router = useRouter();
+
+  const getDensityClass = () => {
+    switch (settings.settings.density) {
+      case "compact": return "py-1.5 px-2";
+      case "spacious": return "py-4 px-2";
+      case "comfortable":
+      default: return "py-2.5 px-2";
+    }
+  };
+
+  const densityClass = getDensityClass();
 
   if (projects.length === 0) {
     return (
@@ -68,43 +82,42 @@ export function ProjectsTable({
                 onCheckedChange={onSelectAll}
               />
             </TableHead>
-            <TableHead className="font-semibold text-gray-900 w-[110px] px-2 text-sm cursor-pointer hover:bg-gray-100">
-              Project
-            </TableHead>
-            <TableHead className="font-semibold text-gray-900 w-[110px] px-2 text-sm">
-              Developer
-            </TableHead>
-            <TableHead className="font-semibold text-gray-900 w-[70px] px-2 text-sm">
-              Units
-            </TableHead>
-            <TableHead className="font-semibold text-gray-900 w-[90px] px-2 text-sm">
-              City
-            </TableHead>
-            <TableHead className="font-semibold text-gray-900 w-[90px] px-2 text-sm">
-              Type
-            </TableHead>
-            <TableHead className="font-semibold text-gray-900 w-[80px] px-2 text-sm">
-              Price
-            </TableHead>
-
-            <TableHead className="font-semibold text-gray-900 w-[100px] px-2 text-sm">
-              Visibility
-            </TableHead>
-            <TableHead className="font-semibold text-gray-900 w-[100px] px-2 text-sm">
-              Status
-            </TableHead>
-            <TableHead className="font-semibold text-gray-900 text-center w-[90px] px-2 text-sm">
-              Import
-            </TableHead>
-            <TableHead className="font-semibold text-gray-900 text-center w-[50px] px-2 text-sm">
-              Actions
-            </TableHead>
+            {settings.isColumnVisible("project") && (
+              <TableHead className="font-semibold text-gray-900 w-[110px] px-2 text-sm cursor-pointer hover:bg-gray-100">Project</TableHead>
+            )}
+            {settings.isColumnVisible("developer") && (
+              <TableHead className="font-semibold text-gray-900 w-[110px] px-2 text-sm">Developer</TableHead>
+            )}
+            {settings.isColumnVisible("units") && (
+              <TableHead className="font-semibold text-gray-900 w-[70px] px-2 text-sm">Units</TableHead>
+            )}
+            {settings.isColumnVisible("city") && (
+              <TableHead className="font-semibold text-gray-900 w-[90px] px-2 text-sm">City</TableHead>
+            )}
+            {settings.isColumnVisible("type") && (
+              <TableHead className="font-semibold text-gray-900 w-[90px] px-2 text-sm">Type</TableHead>
+            )}
+            {settings.isColumnVisible("price") && (
+              <TableHead className="font-semibold text-gray-900 w-[80px] px-2 text-sm">Price</TableHead>
+            )}
+            {settings.isColumnVisible("visibility") && (
+              <TableHead className="font-semibold text-gray-900 w-[100px] px-2 text-sm">Visibility</TableHead>
+            )}
+            {settings.isColumnVisible("status") && (
+              <TableHead className="font-semibold text-gray-900 w-[100px] px-2 text-sm">Status</TableHead>
+            )}
+            {settings.isColumnVisible("import") && (
+              <TableHead className="font-semibold text-gray-900 text-center w-[90px] px-2 text-sm">Import</TableHead>
+            )}
+            {settings.isColumnVisible("actions") && (
+              <TableHead className="font-semibold text-gray-900 text-center w-[50px] px-2 text-sm">Actions</TableHead>
+            )}
           </TableRow>
         </TableHeader>
         <TableBody>
           {projects.map((project) => (
             <TableRow key={project.id} className="hover:bg-gray-50">
-              <TableCell className="px-2">
+              <TableCell className={`px-2 ${densityClass}`}>
                 <Checkbox
                   checked={selectedProjects.includes(project.id)}
                   onCheckedChange={(checked) =>
@@ -112,92 +125,111 @@ export function ProjectsTable({
                   }
                 />
               </TableCell>
-              <TableCell className="text-teal-600 font-medium px-2 text-sm">
-                <button
-                  onClick={() => router.push(`/admin/projects/${project.id}`)}
-                  className="text-gray-900 text-sm font-medium hover:text-teal-600 active:text-teal-800 transition-colors cursor-pointer text-left focus:outline-none"
-                >
-                  {project.name}
-                </button>
-              </TableCell>
-              <TableCell className="text-gray-900 px-2 text-sm truncate max-w-[110px]">
-                {project.developer_name}
-              </TableCell>
-              <TableCell className="px-2">
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium text-gray-900">
-                    {project.country_dimension_unit}
-                  </span>
-                </div>
-              </TableCell>
-              <TableCell className="text-gray-900 px-2 text-sm">
-                {project.city_name}
-              </TableCell>
-              <TableCell className="text-gray-900 px-2 text-sm">
-                {project.projectType}
-              </TableCell>
-              <TableCell className="text-gray-900 px-2 text-sm">
-                {project.price_range}
-              </TableCell>
-              <TableCell className="px-2" onClick={(e) => e.stopPropagation()}>
-                <div className="flex items-center gap-2">
-                  <Switch
-                    disabled
-                    checked={project.is_active ?? false}
-                    onCheckedChange={(checked) => onActiveToggle(project.id, checked)}
-                    className="data-[state=checked]:bg-green-500 transition-colors duration-300 shadow-sm"
-                  />
-                  <Badge
-                    variant={project.is_active ? "default" : "secondary"}
-                    className={`transition-all duration-500 flex items-center justify-center w-6 h-6 p-0 rounded-full shadow-sm ${project.is_active
-                      ? "bg-green-100 border-green-300"
-                      : "bg-gray-100 border-gray-200"
-                      }`}
+              {settings.isColumnVisible("project") && (
+                <TableCell className={`text-teal-600 font-medium px-2 text-sm ${densityClass}`}>
+                  <button
+                    onClick={() => router.push(`/admin/projects/${project.id}`)}
+                    className="text-gray-900 text-sm font-medium hover:text-teal-600 active:text-teal-800 transition-colors cursor-pointer text-left focus:outline-none"
                   >
-                    {project.is_active ? (
-                      <CheckCircle2 className="w-4 h-4 text-green-600 animate-in fade-in zoom-in spin-in-12 duration-500" />
-                    ) : (
-                      <XCircle className="w-4 h-4 text-gray-400 animate-in fade-in zoom-in -spin-in-12 duration-500" />
-                    )}
+                    {project.name}
+                  </button>
+                </TableCell>
+              )}
+              {settings.isColumnVisible("developer") && (
+                <TableCell className={`text-gray-900 px-2 text-sm truncate max-w-[110px] ${densityClass}`}>
+                  {project.developer_name}
+                </TableCell>
+              )}
+              {settings.isColumnVisible("units") && (
+                <TableCell className={`px-2 ${densityClass}`}>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium text-gray-900">
+                      {project.country_dimension_unit}
+                    </span>
+                  </div>
+                </TableCell>
+              )}
+              {settings.isColumnVisible("city") && (
+                <TableCell className={`text-gray-900 px-2 text-sm ${densityClass}`}>
+                  {project.city_name}
+                </TableCell>
+              )}
+              {settings.isColumnVisible("type") && (
+                <TableCell className={`text-gray-900 px-2 text-sm ${densityClass}`}>
+                  {project.projectType}
+                </TableCell>
+              )}
+              {settings.isColumnVisible("price") && (
+                <TableCell className={`text-gray-900 px-2 text-sm ${densityClass}`}>
+                  {project.price_range}
+                </TableCell>
+              )}
+              {settings.isColumnVisible("visibility") && (
+                <TableCell className={`px-2 ${densityClass}`} onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={project.is_active ?? false}
+                      onCheckedChange={(checked) => onActiveToggle(project.id, checked)}
+                      className="data-[state=checked]:bg-green-500 transition-colors duration-300 shadow-sm"
+                    />
+                    <Badge
+                      variant={project.is_active ? "default" : "secondary"}
+                      className={`transition-all duration-500 flex items-center justify-center w-6 h-6 p-0 rounded-full shadow-sm ${project.is_active
+                        ? "bg-green-100 border-green-300"
+                        : "bg-gray-100 border-gray-200"
+                        }`}
+                    >
+                      {project.is_active ? (
+                        <CheckCircle2 className="w-4 h-4 text-green-600 animate-in fade-in zoom-in spin-in-12 duration-500" />
+                      ) : (
+                        <XCircle className="w-4 h-4 text-gray-400 animate-in fade-in zoom-in -spin-in-12 duration-500" />
+                      )}
+                    </Badge>
+                  </div>
+                </TableCell>
+              )}
+              {settings.isColumnVisible("status") && (
+                <TableCell className={`px-2 ${densityClass}`}>
+                  <Badge
+                    variant="outline"
+                    className={
+                      project.status.toLowerCase() === "under construction" ||
+                        project.status.toLowerCase() === "upcoming"
+                        ? "bg-blue-50 text-blue-700 border-blue-200 text-[10px] px-1"
+                        : project.status.toLowerCase() === "completed" ||
+                          project.status.toLowerCase() === "ready for handover"
+                          ? "bg-green-50 text-green-700 border-green-200 text-[10px] px-1"
+                          : "bg-gray-50 text-gray-700 border-gray-200 text-[10px] px-1"
+                    }
+                  >
+                    {project.status}
                   </Badge>
-                </div>
-              </TableCell>
-              <TableCell className="px-2">
-                <Badge
-                  variant="outline"
-                  className={
-                    project.status.toLowerCase() === "under construction" ||
-                      project.status.toLowerCase() === "upcoming"
-                      ? "bg-blue-50 text-blue-700 border-blue-200 text-[10px] px-1"
-                      : project.status.toLowerCase() === "completed" ||
-                        project.status.toLowerCase() === "ready for handover"
-                        ? "bg-green-50 text-green-700 border-green-200 text-[10px] px-1"
-                        : "bg-gray-50 text-gray-700 border-gray-200 text-[10px] px-1"
-                  }
-                >
-                  {project.status}
-                </Badge>
-              </TableCell>
-              <TableCell className="text-center px-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onImport?.(project.id, project.name);
-                  }}
-                  className="bg-white border-gray-100 shadow-lg hover:bg-teal-50 h-8 py-4 px-3 text-md"
-                >
-                  <Download className="w-3 h-3 mr-1" /> Import
-                </Button>
-              </TableCell>
-              <TableCell className="text-center px-2">
-                <TableActions
-                  onView={() => router.push(`/admin/projects/${project.id}`)}
-                  onEdit={() => onEdit(project.id)}
-                  onDelete={() => onDelete(project.id)}
-                />
-              </TableCell>
+                </TableCell>
+              )}
+              {settings.isColumnVisible("import") && (
+                <TableCell className={`text-center px-2 ${densityClass}`}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onImport?.(project.id, project.name);
+                    }}
+                    className="bg-white border-gray-100 shadow-lg hover:bg-teal-50 h-8 py-4 px-3 text-md"
+                  >
+                    <Download className="w-3 h-3 mr-1" /> Import
+                  </Button>
+                </TableCell>
+              )}
+              {settings.isColumnVisible("actions") && (
+                <TableCell className={`text-center px-2 ${densityClass}`}>
+                  <TableActions
+                    onView={() => router.push(`/admin/projects/${project.id}`)}
+                    onEdit={() => onEdit(project.id)}
+                    onDelete={() => onDelete(project.id)}
+                  />
+                </TableCell>
+              )}
             </TableRow>
           ))}
         </TableBody>

@@ -4,6 +4,8 @@ import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tansta
 import { useSession } from "next-auth/react";
 import { AdminUsersService } from "../services/AdminUsersService";
 import { CreateNewUserInput } from "@/validators/create-new-user.schema";
+import { unpackUsersResponse, mapUser } from "../utils/map-user";
+import { useMemo } from "react";
 
 export function useUsers(
   page: number = 1,
@@ -39,8 +41,16 @@ export function useUsers(
     },
   });
 
+  const { itemsArray, totalItems } = useMemo(() => {
+    return unpackUsersResponse(usersData.data);
+  }, [usersData.data]);
+
+  const users = useMemo(() => itemsArray.map(mapUser), [itemsArray]);
+
   return {
     usersData,
+    users,
+    totalUsers: totalItems,
     deleteUserMutation,
     addUserMutation,
   };

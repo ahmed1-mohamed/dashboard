@@ -4,6 +4,8 @@ import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tansta
 import { useSession } from "next-auth/react";
 import { AdminFeaturesService } from "@/services/AdminFeaturesService";
 import { FeaturesDataType } from "@/types";
+import { unpackAndMapFeaturesResponse } from "@/app/admin/features/utils/map-feature";
+import { useMemo } from "react";
 
 export default function useDashboardAdminFeatures() {
   const { data: session } = useSession();
@@ -41,8 +43,13 @@ export default function useDashboardAdminFeatures() {
     },
   });
 
+  const features = useMemo(() => {
+    return unpackAndMapFeaturesResponse(featuresQuery.data);
+  }, [featuresQuery.data]);
+
   return {
     featuresData: featuresQuery,
+    features,
     editFeatureMutation,
     createFeatureMutation,
     deleteFeatureMutation,

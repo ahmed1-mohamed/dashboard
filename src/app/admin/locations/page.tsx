@@ -17,6 +17,8 @@ import { locationsExportToPDF, locationsExportToExcel } from "@/lib/handle-expor
 import { LocationsFilters } from "@/features/locations/components/LocationsFilters";
 import { LocationsTable } from "@/features/locations/components/LocationsTable";
 import { Location } from "@/features/locations/types";
+import { TableSettings } from "@/components/table/table-settings";
+import { useTableSettings } from "@/hooks/use-table-settings";
 
 import {
   AddLocationModal,
@@ -29,7 +31,23 @@ export default function LocationsManagementPage() {
   const router = useRouter();
 
   const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(10);
+
+  const DEFAULT_COLUMNS = [
+    { id: "landmark", label: "Landmark / Name", visible: true },
+    { id: "details", label: "Location Details", visible: true },
+    { id: "projects", label: "Projects", visible: true },
+    { id: "created", label: "Created Date", visible: true },
+    { id: "status", label: "Status", visible: true },
+    { id: "actions", label: "Actions", visible: true },
+  ];
+
+  const tableSettings = useTableSettings("locations", DEFAULT_COLUMNS);
+
+  const [perPage, setPerPage] = useState(tableSettings.settings.itemsPerPage);
+
+  useEffect(() => {
+    setPerPage(tableSettings.settings.itemsPerPage);
+  }, [tableSettings.settings.itemsPerPage]);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [filters, setFilters] = useState({ city: "all", status: "all" });
@@ -255,9 +273,13 @@ export default function LocationsManagementPage() {
         onCityChange={(val) => { setFilter("city", val); setPage(1); }}
         statusFilter={filters.status}
         onStatusChange={(val) => { setFilter("status", val); setPage(1); }}
-        onExportPDF={() => locationsExportToPDF(locations)}
-        onExportExcel={() => locationsExportToExcel(locations)}
-      />
+      >
+        <TableSettings 
+          settings={tableSettings} 
+          onExportExcel={() => locationsExportToExcel(locations)} 
+          onExportCsv={() => locationsExportToExcel(locations)} 
+        />
+      </LocationsFilters>
 
       {isLoading && (
         <div className="space-y-4">
@@ -299,6 +321,7 @@ export default function LocationsManagementPage() {
       {!isLoading && !isError && (
         <>
           <LocationsTable
+            settings={tableSettings}
             locations={currentLocations}
             selectedLocations={selectedLocations}
             locationStatuses={locationStatuses}
@@ -332,20 +355,24 @@ export default function LocationsManagementPage() {
         </>
       )}
 
-      <AddLocationModal
-        isOpen={isAddLocationModalOpen}
-        onClose={() => setIsAddLocationModalOpen(false)}
-      />
+      {isAddLocationModalOpen && (
+        <AddLocationModal
+          isOpen={isAddLocationModalOpen}
+          onClose={() => setIsAddLocationModalOpen(false)}
+        />
+      )}
 
-      <DeleteLocationModal
-        location={selectedLocation}
-        isOpen={isDeleteModalOpen}
-        onClose={() => {
-          setIsDeleteModalOpen(false);
-          setLocationToDelete(null);
-        }}
-        onSuccess={handleConfirmDelete}
-      />
+      {isDeleteModalOpen && (
+        <DeleteLocationModal
+          location={selectedLocation}
+          isOpen={isDeleteModalOpen}
+          onClose={() => {
+            setIsDeleteModalOpen(false);
+            setLocationToDelete(null);
+          }}
+          onSuccess={handleConfirmDelete}
+        />
+      )}
     </div>
   );
 }

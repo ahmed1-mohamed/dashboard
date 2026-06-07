@@ -12,8 +12,10 @@ import {
 import { TableActions } from "@/components/table/table-actions";
 import { useRouter } from "next/navigation";
 import { Property } from "../types";
+import { useTableSettings } from "@/hooks/use-table-settings";
 
 interface PropertiesTableProps {
+  settings: ReturnType<typeof useTableSettings>;
   properties: Property[];
   selectedProperties: number[];
   onSelectAll: (checked: boolean) => void;
@@ -23,6 +25,7 @@ interface PropertiesTableProps {
 }
 
 export function PropertiesTable({
+  settings,
   properties,
   selectedProperties,
   onSelectAll,
@@ -31,6 +34,17 @@ export function PropertiesTable({
   onDelete,
 }: PropertiesTableProps) {
   const router = useRouter();
+
+  const getDensityClass = () => {
+    switch (settings.settings.density) {
+      case "compact": return "py-1.5 px-2";
+      case "spacious": return "py-4 px-2";
+      case "comfortable":
+      default: return "py-2.5 px-2";
+    }
+  };
+
+  const densityClass = getDensityClass();
 
   if (properties.length === 0) {
     return (
@@ -60,39 +74,39 @@ export function PropertiesTable({
                 onCheckedChange={onSelectAll}
               />
             </TableHead>
-            <TableHead className="font-semibold text-gray-900 w-[80px] px-2 text-sm">
-              Unit Number
-            </TableHead>
-            <TableHead className="font-semibold text-gray-900 w-[110px] px-2 text-sm">
-              Property Name
-            </TableHead>
-            <TableHead className="font-semibold text-gray-900 w-[140px] px-2 text-sm">
-              Type
-            </TableHead>
-            <TableHead className="font-semibold text-gray-900 w-[70px] px-2 text-sm">
-              Area
-            </TableHead>
-            <TableHead className="font-semibold text-gray-900 w-[100px] px-2 text-sm">
-              Floor
-            </TableHead>
-            <TableHead className="font-semibold text-gray-900 w-[110px] px-2 text-sm">
-              Price
-            </TableHead>
-            <TableHead className="font-semibold text-gray-900 w-[40px] px-2 text-sm">
-              Project Name
-            </TableHead>
-            <TableHead className="font-semibold text-gray-900 w-[90px] px-2 text-sm">
-              Status
-            </TableHead>
-            <TableHead className="font-semibold text-gray-900 text-center w-[50px] px-2 text-sm">
-              Actions
-            </TableHead>
+            {settings.isColumnVisible("unitNumber") && (
+              <TableHead className="font-semibold text-gray-900 w-[80px] px-2 text-sm">Unit Number</TableHead>
+            )}
+            {settings.isColumnVisible("propertyName") && (
+              <TableHead className="font-semibold text-gray-900 w-[110px] px-2 text-sm">Property Name</TableHead>
+            )}
+            {settings.isColumnVisible("type") && (
+              <TableHead className="font-semibold text-gray-900 w-[140px] px-2 text-sm">Type</TableHead>
+            )}
+            {settings.isColumnVisible("area") && (
+              <TableHead className="font-semibold text-gray-900 w-[70px] px-2 text-sm">Area</TableHead>
+            )}
+            {settings.isColumnVisible("floor") && (
+              <TableHead className="font-semibold text-gray-900 w-[100px] px-2 text-sm">Floor</TableHead>
+            )}
+            {settings.isColumnVisible("price") && (
+              <TableHead className="font-semibold text-gray-900 w-[110px] px-2 text-sm">Price</TableHead>
+            )}
+            {settings.isColumnVisible("projectName") && (
+              <TableHead className="font-semibold text-gray-900 w-[40px] px-2 text-sm">Project Name</TableHead>
+            )}
+            {settings.isColumnVisible("status") && (
+              <TableHead className="font-semibold text-gray-900 w-[90px] px-2 text-sm">Status</TableHead>
+            )}
+            {settings.isColumnVisible("actions") && (
+              <TableHead className="font-semibold text-gray-900 text-center w-[50px] px-2 text-sm">Actions</TableHead>
+            )}
           </TableRow>
         </TableHeader>
         <TableBody>
             {properties.map((property) => (
               <TableRow key={property.id}>
-                <TableCell className="px-2">
+                <TableCell className={`px-2 ${densityClass}`}>
                   <Checkbox
                     checked={selectedProperties.includes(property.id)}
                     onCheckedChange={(checked) =>
@@ -100,51 +114,69 @@ export function PropertiesTable({
                     }
                   />
                 </TableCell>
-                <TableCell className="text-teal-600 font-medium px-2 text-sm">
-                  <button
-                    onClick={() => router.push(`/admin/properties/${property.id}`)}
-                    className="text-gray-900 text-sm font-medium hover:text-teal-600 active:text-teal-800 transition-colors cursor-pointer text-left focus:outline-none"
-                  >
-                    {property.unitNumber}
-                  </button>
-                </TableCell>
-                <TableCell className="text-gray-900 px-2 text-sm truncate">
-                  {property.property_name}
-                </TableCell>
-                <TableCell className="text-gray-900 px-2 text-sm truncate">
-                  {property.type}
-                </TableCell>
-                <TableCell className="text-gray-900 px-2 text-xs">
-                  {property.area}
-                </TableCell>
-                <TableCell className="text-gray-900 px-2 text-sm">
-                  {property.floor}
-                </TableCell>
-                <TableCell className="text-gray-900 px-2 text-sm">
-                  {property.price}
-                </TableCell>
-                <TableCell className="text-gray-900 px-2 text-sm">
-                  {property.project_name}
-                </TableCell>
-                <TableCell className="px-2">
-                  <Badge
-                    variant="outline"
-                    className={
-                      property.status === "Reserved"
-                        ? "bg-orange-50 text-orange-700 border-orange-200 text-[10px] px-1"
-                        : "bg-green-50 text-green-700 border-green-200 text-[10px] px-1"
-                    }
-                  >
-                    {property.status}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-center px-2">
-                  <TableActions
-                    onView={() => router.push(`/admin/properties/${property.id}`)}
-                    onEdit={() => onEdit(property.id)}
-                    onDelete={() => onDelete(property.id)}
-                  />
-                </TableCell>
+                {settings.isColumnVisible("unitNumber") && (
+                  <TableCell className={`text-teal-600 font-medium px-2 text-sm ${densityClass}`}>
+                    <button
+                      onClick={() => router.push(`/admin/properties/${property.id}`)}
+                      className="text-gray-900 text-sm font-medium hover:text-teal-600 active:text-teal-800 transition-colors cursor-pointer text-left focus:outline-none"
+                    >
+                      {property.unitNumber}
+                    </button>
+                  </TableCell>
+                )}
+                {settings.isColumnVisible("propertyName") && (
+                  <TableCell className={`text-gray-900 px-2 text-sm truncate ${densityClass}`}>
+                    {property.property_name}
+                  </TableCell>
+                )}
+                {settings.isColumnVisible("type") && (
+                  <TableCell className={`text-gray-900 px-2 text-sm truncate ${densityClass}`}>
+                    {property.type}
+                  </TableCell>
+                )}
+                {settings.isColumnVisible("area") && (
+                  <TableCell className={`text-gray-900 px-2 text-xs ${densityClass}`}>
+                    {property.area}
+                  </TableCell>
+                )}
+                {settings.isColumnVisible("floor") && (
+                  <TableCell className={`text-gray-900 px-2 text-sm ${densityClass}`}>
+                    {property.floor}
+                  </TableCell>
+                )}
+                {settings.isColumnVisible("price") && (
+                  <TableCell className={`text-gray-900 px-2 text-sm ${densityClass}`}>
+                    {property.price}
+                  </TableCell>
+                )}
+                {settings.isColumnVisible("projectName") && (
+                  <TableCell className={`text-gray-900 px-2 text-sm ${densityClass}`}>
+                    {property.project_name}
+                  </TableCell>
+                )}
+                {settings.isColumnVisible("status") && (
+                  <TableCell className={`px-2 ${densityClass}`}>
+                    <Badge
+                      variant="outline"
+                      className={
+                        property.status === "Reserved"
+                          ? "bg-orange-50 text-orange-700 border-orange-200 text-[10px] px-1"
+                          : "bg-green-50 text-green-700 border-green-200 text-[10px] px-1"
+                      }
+                    >
+                      {property.status}
+                    </Badge>
+                  </TableCell>
+                )}
+                {settings.isColumnVisible("actions") && (
+                  <TableCell className={`text-center px-2 ${densityClass}`}>
+                    <TableActions
+                      onView={() => router.push(`/admin/properties/${property.id}`)}
+                      onEdit={() => onEdit(property.id)}
+                      onDelete={() => onDelete(property.id)}
+                    />
+                  </TableCell>
+                )}
               </TableRow>
             ))}
         </TableBody>

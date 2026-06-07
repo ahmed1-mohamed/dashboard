@@ -1,6 +1,6 @@
+import React from "react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Search, Download, Settings2 } from "lucide-react";
+import { Search } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -8,19 +8,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 interface FeaturesFiltersProps {
   searchQuery: string;
   setSearchQuery: (val: string) => void;
   statusFilter: string;
   setStatusFilter: (val: string) => void;
-  onExport: (format: "pdf" | "xlsx" | "excel") => void;
+  children?: React.ReactNode;
 }
 
 export function FeaturesFilters({
@@ -28,7 +22,7 @@ export function FeaturesFilters({
   setSearchQuery,
   statusFilter,
   setStatusFilter,
-  onExport,
+  children,
 }: FeaturesFiltersProps) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-4">
@@ -73,32 +67,11 @@ export function FeaturesFilters({
         </Select>
       </div>
 
-      <div className="flex items-center gap-2">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="gap-2 border-gray-200 bg-white text-gray-600 font-normal h-9">
-              <Download className="h-4 w-4" />
-              Export
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-32 bg-white">
-            <DropdownMenuItem onClick={() => onExport("xlsx")} className="text-xs cursor-pointer font-medium text-gray-700 py-2">
-              XLSX
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onExport("pdf")} className="text-xs cursor-pointer font-medium text-gray-700 py-2">
-              PDF
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onExport("excel")} className="text-xs cursor-pointer font-medium text-gray-700 py-2">
-              Excel
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        <Button variant="outline" className="gap-2 border-gray-200 bg-white text-gray-600 font-normal h-9">
-          <Settings2 className="h-4 w-4" />
-          Table settings
-        </Button>
-      </div>
+      {children && (
+        <div className="flex items-center gap-2">
+          {children}
+        </div>
+      )}
     </div>
   );
 }

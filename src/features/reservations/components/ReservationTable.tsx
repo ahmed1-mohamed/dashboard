@@ -12,8 +12,10 @@ import { Badge } from "@/components/ui/badge";
 import { TableActions } from "@/components/table/table-actions";
 import { Booking } from "../types";
 import { useRouter } from "next/navigation";
+import { useTableSettings } from "@/hooks/use-table-settings";
 
 interface ReservationTableProps {
+  settings: ReturnType<typeof useTableSettings>;
   bookings: Booking[];
   selectedBookings: number[];
   onSelectAll: (checked: boolean) => void;
@@ -21,12 +23,24 @@ interface ReservationTableProps {
 }
 
 export const ReservationTable = memo(function ReservationTable({
+  settings,
   bookings,
   selectedBookings,
   onSelectAll,
   onSelectBooking,
 }: ReservationTableProps) {
   const router = useRouter();
+
+  const getDensityClass = () => {
+    switch (settings.settings.density) {
+      case "compact": return "py-1.5 px-2";
+      case "spacious": return "py-4 px-2";
+      case "comfortable":
+      default: return "py-2.5 px-2";
+    }
+  };
+
+  const densityClass = getDensityClass();
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white overflow-hidden overflow-x-auto w-full">
@@ -42,30 +56,30 @@ export const ReservationTable = memo(function ReservationTable({
                 onCheckedChange={onSelectAll}
               />
             </TableHead>
-            <TableHead className="font-semibold text-gray-900 w-[100px] px-2 text-sm">
-              Reservation Number
-            </TableHead>
-            <TableHead className="font-semibold text-gray-900 w-[110px] px-2 text-sm">
-              Client Name
-            </TableHead>
-            <TableHead className="font-semibold text-gray-900 w-[110px] px-2 text-sm">
-              Project
-            </TableHead>
-            <TableHead className="font-semibold text-gray-900 w-[70px] px-2 text-sm">
-              Country
-            </TableHead>
-            <TableHead className="font-semibold text-gray-900 w-[100px] px-2 text-sm">
-              Reservation Date
-            </TableHead>
-            <TableHead className="font-semibold text-gray-900 w-[100px] px-2 text-sm">
-              Expiry Date
-            </TableHead>
-            <TableHead className="font-semibold text-gray-900 w-[130px] px-2 text-sm">
-              Status
-            </TableHead>
-            <TableHead className="font-semibold text-gray-900 text-center w-[50px] px-2 text-sm">
-              Actions
-            </TableHead>
+            {settings.isColumnVisible("number") && (
+              <TableHead className="font-semibold text-gray-900 w-[100px] px-2 text-sm">Reservation Number</TableHead>
+            )}
+            {settings.isColumnVisible("client") && (
+              <TableHead className="font-semibold text-gray-900 w-[110px] px-2 text-sm">Client Name</TableHead>
+            )}
+            {settings.isColumnVisible("project") && (
+              <TableHead className="font-semibold text-gray-900 w-[110px] px-2 text-sm">Project</TableHead>
+            )}
+            {settings.isColumnVisible("country") && (
+              <TableHead className="font-semibold text-gray-900 w-[70px] px-2 text-sm">Country</TableHead>
+            )}
+            {settings.isColumnVisible("reservationDate") && (
+              <TableHead className="font-semibold text-gray-900 w-[100px] px-2 text-sm">Reservation Date</TableHead>
+            )}
+            {settings.isColumnVisible("expiryDate") && (
+              <TableHead className="font-semibold text-gray-900 w-[100px] px-2 text-sm">Expiry Date</TableHead>
+            )}
+            {settings.isColumnVisible("status") && (
+              <TableHead className="font-semibold text-gray-900 w-[130px] px-2 text-sm">Status</TableHead>
+            )}
+            {settings.isColumnVisible("actions") && (
+              <TableHead className="font-semibold text-gray-900 text-center w-[50px] px-2 text-sm">Actions</TableHead>
+            )}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -85,7 +99,7 @@ export const ReservationTable = memo(function ReservationTable({
                 className="cursor-pointer hover:bg-gray-50 transition-colors"
                 onClick={() => router.push(`/admin/reservations/${booking.id}`)}
               >
-                <TableCell className="px-2" onClick={(e) => e.stopPropagation()}>
+                <TableCell className={densityClass} onClick={(e) => e.stopPropagation()}>
                   <Checkbox
                     checked={selectedBookings.includes(booking.id)}
                     onCheckedChange={(checked) =>
@@ -93,44 +107,60 @@ export const ReservationTable = memo(function ReservationTable({
                     }
                   />
                 </TableCell>
-                <TableCell className="text-teal-600 font-medium px-2 text-sm">
-                  {booking.bookingNumber}
-                </TableCell>
-                <TableCell className="text-gray-900 px-2 text-sm truncate max-w-[120px]">
-                  {booking.user_name}
-                </TableCell>
-                <TableCell className="text-gray-900 px-2 text-sm truncate max-w-[120px]">
-                  {booking.project_name}
-                </TableCell>
-                <TableCell className="text-gray-900 px-2 text-sm">
-                  {booking.country}
-                </TableCell>
-                <TableCell className="text-gray-900 px-2 text-sm">
-                  {booking.reservation_date}
-                </TableCell>
-                <TableCell className="text-gray-900 px-2 text-sm">
-                  {booking.expiry_date}
-                </TableCell>
-                <TableCell className="px-2">
-                  <div className="flex flex-col gap-1 items-start">
-                    <span className="text-gray-900 text-sm truncate max-w-[120px]">
-                      {booking.reservation_status_type}
-                    </span>
-                    <Badge
-                      variant="outline"
-                      className="bg-gray-100 text-gray-700 border-gray-200 text-[10px] px-2 py-0.5"
-                    >
-                      {booking.last_status}
-                    </Badge>
-                  </div>
-                </TableCell>
-                <TableCell className="text-center px-2" onClick={(e) => e.stopPropagation()}>
-                  <TableActions
-                    onView={() => router.push(`/admin/reservations/${booking.id}`)}
-                    onEdit={() => router.push(`/admin/reservations/${booking.id}`)}
-                    onDelete={() => console.log("Delete", booking.id)}
-                  />
-                </TableCell>
+                {settings.isColumnVisible("number") && (
+                  <TableCell className={`text-teal-600 font-medium text-sm ${densityClass}`}>
+                    {booking.bookingNumber}
+                  </TableCell>
+                )}
+                {settings.isColumnVisible("client") && (
+                  <TableCell className={`text-gray-900 text-sm truncate max-w-[120px] ${densityClass}`}>
+                    {booking.user_name}
+                  </TableCell>
+                )}
+                {settings.isColumnVisible("project") && (
+                  <TableCell className={`text-gray-900 text-sm truncate max-w-[120px] ${densityClass}`}>
+                    {booking.project_name}
+                  </TableCell>
+                )}
+                {settings.isColumnVisible("country") && (
+                  <TableCell className={`text-gray-900 text-sm ${densityClass}`}>
+                    {booking.country}
+                  </TableCell>
+                )}
+                {settings.isColumnVisible("reservationDate") && (
+                  <TableCell className={`text-gray-900 text-sm ${densityClass}`}>
+                    {booking.reservation_date}
+                  </TableCell>
+                )}
+                {settings.isColumnVisible("expiryDate") && (
+                  <TableCell className={`text-gray-900 text-sm ${densityClass}`}>
+                    {booking.expiry_date}
+                  </TableCell>
+                )}
+                {settings.isColumnVisible("status") && (
+                  <TableCell className={densityClass}>
+                    <div className="flex flex-col gap-1 items-start">
+                      <span className="text-gray-900 text-sm truncate max-w-[120px]">
+                        {booking.reservation_status_type}
+                      </span>
+                      <Badge
+                        variant="outline"
+                        className="bg-gray-100 text-gray-700 border-gray-200 text-[10px] px-2 py-0.5"
+                      >
+                        {booking.last_status}
+                      </Badge>
+                    </div>
+                  </TableCell>
+                )}
+                {settings.isColumnVisible("actions") && (
+                  <TableCell className={`text-center ${densityClass}`} onClick={(e) => e.stopPropagation()}>
+                    <TableActions
+                      onView={() => router.push(`/admin/reservations/${booking.id}`)}
+                      onEdit={() => router.push(`/admin/reservations/${booking.id}`)}
+                      onDelete={() => console.log("Delete", booking.id)}
+                    />
+                  </TableCell>
+                )}
               </TableRow>
             ))
           )}

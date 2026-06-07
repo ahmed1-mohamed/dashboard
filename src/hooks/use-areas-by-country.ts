@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
-import { AdminAreasService } from "@/services/AdminAreasService";
+import { apiClient } from "@/lib/apiClient";
 
 export default function useAreasByCountry(country: string) {
   const { data: session } = useSession();
@@ -10,9 +10,9 @@ export default function useAreasByCountry(country: string) {
 
   const areasData = useQuery({
     queryKey: ["areas", country],
-    queryFn: () => AdminAreasService.getAreasByCountry(country),
+    queryFn: () => apiClient.get(`/dashboard/areas?per_page=1000${country ? `&country=${country}` : ''}`),
     retry: false,
-    enabled: !!token && !!country,
+    enabled: !!token,
   });
 
   return areasData;

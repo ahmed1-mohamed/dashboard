@@ -8,6 +8,8 @@ import {
 } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import { AdminDevelopersService } from "../services/AdminDevelopersService";
+import { unpackDevelopersResponse, mapDeveloper } from "../utils/map-developer";
+import { useMemo } from "react";
 
 export function useDevelopers(
   page: number = 1,
@@ -74,8 +76,17 @@ export function useDevelopers(
     },
   });
 
+  const { itemsArray, totalItems } = useMemo(() => {
+    return unpackDevelopersResponse(developersData.data);
+  }, [developersData.data]);
+
+  const developers = useMemo(() => itemsArray.map(mapDeveloper), [itemsArray]);
+
   return {
     developersData,
+    developers,
+    rawDevelopers: itemsArray,
+    totalDevelopers: totalItems,
     deleteMutation,
     addMutation,
     updateMutation,

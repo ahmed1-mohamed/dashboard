@@ -47,49 +47,7 @@ export function ProjectHeader({ projectId, token, data }: ProjectHeaderProps) {
 
   const statusMutation = useMutation({
     mutationFn: (newIsActive: boolean) => {
-      let mappedProjectType = data.project_type ?? "";
-      const lowerType = mappedProjectType.toLowerCase();
-      if (lowerType === "mixed use" || lowerType === "mixed-use") mappedProjectType = "mixed-use";
-      else if (lowerType === "residential") mappedProjectType = "residential";
-      else if (lowerType === "commercial") mappedProjectType = "commercial";
-
-      const cityId = String(data.location?.city?.id || (data.location as any)?.city_id || "");
-      const areaId = String(data.location?.area?.area_id || (data.location as any)?.area_id || "");
-
-      const payload: Record<string, unknown> = {
-        project_name: data.project_name,
-        status: data.status,
-        project_type: mappedProjectType,
-        developer_id: String(selectedDeveloperId),
-      };
-
-      if (data.total_units != null) payload.total_units = String(data.total_units);
-      if (data.available_units != null) payload.available_units = String(data.available_units);
-      if (data.launch_date) payload.launch_date = data.launch_date;
-      if (data.completion_date) payload.completion_date = data.completion_date;
-      if (data.currency) payload.currency = data.currency;
-      if (data.project_size) payload.project_size = String(data.project_size);
-      if (data.description) payload.description = data.description;
-      if (data.price_range) payload.price_range = String(data.price_range);
-      if (data.price_range_SQ) payload.price_range_SQ = String(data.price_range_SQ);
-
-      // Only include location if we have valid city_id and area_id
-      if (cityId && areaId) {
-        payload.location = {
-          latitude: data.location?.latitude ?? 0,
-          longitude: data.location?.longitude ?? 0,
-          landmark: data.location?.landmark || "",
-          city_id: cityId,
-          area_id: areaId,
-          north_side: data.location?.north_side || "",
-          south_side: data.location?.south_side || "",
-          east_side: data.location?.east_side || "",
-          west_side: data.location?.west_side || "",
-          google_map_link: data.location?.google_map_link || "",
-        };
-      }
-
-      return AdminProjectsService.updateProject(projectId, payload);
+      return AdminProjectsService.toggleActive(projectId, newIsActive);
     },
     onSuccess: () => {
       toast.success("Project activation updated successfully!");

@@ -1,4 +1,3 @@
-"use client";
 import React, { useState, useCallback } from "react";
 import Link from "next/link";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -13,6 +12,7 @@ import {
 import { TableActions } from "@/components/table/table-actions";
 import { Location } from "../types";
 import { Badge } from "@/components/ui/badge";
+import { useTableSettings } from "@/hooks/use-table-settings";
 
 function StatusToggle({
   isActive,
@@ -83,6 +83,7 @@ function StatusToggle({
 }
 
 interface LocationsTableProps {
+  settings: ReturnType<typeof useTableSettings>;
   locations: Location[];
   selectedLocations: number[];
   locationStatuses: Record<number, boolean>;
@@ -95,6 +96,7 @@ interface LocationsTableProps {
 }
 
 export function LocationsTable({
+  settings,
   locations,
   selectedLocations,
   locationStatuses,
@@ -105,6 +107,17 @@ export function LocationsTable({
   onEdit,
   onDelete,
 }: LocationsTableProps) {
+  const getDensityClass = () => {
+    switch (settings.settings.density) {
+      case "compact": return "py-1.5 px-4";
+      case "spacious": return "py-4 px-4";
+      case "comfortable":
+      default: return "py-3 px-4";
+    }
+  };
+
+  const densityClass = getDensityClass();
+
   if (locations.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 px-4 bg-white rounded-lg border border-gray-200 shadow-sm animate-in fade-in zoom-in duration-500">
@@ -137,24 +150,24 @@ export function LocationsTable({
                 className="border-gray-300"
               />
             </TableHead>
-            <TableHead className="font-semibold text-gray-700 px-4 py-3 text-sm w-[140px]">
-              Landmark / Name
-            </TableHead>
-            <TableHead className="font-semibold text-gray-700 px-4 py-3 text-sm w-[200px]">
-              Location Details
-            </TableHead>
-            <TableHead className="font-semibold text-gray-700 px-4 py-3 text-sm w-[120px]">
-              Projects
-            </TableHead>
-            <TableHead className="font-semibold text-gray-700 px-4 py-3 text-sm w-[160px]">
-              Created Date
-            </TableHead>
-            <TableHead className="font-semibold text-gray-700 px-4 py-3 text-sm w-[130px]">
-              Status
-            </TableHead>
-            <TableHead className="font-semibold text-gray-700 text-center px-4 py-3 text-sm w-[80px]">
-              Actions
-            </TableHead>
+            {settings.isColumnVisible("landmark") && (
+              <TableHead className="font-semibold text-gray-700 px-4 py-3 text-sm w-[140px]">Landmark / Name</TableHead>
+            )}
+            {settings.isColumnVisible("details") && (
+              <TableHead className="font-semibold text-gray-700 px-4 py-3 text-sm w-[200px]">Location Details</TableHead>
+            )}
+            {settings.isColumnVisible("projects") && (
+              <TableHead className="font-semibold text-gray-700 px-4 py-3 text-sm w-[120px]">Projects</TableHead>
+            )}
+            {settings.isColumnVisible("created") && (
+              <TableHead className="font-semibold text-gray-700 px-4 py-3 text-sm w-[160px]">Created Date</TableHead>
+            )}
+            {settings.isColumnVisible("status") && (
+              <TableHead className="font-semibold text-gray-700 px-4 py-3 text-sm w-[130px]">Status</TableHead>
+            )}
+            {settings.isColumnVisible("actions") && (
+              <TableHead className="font-semibold text-gray-700 text-center px-4 py-3 text-sm w-[80px]">Actions</TableHead>
+            )}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -163,7 +176,7 @@ export function LocationsTable({
               key={location.location_id}
               className="hover:bg-gray-50/50 transition-colors border-b border-gray-100 last:border-0"
             >
-              <TableCell className="px-4 py-3">
+              <TableCell className={densityClass}>
                 <Checkbox
                   checked={selectedLocations.includes(location.location_id)}
                   onCheckedChange={(checked) =>
@@ -172,42 +185,54 @@ export function LocationsTable({
                   className="border-gray-300"
                 />
               </TableCell>
-              <TableCell className="px-4 py-3 max-w-[150px]">
-                <button
-                  onClick={() => onView(location)}
-                  className="text-gray-900 font-medium text-sm block truncate text-left hover:text-teal-600 active:text-teal-800 transition-colors cursor-pointer focus:outline-none w-full"
-                  title={location.location_landmark}
-                >
-                  {location.location_landmark}
-                </button>
-              </TableCell>
-              <TableCell className="px-4 py-3">
-                <div className="flex flex-col gap-1">
-                  <span className="text-gray-900 font-medium text-sm">{location.city_name}</span>
-                  <span className="text-gray-500 text-xs">{location.area_name}, {location.country_name}</span>
-                </div>
-              </TableCell>
-              <TableCell className="px-4 py-3">
-                <Badge variant="secondary" className="bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200">
-                  {location.projects_count} Projects
-                </Badge>
-              </TableCell>
-              <TableCell className="text-gray-600 px-4 py-3 text-sm">
-                {location.created_at}
-              </TableCell>
-              <TableCell className="px-4 py-3">
-                <StatusToggle
-                  isActive={locationStatuses[location.location_id] ?? true}
-                  onToggle={() => onToggleStatus(location.location_id)}
-                />
-              </TableCell>
-              <TableCell className="text-center px-4 py-3">
-                <TableActions
-                  onView={() => onView(location)}
-                  onEdit={() => onEdit(location)}
-                  onDelete={() => onDelete(location)}
-                />
-              </TableCell>
+              {settings.isColumnVisible("landmark") && (
+                <TableCell className={`${densityClass} max-w-[150px]`}>
+                  <button
+                    onClick={() => onView(location)}
+                    className="text-gray-900 font-medium text-sm block truncate text-left hover:text-teal-600 active:text-teal-800 transition-colors cursor-pointer focus:outline-none w-full"
+                    title={location.location_landmark}
+                  >
+                    {location.location_landmark}
+                  </button>
+                </TableCell>
+              )}
+              {settings.isColumnVisible("details") && (
+                <TableCell className={densityClass}>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-gray-900 font-medium text-sm">{location.city_name}</span>
+                    <span className="text-gray-500 text-xs">{location.area_name}, {location.country_name}</span>
+                  </div>
+                </TableCell>
+              )}
+              {settings.isColumnVisible("projects") && (
+                <TableCell className={densityClass}>
+                  <Badge variant="secondary" className="bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200">
+                    {location.projects_count} Projects
+                  </Badge>
+                </TableCell>
+              )}
+              {settings.isColumnVisible("created") && (
+                <TableCell className={`text-gray-600 text-sm ${densityClass}`}>
+                  {location.created_at}
+                </TableCell>
+              )}
+              {settings.isColumnVisible("status") && (
+                <TableCell className={densityClass}>
+                  <StatusToggle
+                    isActive={locationStatuses[location.location_id] ?? true}
+                    onToggle={() => onToggleStatus(location.location_id)}
+                  />
+                </TableCell>
+              )}
+              {settings.isColumnVisible("actions") && (
+                <TableCell className={`text-center ${densityClass}`}>
+                  <TableActions
+                    onView={() => onView(location)}
+                    onEdit={() => onEdit(location)}
+                    onDelete={() => onDelete(location)}
+                  />
+                </TableCell>
+              )}
             </TableRow>
           ))}
         </TableBody>

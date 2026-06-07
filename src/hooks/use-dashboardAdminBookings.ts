@@ -9,6 +9,8 @@ import {
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { AdminBookingsService } from "@/services/AdminBookingsService";
+import { unpackReservationsResponse, mapReservation } from "@/features/reservations/utils/map-reservation";
+import { useMemo } from "react";
 
 interface BookingFilters {
   page?: number;
@@ -174,8 +176,16 @@ export default function useDashboardAdminBookingsData(
     },
   });
 
+  const { itemsArray, totalItems } = useMemo(() => {
+    return unpackReservationsResponse(bookingsData.data);
+  }, [bookingsData.data]);
+
+  const bookings = useMemo(() => itemsArray.map(mapReservation), [itemsArray]);
+
   return {
     bookingsData,
+    bookings,
+    totalBookings: totalItems,
     handleConfirm: confirmMutation.mutate,
     handleDecline: declineMutation.mutate,
     isConfirming: confirmMutation.isPending,

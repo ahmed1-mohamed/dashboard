@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
-import { AdminCitiesService } from "@/services/AdminCitiesService";
+import { apiClient } from "@/lib/apiClient";
 
 export default function useCitiesByCountry(country: string) {
   const { data: session } = useSession();
@@ -10,9 +10,9 @@ export default function useCitiesByCountry(country: string) {
 
   const citiesData = useQuery({
     queryKey: ["cities", country],
-    queryFn: () => AdminCitiesService.getCitiesByCountry(country),
+    queryFn: () => apiClient.get(`/dashboard/cities?per_page=1000${country ? `&country=${country}` : ''}`),
     retry: false,
-    enabled: !!token && !!country,
+    enabled: !!token,
   });
 
   return citiesData;

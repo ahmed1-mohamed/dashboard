@@ -12,6 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { TableActions } from "@/components/table/table-actions";
+import { useTableSettings } from "@/hooks/use-table-settings";
 
 export interface Area {
   area_id: number;
@@ -29,6 +30,7 @@ export interface Area {
 }
 
 interface AreasTableProps {
+  settings: ReturnType<typeof useTableSettings>;
   areas: Area[];
   isLoading: boolean;
   isError: boolean;
@@ -45,6 +47,7 @@ interface AreasTableProps {
 }
 
 export function AreasTable({
+  settings,
   areas,
   isLoading,
   isError,
@@ -59,6 +62,17 @@ export function AreasTable({
   onEdit,
   onDelete,
 }: AreasTableProps) {
+  const getDensityClass = () => {
+    switch (settings.settings.density) {
+      case "compact": return "py-1.5 px-2";
+      case "spacious": return "py-4 px-2";
+      case "comfortable":
+      default: return "py-2.5 px-2";
+    }
+  };
+
+  const densityClass = getDensityClass();
+
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -119,21 +133,21 @@ export function AreasTable({
                   onCheckedChange={onSelectAll}
                 />
               </TableHead>
-              <TableHead className="font-semibold text-gray-900 w-[200px] px-2 py-3 text-xs uppercase tracking-wider">
-                Area Name
-              </TableHead>
-              <TableHead className="font-semibold text-gray-900 w-[250px] px-2 py-3 text-xs uppercase tracking-wider">
-                Description
-              </TableHead>
-              <TableHead className="font-semibold text-gray-900 w-[100px] px-2 py-3 text-xs uppercase tracking-wider">
-                Created
-              </TableHead>
-              <TableHead className="font-semibold text-gray-900 text-center w-[80px] px-2 py-3 text-xs uppercase tracking-wider">
-                Status
-              </TableHead>
-              <TableHead className="font-semibold text-gray-900 text-center w-[80px] px-2 py-3 text-xs uppercase tracking-wider">
-                Actions
-              </TableHead>
+              {settings.isColumnVisible("areaName") && (
+                <TableHead className="font-semibold text-gray-900 w-[200px] px-2 py-3 text-xs uppercase tracking-wider">Area Name</TableHead>
+              )}
+              {settings.isColumnVisible("description") && (
+                <TableHead className="font-semibold text-gray-900 w-[250px] px-2 py-3 text-xs uppercase tracking-wider">Description</TableHead>
+              )}
+              {settings.isColumnVisible("created") && (
+                <TableHead className="font-semibold text-gray-900 w-[100px] px-2 py-3 text-xs uppercase tracking-wider">Created</TableHead>
+              )}
+              {settings.isColumnVisible("status") && (
+                <TableHead className="font-semibold text-gray-900 text-center w-[80px] px-2 py-3 text-xs uppercase tracking-wider">Status</TableHead>
+              )}
+              {settings.isColumnVisible("actions") && (
+                <TableHead className="font-semibold text-gray-900 text-center w-[80px] px-2 py-3 text-xs uppercase tracking-wider">Actions</TableHead>
+              )}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -146,7 +160,7 @@ export function AreasTable({
             ) : (
               areas.map((area) => (
                 <TableRow key={area.area_id} className="hover:bg-gray-50/50 transition-colors">
-                  <TableCell className="px-2 py-3 text-center">
+                  <TableCell className={`px-2 text-center ${densityClass}`}>
                     <Checkbox
                       checked={selectedAreas.includes(area.area_id)}
                       onCheckedChange={(checked) =>
@@ -154,35 +168,45 @@ export function AreasTable({
                       }
                     />
                   </TableCell>
-                  <TableCell className="px-2 py-3 text-sm">
-                    <button
-                      onClick={() => onView(area)}
-                      className="text-teal-600 font-medium transition-colors duration-200 hover:text-teal-800 focus:outline-none"
-                    >
-                      {area.area_name}
-                    </button>
-                  </TableCell>
-                  <TableCell className="text-gray-900 px-2 py-3 text-sm">
-                    <div className="line-clamp-2 w-[250px]" title={area.description || "N/A"}>
-                      {area.description || "N/A"}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-gray-900 px-2 py-3 text-sm whitespace-nowrap">
-                    {area.created_at?.split(" ")[0]}
-                  </TableCell>
-                  <TableCell className="text-center px-2 py-3">
-                    <Switch
-                      checked={areaStatuses[area.area_id] !== false}
-                      onCheckedChange={() => onToggleStatus(area.area_id)}
-                    />
-                  </TableCell>
-                  <TableCell className="text-center px-2 py-3">
-                    <TableActions
-                      onView={() => onView(area)}
-                      onEdit={() => onEdit(area)}
-                      onDelete={() => onDelete(area.area_id)}
-                    />
-                  </TableCell>
+                  {settings.isColumnVisible("areaName") && (
+                    <TableCell className={`px-2 text-sm ${densityClass}`}>
+                      <button
+                        onClick={() => onView(area)}
+                        className="text-teal-600 font-medium transition-colors duration-200 hover:text-teal-800 focus:outline-none"
+                      >
+                        {area.area_name}
+                      </button>
+                    </TableCell>
+                  )}
+                  {settings.isColumnVisible("description") && (
+                    <TableCell className={`text-gray-900 px-2 text-sm ${densityClass}`}>
+                      <div className="line-clamp-2 w-[250px]" title={area.description || "N/A"}>
+                        {area.description || "N/A"}
+                      </div>
+                    </TableCell>
+                  )}
+                  {settings.isColumnVisible("created") && (
+                    <TableCell className={`text-gray-900 px-2 text-sm whitespace-nowrap ${densityClass}`}>
+                      {area.created_at?.split(" ")[0]}
+                    </TableCell>
+                  )}
+                  {settings.isColumnVisible("status") && (
+                    <TableCell className={`text-center px-2 ${densityClass}`}>
+                      <Switch
+                        checked={areaStatuses[area.area_id] !== false}
+                        onCheckedChange={() => onToggleStatus(area.area_id)}
+                      />
+                    </TableCell>
+                  )}
+                  {settings.isColumnVisible("actions") && (
+                    <TableCell className={`text-center px-2 ${densityClass}`}>
+                      <TableActions
+                        onView={() => onView(area)}
+                        onEdit={() => onEdit(area)}
+                        onDelete={() => onDelete(area.area_id)}
+                      />
+                    </TableCell>
+                  )}
                 </TableRow>
               ))
             )}

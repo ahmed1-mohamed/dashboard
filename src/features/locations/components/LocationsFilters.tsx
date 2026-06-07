@@ -8,14 +8,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Download, FileText, Table, Settings2 } from "lucide-react";
 
 interface LocationsFiltersProps {
   searchQuery: string;
@@ -25,8 +17,7 @@ interface LocationsFiltersProps {
   onCityChange: (value: string) => void;
   statusFilter: string;
   onStatusChange: (value: string) => void;
-  onExportPDF: () => void;
-  onExportExcel: () => void;
+  children?: React.ReactNode;
 }
 
 export function LocationsFilters({
@@ -37,8 +28,7 @@ export function LocationsFilters({
   onCityChange,
   statusFilter,
   onStatusChange,
-  onExportPDF,
-  onExportExcel,
+  children,
 }: LocationsFiltersProps) {
   return (
     <div className="flex flex-col sm:flex-row flex-wrap sm:items-center justify-between gap-3 mb-4">
@@ -75,26 +65,11 @@ export function LocationsFilters({
         </Select>
       </div>
 
-      <div className="flex items-center gap-2 w-full sm:w-auto">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="gap-2 border-gray-200 flex-1 sm:flex-none">
-              <Download className="h-4 w-4" /> Export
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={onExportPDF} className="gap-2 cursor-pointer">
-              <FileText className="h-4 w-4 text-red-500" /> Export as PDF
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={onExportExcel} className="gap-2 cursor-pointer">
-              <Table className="h-4 w-4 text-green-600" /> Export as Excel
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-        <Button variant="outline" className="gap-2 border-gray-200">
-          <Settings2 className="h-4 w-4" /> Table settings
-        </Button>
-      </div>
+      {children && (
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          {children}
+        </div>
+      )}
     </div>
   );
 }

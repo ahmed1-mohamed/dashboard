@@ -44,12 +44,96 @@ export default function ReportsPage() {
     );
   }
 
+  const isProjectSummary = report.data && (report.data.project_id !== undefined || report.data.active_properties_count !== undefined);
+
+  if (isProjectSummary) {
+    const proj = report.data;
+    return (
+      <div className="mx-auto max-w-6xl space-y-6 p-6">
+        <div className="item-center flex justify-center text-lg">{pName}</div>
+        <div className="rounded-lg border bg-white p-6 shadow-sm">
+          <div className="mb-6 flex items-center gap-3">
+            {report.success ? (
+              <CheckCircle className="h-8 w-8 text-green-500" />
+            ) : (
+              <XCircle className="h-8 w-8 text-red-500" />
+            )}
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Import Successful</h1>
+              <p className={`text-sm ${report.success ? "text-green-600" : "text-red-600"}`}>
+                {report.message || "Project data imported successfully."}
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="rounded-lg border border-teal-200 bg-teal-50 p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <FileText className="h-5 w-5 text-teal-600" />
+                <span className="text-sm font-medium text-teal-900">Project Name</span>
+              </div>
+              <div className="text-xl font-bold text-teal-900 break-words">{proj.project_name || "N/A"}</div>
+            </div>
+
+            <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <TrendingUp className="h-5 w-5 text-blue-600" />
+                <span className="text-sm font-medium text-blue-900">Total Units</span>
+              </div>
+              <div className="text-2xl font-bold text-blue-900">{proj.total_units ?? 0}</div>
+            </div>
+
+            <div className="rounded-lg border border-purple-200 bg-purple-50 p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Copy className="h-5 w-5 text-purple-600" />
+                <span className="text-sm font-medium text-purple-900">Active Properties</span>
+              </div>
+              <div className="text-2xl font-bold text-purple-900">{proj.active_properties_count ?? 0}</div>
+            </div>
+
+            <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <CheckCircle className="h-5 w-5 text-green-600" />
+                <span className="text-sm font-medium text-green-900">Available Properties</span>
+              </div>
+              <div className="text-2xl font-bold text-green-900">{proj.available_properties_count ?? 0}</div>
+            </div>
+
+            <div className="rounded-lg border border-orange-200 bg-orange-50 p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <AlertTriangle className="h-5 w-5 text-orange-600" />
+                <span className="text-sm font-medium text-orange-900">Booked Properties</span>
+              </div>
+              <div className="text-2xl font-bold text-orange-900">{proj.booked_properties_count ?? 0}</div>
+            </div>
+
+            <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <FileText className="h-5 w-5 text-indigo-600" />
+                <span className="text-sm font-medium text-indigo-900">Available Units</span>
+              </div>
+              <div className="text-2xl font-bold text-indigo-900">{proj.available_units ?? 0}</div>
+            </div>
+            
+            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <FileText className="h-5 w-5 text-gray-600" />
+                <span className="text-sm font-medium text-gray-900">Project Type</span>
+              </div>
+              <div className="text-xl font-bold text-gray-900 capitalize">{proj.project_type || "N/A"}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const {
     inserted = [],
     updated = [],
     duplicates = [],
     errors = [],
-  } = report.data;
+  } = report.data || {};
 
   // Calculate statistics
   const totalProcessed =

@@ -5,6 +5,8 @@ import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { AdminAreasService } from "@/services/AdminAreasService";
 import { AreaInput } from "@/validators/area.schema";
+import { unpackAreasResponse, mapArea } from "@/app/admin/areas/utils/map-area";
+import { useMemo } from "react";
 
 export default function useDashboardAdminAreasData(
   page?: number,
@@ -68,8 +70,16 @@ export default function useDashboardAdminAreasData(
     },
   });
 
+  const { itemsArray, totalItems } = useMemo(() => {
+    return unpackAreasResponse(areasData.data);
+  }, [areasData.data]);
+
+  const areas = useMemo(() => itemsArray.map(mapArea), [itemsArray]);
+
   return {
     areasData,
+    areas,
+    totalAreas: totalItems,
     createAreaMutation,
     deleteAreaMutation,
     updateAreaMutation,

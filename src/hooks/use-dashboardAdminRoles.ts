@@ -3,6 +3,8 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import { AdminRolesService } from "@/services/AdminRolesService";
+import { unpackRolesResponse, mapRole } from "@/app/admin/roles/utils/map-role";
+import { useMemo } from "react";
 
 export default function useDashboardAdminRolesData() {
   const { data: session } = useSession();
@@ -29,8 +31,14 @@ export default function useDashboardAdminRolesData() {
     },
   });
 
+  const roles = useMemo(() => {
+    const arr = unpackRolesResponse(rolesData.data);
+    return arr.map(mapRole);
+  }, [rolesData.data]);
+
   return {
     rolesData,
+    roles,
     deleteRoleMutation,
   };
 }

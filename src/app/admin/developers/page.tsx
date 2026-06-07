@@ -21,9 +21,13 @@ import { useDevelopers } from "@/features/developers/hooks/useDevelopers";
 import { DevelopersTable } from "@/features/developers/components/DevelopersTable";
 import { DevelopersFilters } from "@/features/developers/components/DevelopersFilters";
 import { useServerPagination } from "@/hooks/useServerPagination";
-import { AddDeveloperModal } from "@/components/modals/add-developer-modal";
-import { BulkImportDevelopersModal } from "@/components/modals/bulk-import-developers-modal";
-import { EditDeveloperModal } from "@/components/modals/edit-developer-modal";
+import { TableSettings } from "@/components/table/table-settings";
+import { useTableSettings } from "@/hooks/use-table-settings";
+import dynamic from "next/dynamic";
+
+const AddDeveloperModal = dynamic(() => import("@/components/modals/add-developer-modal").then(mod => mod.AddDeveloperModal));
+const BulkImportDevelopersModal = dynamic(() => import("@/components/modals/bulk-import-developers-modal").then(mod => mod.BulkImportDevelopersModal));
+const EditDeveloperModal = dynamic(() => import("@/components/modals/edit-developer-modal").then(mod => mod.EditDeveloperModal));
 
 interface DeveloperData {
   developer_id: number;
@@ -46,6 +50,20 @@ export default function DevelopersPage() {
 }
 
 function DevelopersPageContent() {
+  const DEFAULT_COLUMNS = [
+    { id: "developer", label: "Developer", visible: true },
+    { id: "country", label: "Country", visible: true },
+    { id: "city", label: "City", visible: true },
+    { id: "projects", label: "Projects", visible: true },
+    { id: "website", label: "Website", visible: true },
+    { id: "email", label: "Email", visible: true },
+    { id: "contact", label: "Contact", visible: true },
+    { id: "status", label: "Status", visible: true },
+    { id: "actions", label: "Actions", visible: true },
+  ];
+
+  const tableSettings = useTableSettings("developers", DEFAULT_COLUMNS);
+
   const {
     page,
     perPage,
@@ -58,12 +76,19 @@ function DevelopersPageContent() {
     setFilter,
   } = useServerPagination({
     initialPage: 1,
-    initialPerPage: 10,
+    initialPerPage: tableSettings.settings.itemsPerPage,
     initialFilters: { status: "all", country: "all" },
   });
 
+  React.useEffect(() => {
+    setPerPage(String(tableSettings.settings.itemsPerPage));
+  }, [tableSettings.settings.itemsPerPage, setPerPage]);
+
   const {
     developersData,
+    developers,
+    rawDevelopers,
+    totalDevelopers,
     deleteMutation,
     bulkImportMutation,
     toggleStatusMutation,
@@ -75,7 +100,7 @@ function DevelopersPageContent() {
     filters.country !== "all" ? filters.country : undefined,
   );
 
-  const { data: devData, isLoading, isError, error, refetch } = developersData;
+  const { isLoading, isError, error, refetch } = developersData;
 
   // Modal states
   const [addModalOpen, setAddModalOpen] = useState(false);
@@ -86,45 +111,6 @@ function DevelopersPageContent() {
   const [selectedDeveloperId, setSelectedDeveloperId] = useState<number | null>(null);
   const [selectedDeveloperData, setSelectedDeveloperData] = useState<DeveloperData | undefined>(undefined);
   const [selectedDevelopers, setSelectedDevelopers] = useState<number[]>([]);
-
-  const itemsArray: DeveloperApiResponse[] = useMemo(() => {
-    const rawData = (devData as { data?: unknown })?.data;
-    let arr: DeveloperApiResponse[] = [];
-    if (Array.isArray(rawData)) {
-      arr = rawData as DeveloperApiResponse[];
-    } else {
-      const nested = (rawData as { developers?: unknown } | undefined)?.developers;
-      if (Array.isArray(nested)) arr = nested as DeveloperApiResponse[];
-    }
-
-    return arr;
-  }, [devData]);
-
-  const totalDevelopers: number = useMemo(() => {
-    const rawData = (devData as { data?: unknown; total?: number })?.data;
-    if (typeof (devData as { total?: number })?.total === "number") {
-      return (devData as { total: number }).total;
-    }
-    if (rawData && typeof rawData === "object" && "total" in rawData) {
-      return (rawData as { total: number }).total;
-    }
-    return itemsArray.length;
-  }, [devData, itemsArray.length]);
-
-  const developers: Developer[] = useMemo(() => {
-    return itemsArray.map((dev) => ({
-      id: dev.developer_id,
-      name: dev.developer_name || "N/A",
-      countries: dev.countries || "N/A",
-      cities: dev.cities || "N/A",
-      projects: dev.projects_count || 0,
-      website: dev.website || "N/A",
-      email: dev.email || "N/A",
-      contact: dev.phone_number || "N/A",
-      status: dev.status === "active" || Boolean(dev.is_active),
-      logo: dev.logo,
-    }));
-  }, [itemsArray]);
 
   const totalPages = Math.max(1, Math.ceil(totalDevelopers / perPage));
 
@@ -163,7 +149,7 @@ function DevelopersPageContent() {
 
   const handleEditDeveloper = useCallback(
     (id: number) => {
-      const developer = itemsArray.find((d) => d.developer_id === id);
+      const developer = rawDevelopers.find((d: any) => d.developer_id === id);
       if (developer) {
         setSelectedDeveloperId(id);
         setSelectedDeveloperData({
@@ -180,7 +166,7 @@ function DevelopersPageContent() {
         setEditModalOpen(true);
       }
     },
-    [itemsArray],
+    [rawDevelopers],
   );
 
   const handleDeleteDeveloper = useCallback((id: number) => {
@@ -213,27 +199,94 @@ function DevelopersPageContent() {
     [bulkImportMutation],
   );
 
-  const handleExport = useCallback(() => {
-    if (developers.length === 0) {
-      toast.info("No developers to export");
-      return;
+  const handleExport = useCallback(async () => {
+    toast.info("Preparing export... This might take a moment.", { duration: 3000 });
+    try {
+      let allExportedDevelopers: Developer[] = [];
+      let currentPage = 1;
+      let totalPagesToFetch = 1;
+      const batchSize = 100;
+      const { AdminDevelopersService } = await import("@/features/developers/services/AdminDevelopersService");
+
+      do {
+        const response: any = await AdminDevelopersService.getDevelopersPaginated(
+          currentPage,
+          batchSize,
+          debouncedSearch || undefined,
+          filters.status !== "all" ? filters.status : undefined,
+          filters.country !== "all" ? filters.country : undefined
+        );
+
+        let batch: DeveloperApiResponse[] = [];
+        let currentTotal = 0;
+        
+        const rawData = response?.data || response;
+        if (Array.isArray(rawData)) {
+          batch = rawData;
+          totalPagesToFetch = 1;
+        } else {
+          const nested = rawData as { data?: unknown; total?: number; meta?: any } | undefined;
+          if (Array.isArray(nested?.data)) {
+            batch = nested.data as DeveloperApiResponse[];
+            currentTotal = nested.total ?? nested.meta?.total ?? batch.length;
+          } else {
+            const doublyNested = (nested?.data as { data?: unknown; total?: number } | undefined);
+            if (Array.isArray(doublyNested?.data)) {
+              batch = doublyNested.data as DeveloperApiResponse[];
+              currentTotal = doublyNested.total ?? batch.length;
+            } else if (Array.isArray((rawData as any)?.developers)) {
+               batch = (rawData as any).developers as DeveloperApiResponse[];
+               currentTotal = (rawData as any).total ?? batch.length;
+            }
+          }
+          if (currentTotal > 0) {
+            totalPagesToFetch = Math.ceil(currentTotal / batchSize);
+          } else {
+            totalPagesToFetch = 1;
+          }
+        }
+
+        const mappedBatch = batch.map((dev) => ({
+          id: dev.developer_id,
+          name: dev.developer_name || "N/A",
+          countries: dev.countries || "N/A",
+          cities: dev.cities || "N/A",
+          projects: dev.projects_count || 0,
+          website: dev.website || "N/A",
+          email: dev.email || "N/A",
+          contact: dev.phone_number || "N/A",
+          status: dev.status === "active" || Boolean(dev.is_active),
+          logo: dev.logo || "",
+        }));
+
+        allExportedDevelopers = [...allExportedDevelopers, ...mappedBatch];
+        currentPage++;
+      } while (currentPage <= totalPagesToFetch);
+
+      if (allExportedDevelopers.length === 0) {
+        toast.info("No developers to export");
+        return;
+      }
+      
+      const headers = ["ID", "Name", "Email", "Phone", "Website", "Countries", "Status", "Projects"];
+      const rows = allExportedDevelopers.map((d) => [
+        d.id, `"${d.name}"`, `"${d.email}"`, `"${d.contact}"`,
+        `"${d.website}"`, `"${d.countries}"`,
+        d.status ? "Active" : "Inactive", d.projects,
+      ]);
+      const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `developers_${new Date().toISOString().split("T")[0]}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Developers exported successfully!");
+    } catch (error) {
+      toast.error("Failed to export developers");
     }
-    const headers = ["ID", "Name", "Email", "Phone", "Website", "Countries", "Status", "Projects"];
-    const rows = developers.map((d) => [
-      d.id, `"${d.name}"`, `"${d.email}"`, `"${d.contact}"`,
-      `"${d.website}"`, `"${d.countries}"`,
-      d.status ? "Active" : "Inactive", d.projects,
-    ]);
-    const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `developers_${new Date().toISOString().split("T")[0]}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success("Developers exported!");
-  }, [developers]);
+  }, [debouncedSearch, filters.status, filters.country]);
 
   return (
     <div className="p-4 px-3 space-y-4 max-w-full overflow-hidden">
@@ -295,9 +348,6 @@ function DevelopersPageContent() {
               onCountryChange={(val) => setFilter("country", val)}
             />
             <div className="flex items-center gap-2 mb-4">
-              <Button variant="outline" className="gap-2 border-gray-200" onClick={handleExport}>
-                <Download className="h-4 w-4" /> Export
-              </Button>
               <Button
                 variant="outline"
                 className="gap-2 border-gray-200"
@@ -305,13 +355,15 @@ function DevelopersPageContent() {
               >
                 <Upload className="h-4 w-4" /> Import
               </Button>
-              <Button variant="outline" className="gap-2 border-gray-200">
-                <Settings2 className="h-4 w-4" /> Table settings
-              </Button>
+              <TableSettings 
+                settings={tableSettings} 
+                onExportCsv={handleExport} 
+              />
             </div>
           </div>
 
           <DevelopersTable
+            settings={tableSettings}
             developers={developers}
             selectedDevelopers={selectedDevelopers}
             onSelectAll={handleSelectAll}
@@ -333,30 +385,36 @@ function DevelopersPageContent() {
         </>
       )}
 
-      <AddDeveloperModal
-        isOpen={addModalOpen}
-        onClose={() => setAddModalOpen(false)}
-      />
-      <BulkImportDevelopersModal
-        isOpen={bulkImportModalOpen}
-        onClose={() => setBulkImportModalOpen(false)}
-        onSubmit={handleBulkImport}
-      />
-      <EditDeveloperModal
-        isOpen={editModalOpen}
-        onClose={() => {
-          setEditModalOpen(false);
-          setSelectedDeveloperId(null);
-          setSelectedDeveloperData(undefined);
-        }}
-        developerId={selectedDeveloperId}
-        data={selectedDeveloperData}
-        onSuccess={() => {
-          setEditModalOpen(false);
-          setSelectedDeveloperId(null);
-          setSelectedDeveloperData(undefined);
-        }}
-      />
+      {addModalOpen && (
+        <AddDeveloperModal
+          isOpen={addModalOpen}
+          onClose={() => setAddModalOpen(false)}
+        />
+      )}
+      {bulkImportModalOpen && (
+        <BulkImportDevelopersModal
+          isOpen={bulkImportModalOpen}
+          onClose={() => setBulkImportModalOpen(false)}
+          onSubmit={handleBulkImport}
+        />
+      )}
+      {editModalOpen && (
+        <EditDeveloperModal
+          isOpen={editModalOpen}
+          onClose={() => {
+            setEditModalOpen(false);
+            setSelectedDeveloperId(null);
+            setSelectedDeveloperData(undefined);
+          }}
+          developerId={selectedDeveloperId}
+          data={selectedDeveloperData}
+          onSuccess={() => {
+            setEditModalOpen(false);
+            setSelectedDeveloperId(null);
+            setSelectedDeveloperData(undefined);
+          }}
+        />
+      )}
 
       <Dialog
         open={deleteDialogOpen && developerToDelete !== null}

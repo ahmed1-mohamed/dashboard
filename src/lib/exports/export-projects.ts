@@ -29,9 +29,11 @@ export const projectsExportToPDF = (data: any[]) => {
       price_range,
       price_range_SQ,
       description,
-      location,
+      location_landmark,
+      city_name,
+      country_name,
     }: any) => {
-      const cardHeight = 160;
+      const cardHeight = 170;
 
       if (yPos + 40 > pageHeight) {
         doc.addPage();
@@ -99,20 +101,21 @@ export const projectsExportToPDF = (data: any[]) => {
       yPos += lineSpacing;
 
       doc.setFont("helvetica", "bold");
+      doc.text(`Location:`, 14, yPos);
+      doc.setFont("helvetica", "normal");
+      doc.text(`${location_landmark || "N/A"}, ${city_name || "N/A"}, ${country_name || "N/A"}`, valueXPos, yPos);
+      yPos += lineSpacing;
+
+      doc.setFont("helvetica", "bold");
       doc.text(`Description:`, 14, yPos);
       doc.setFont("helvetica", "normal");
+      const cleanDesc = description ? description.replace(/<[^>]*>?/gm, "") : "N/A";
       doc.text(
-        doc.splitTextToSize(description || "N/A", 180),
+        doc.splitTextToSize(cleanDesc, 180),
         14,
         yPos + lineSpacing,
       );
       yPos += lineSpacing * 3.5;
-
-      doc.setFont("helvetica", "bold");
-      doc.text(`Location Map:`, 14, yPos);
-      doc.setFont("helvetica", "normal");
-      doc.text(location?.google_map_link || "N/A", valueXPos, yPos);
-      yPos += lineSpacing;
 
       yPos += cardMargin;
     },
@@ -135,44 +138,56 @@ export const projectsExportToExcel = (data: any[]) => {
       price_range,
       price_range_SQ,
       description,
-      location,
       project_size,
       phase,
       is_active,
-      currency,
+      project_currency,
       permit_no,
       barcode,
       slug,
+      properties_count,
       active_properties_count,
       available_properties_count,
       booked_properties_count,
       sold_properties_count,
-      developer,
+      developer_name,
+      city_name,
+      country_name,
+      country_currency,
+      country_dimension_unit,
+      location_landmark,
+      created_at,
     }: any) => ({
-      ID: project_id ?? "N/A",
+      "Project ID": project_id ?? "N/A",
       "Project Name": project_name ?? "N/A",
       "Project Type": project_type ?? "N/A",
-      "Available Units": available_units ?? "N/A",
+      "Developer": developer_name ?? "N/A",
+      "Status": status ?? "N/A",
+      "Is Active": is_active === 1 || is_active === true || is_active === "1" ? "Yes" : "No",
       "Total Units": total_units ?? "N/A",
-      Status: status ?? "N/A",
-      "Launch Date": launch_date ?? "N/A",
-      "Completion Date": completion_date ?? "N/A",
-      "Price Range": price_range ?? "N/A",
-      "Price Range SQ": price_range_SQ ?? "N/A",
-      Description: description ? description.replace(/<[^>]*>?/gm, "") : "N/A",
-      "Project Size": project_size ?? "N/A",
-      Phase: phase ?? "N/A",
-      "Is Active": is_active === 1 || is_active === true ? "Yes" : "No",
-      Currency: currency ?? "N/A",
-      "Permit No": permit_no ?? "N/A",
-      Barcode: barcode ?? "N/A",
-      Slug: slug ?? "N/A",
+      "Available Units": available_units ?? "N/A",
+      "Properties Count": properties_count ?? 0,
       "Active Properties Count": active_properties_count ?? 0,
       "Available Properties Count": available_properties_count ?? 0,
       "Booked Properties Count": booked_properties_count ?? 0,
       "Sold Properties Count": sold_properties_count ?? 0,
-      Developer: developer?.developer_name ?? "N/A",
-      "Location Map": location?.google_map_link ?? "N/A",
+      "Launch Date": launch_date ?? "N/A",
+      "Completion Date": completion_date ?? "N/A",
+      "Price Range": price_range ?? "N/A",
+      "Price Range SQ": price_range_SQ ?? "N/A",
+      "Project Currency": project_currency ?? "N/A",
+      "Country Name": country_name ?? "N/A",
+      "City Name": city_name ?? "N/A",
+      "Location Landmark": location_landmark ?? "N/A",
+      "Country Currency": country_currency ?? "N/A",
+      "Country Dimension Unit": country_dimension_unit ?? "N/A",
+      "Project Size": project_size ?? "N/A",
+      "Description": description ? description.replace(/<[^>]*>?/gm, "") : "N/A",
+      "Phase": phase ?? "N/A",
+      "Permit No": permit_no ?? "N/A",
+      "Barcode": barcode ?? "N/A",
+      "Slug": slug ?? "N/A",
+      "Created At": created_at ?? "N/A",
     }),
   );
 

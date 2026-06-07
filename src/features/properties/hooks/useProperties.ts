@@ -3,6 +3,8 @@
 import { useQuery, keepPreviousData, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import { AdminPropertiesService, PropertiesFilterParams } from "../services/AdminPropertiesService";
+import { mapProperty } from "../utils/map-property";
+import { useMemo } from "react";
 
 export default function useProperties(
   page: number = 1,
@@ -48,9 +50,12 @@ export default function useProperties(
     | { data: unknown[]; total: number }
     | undefined;
 
+  const rawData = rawResponse?.data ?? [];
+  const properties = useMemo(() => rawData.map(mapProperty), [rawData]);
+
   return {
-    data: rawResponse?.data ?? [],
-    total: rawResponse?.total ?? 0,
+    properties,
+    totalProperties: rawResponse?.total ?? 0,
     isLoading: propertiesQuery.isLoading,
     isError: propertiesQuery.isError,
     error: propertiesQuery.error,

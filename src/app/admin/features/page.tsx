@@ -3,16 +3,21 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { AddFeatureModal2 } from "@/components/modals/add-feature-modal2";
-import { EditFeatureModal2 } from "@/components/modals/edit-feature-modal2";
-import { DeleteFeatureModal2 } from "@/components/modals/delete-feature-modal2";
-import { ViewFeatureModal } from "@/components/modals/view-feature-modal";
+import dynamic from "next/dynamic";
+
+const AddFeatureModal2 = dynamic(() => import("@/components/modals/add-feature-modal2").then(mod => mod.AddFeatureModal2));
+const EditFeatureModal2 = dynamic(() => import("@/components/modals/edit-feature-modal2").then(mod => mod.EditFeatureModal2));
+const DeleteFeatureModal2 = dynamic(() => import("@/components/modals/delete-feature-modal2").then(mod => mod.DeleteFeatureModal2));
+const ViewFeatureModal = dynamic(() => import("@/components/modals/view-feature-modal").then(mod => mod.ViewFeatureModal));
+
 import useDashboardAdminFeatures from "@/hooks/use-dashboardAdminFeatures";
 import { featuresExportToExcel, featuresExportToPDF } from "@/lib/handle-export";
 
 import { FeaturesHeader } from "./components/FeaturesHeader";
 import { FeaturesFilters } from "./components/FeaturesFilters";
 import { FeaturesTable, Feature } from "./components/FeaturesTable";
+import { TableSettings } from "@/components/table/table-settings";
+import { useTableSettings } from "@/hooks/use-table-settings";
 
 interface ApiFeature {
   feature_id: number;
@@ -22,17 +27,8 @@ interface ApiFeature {
 }
 
 export default function FeaturesManagementPage() {
-  const { featuresData } = useDashboardAdminFeatures();
-  const { data: apiData, isLoading, error } = featuresData;
-
-  const features: Feature[] = Array.isArray(apiData?.data?.data!)
-    ? apiData?.data?.data?.map((f: ApiFeature, index: number) => ({
-        id: f.feature_id || index,
-        featureName: f.feature_name || "N/A",
-        isAmenity: f.is_amenity === 1,
-        icon: f.icons || "",
-      }))
-    : [];
+  const { featuresData, features } = useDashboardAdminFeatures();
+  const { isLoading, error } = featuresData;
 
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -44,7 +40,17 @@ export default function FeaturesManagementPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
-  const itemsPerPage = 10;
+  const DEFAULT_COLUMNS = [
+    { id: "id", label: "ID", visible: true },
+    { id: "featureName", label: "Feature Name", visible: true },
+    { id: "isAmenity", label: "Is Amenity", visible: true },
+    { id: "icon", label: "Icon", visible: true },
+    { id: "actions", label: "Actions", visible: true },
+  ];
+
+  const tableSettings = useTableSettings("features", DEFAULT_COLUMNS);
+
+  const itemsPerPage = tableSettings.settings.itemsPerPage;
 
   if (isLoading)
     return <div className="p-8 text-center text-gray-500">Loading features...</div>;
@@ -133,10 +139,15 @@ export default function FeaturesManagementPage() {
         setSearchQuery={setSearchQuery}
         statusFilter={statusFilter}
         setStatusFilter={setStatusFilter}
-        onExport={handleExport}
-      />
+      >
+        <TableSettings 
+          settings={tableSettings} 
+          onExportExcel={() => handleExport("excel")} 
+        />
+      </FeaturesFilters>
 
       <FeaturesTable 
+        settings={tableSettings}
         features={paginatedFeatures}
         selectedFeatures={selectedFeatures}
         handleSelectAll={handleSelectAll}
@@ -190,48 +201,56 @@ export default function FeaturesManagementPage() {
       </div>
 
       {/* Modals */}
-      <ViewFeatureModal
-        feature={selectedFeature}
-        isOpen={isViewModalOpen}
-        onClose={() => {
-          setIsViewModalOpen(false);
-          setSelectedFeature(null);
-        }}
-        onEdit={() => {
-          setIsViewModalOpen(false);
-          setIsEditModalOpen(true);
-        }}
-        onDelete={() => {
-          setIsViewModalOpen(false);
-          setIsDeleteModalOpen(true);
-        }}
-      />
+      {isViewModalOpen && selectedFeature && (
+        <ViewFeatureModal
+          feature={selectedFeature}
+          isOpen={isViewModalOpen}
+          onClose={() => {
+            setIsViewModalOpen(false);
+            setSelectedFeature(null);
+          }}
+          onEdit={() => {
+            setIsViewModalOpen(false);
+            setIsEditModalOpen(true);
+          }}
+          onDelete={() => {
+            setIsViewModalOpen(false);
+            setIsDeleteModalOpen(true);
+          }}
+        />
+      )}
 
-      <AddFeatureModal2
-        isOpen={isAddFeatureModal2Open}
-        onClose={() => setIsAddFeatureModal2Open(false)}
-        onEdit={(feature) => handleEdit(feature)}
-        onDelete={(feature) => handleDelete(feature)}
-      />
+      {isAddFeatureModal2Open && (
+        <AddFeatureModal2
+          isOpen={isAddFeatureModal2Open}
+          onClose={() => setIsAddFeatureModal2Open(false)}
+          onEdit={(feature) => handleEdit(feature)}
+          onDelete={(feature) => handleDelete(feature)}
+        />
+      )}
 
       {/* Edit Feature Modal 2 */}
-      <EditFeatureModal2
-        isOpen={isEditModalOpen}
-        onClose={() => {
-          setIsEditModalOpen(false);
-          setSelectedFeature(null);
-        }}
-        feature={selectedFeature}
-      />
+      {isEditModalOpen && selectedFeature && (
+        <EditFeatureModal2
+          isOpen={isEditModalOpen}
+          onClose={() => {
+            setIsEditModalOpen(false);
+            setSelectedFeature(null);
+          }}
+          feature={selectedFeature}
+        />
+      )}
 
-      <DeleteFeatureModal2
-        isOpen={isDeleteModalOpen}
-        onClose={() => {
-          setIsDeleteModalOpen(false);
-          setSelectedFeature(null);
-        }}
-        feature={selectedFeature}
-      />
+      {isDeleteModalOpen && selectedFeature && (
+        <DeleteFeatureModal2
+          isOpen={isDeleteModalOpen}
+          onClose={() => {
+            setIsDeleteModalOpen(false);
+            setSelectedFeature(null);
+          }}
+          feature={selectedFeature}
+        />
+      )}
     </div>
   );
 }

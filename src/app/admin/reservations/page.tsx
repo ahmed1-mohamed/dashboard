@@ -18,6 +18,8 @@ import { ReservationTable } from "@/features/reservations/components/Reservation
 import { ReservationFilters } from "@/features/reservations/components/ReservationFilters";
 import { ReservationPagination } from "@/features/reservations/components/ReservationPagination";
 import { Booking, ApiReservation } from "@/features/reservations/types";
+import { TableSettings } from "@/components/table/table-settings";
+import { useTableSettings } from "@/hooks/use-table-settings";
 
 interface BookingsPageProps {
   initialPage?: number;
@@ -51,6 +53,26 @@ function BookingsPageContent({
     const p = searchParams.get("page");
     return p ? Number(p) : initialPage;
   });
+
+  const DEFAULT_COLUMNS = [
+    { id: "number", label: "Reservation Number", visible: true },
+    { id: "client", label: "Client Name", visible: true },
+    { id: "project", label: "Project", visible: true },
+    { id: "country", label: "Country", visible: true },
+    { id: "reservationDate", label: "Reservation Date", visible: true },
+    { id: "expiryDate", label: "Expiry Date", visible: true },
+    { id: "status", label: "Status", visible: true },
+    { id: "actions", label: "Actions", visible: true },
+  ];
+
+  const tableSettings = useTableSettings("reservations", DEFAULT_COLUMNS);
+
+  const [itemsPerPageState, setItemsPerPage] = useState(tableSettings.settings.itemsPerPage);
+
+  useEffect(() => {
+    setItemsPerPage(tableSettings.settings.itemsPerPage);
+  }, [tableSettings.settings.itemsPerPage]);
+
   const [selectedBookings, setSelectedBookings] = useState<number[]>([]);
 
   const isInitialMount = useRef(true);
@@ -105,13 +127,15 @@ function BookingsPageContent({
   // Fetch bookings data using custom hook with all filters
   const {
     bookingsData,
+    bookings,
+    totalBookings,
     handleConfirm,
     handleDecline,
     isConfirming,
     isDeclining,
   } = useDashboardAdminBookingsData({
     page: currentPage,
-    perPage: itemsPerPage,
+    perPage: itemsPerPageState,
     search: debouncedSearch,
     country: countryFilter,
     status: statusFilter,
@@ -119,33 +143,12 @@ function BookingsPageContent({
     expiryDate: expiryDateFilter,
   });
 
-  const { data, isLoading, isError, error, isFetching, refetch } = bookingsData;
-
-  // Extract array and total from response envelope
-  // API returns { data: Booking[], total: number } (or similar)
-  const itemsArray = (data as any)?.data || [];
-  const totalBookings = (data as any)?.total || itemsArray.length;
-
-  const bookings: Booking[] = itemsArray.map((booking: ApiReservation) => ({
-    id: booking.reservation_id,
-    bookingNumber: `BK-${booking.reservation_id}`,
-    user_name: booking.user_name || "N/A",
-    project_name: booking.project_name || "N/A",
-    country: booking.country || "N/A",
-    reservation_date: booking.reservation_date
-      ? new Date(booking.reservation_date).toISOString().split("T")[0]
-      : "N/A",
-    expiry_date: booking.expiry_date
-      ? new Date(booking.expiry_date).toISOString().split("T")[0]
-      : "N/A",
-    reservation_status_type: booking.reservation_status_type || "N/A",
-    last_status: booking.last_status,
-  }));
+  const { isLoading, isError, error, isFetching, refetch } = bookingsData;
 
   // Pagination using server-side total
-  const totalPages = Math.ceil(Number(totalBookings) / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
+  const totalPages = Math.ceil(Number(totalBookings) / itemsPerPageState);
+  const startIndex = (currentPage - 1) * itemsPerPageState;
+  const endIndex = startIndex + itemsPerPageState;
   const paginatedBookings = bookings; // Already paginated by server
 
   // Handle page changes
@@ -290,7 +293,7 @@ function BookingsPageContent({
       {/* Filters and Actions */}
       {!isLoading && !isError && (
         <>
-          <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+          <div className="flex flex-col gap-4 mb-4">
             <ReservationFilters
               searchQuery={searchQuery}
               onSearchChange={setSearchQuery}
@@ -302,22 +305,17 @@ function BookingsPageContent({
               onTypeChange={setTypeFilter}
               expiryDateFilter={expiryDateFilter}
               onExpiryDateChange={setExpiryDateFilter}
-            />
-
-            {/* Action Buttons */}
-            <div className="flex items-center gap-2">
-              <Button variant="outline" className="gap-2 border-gray-200">
-                <Download className="h-4 w-4" />
-                Export
-              </Button>
-              <Button variant="outline" className="gap-2 border-gray-200">
-                <Settings2 className="h-4 w-4" />
-                Table settings
-              </Button>
-            </div>
+            >
+              <TableSettings 
+                settings={tableSettings} 
+                onExportExcel={() => console.log("Exporting excel...")} 
+                onExportCsv={() => console.log("Exporting csv...")} 
+              />
+            </ReservationFilters>
           </div>
 
           <ReservationTable
+            settings={tableSettings}
             bookings={bookings}
             selectedBookings={selectedBookings}
             onSelectAll={handleSelectAll}
@@ -329,7 +327,7 @@ function BookingsPageContent({
               currentPage={currentPage}
               totalPages={totalPages}
               totalItems={totalBookings}
-              itemsPerPage={itemsPerPage}
+              itemsPerPage={itemsPerPageState}
               onPageChange={handlePageChange}
               isFetching={isFetching}
             />

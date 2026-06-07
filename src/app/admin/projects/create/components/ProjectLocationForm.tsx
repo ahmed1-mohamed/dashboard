@@ -56,10 +56,22 @@ export function ProjectLocationForm({
       setOptions([]);
       return;
     }
-    const body = response.data;
-    const citiesArray: any[] | undefined = Array.isArray(body) ? body : (body as any)?.data;
-    if (Array.isArray(citiesArray)) {
-      setOptions(citiesArray.map((city: any) => ({ label: city.name, value: city.name })));
+    
+    let citiesArray: any[] = [];
+    const rawData = response.data;
+    if (Array.isArray(rawData)) {
+      citiesArray = rawData;
+    } else {
+      const nested = (rawData as any)?.data;
+      if (Array.isArray(nested)) {
+        citiesArray = nested;
+      } else if (Array.isArray((nested as any)?.data)) {
+        citiesArray = (nested as any).data;
+      }
+    }
+
+    if (citiesArray.length > 0) {
+      setOptions(citiesArray.map((city: any) => ({ label: city.name || city.city_name, value: city.name || city.city_name })));
     } else {
       setOptions([]);
     }
@@ -73,10 +85,24 @@ export function ProjectLocationForm({
       setOptions2([]);
       return;
     }
-    const body = response.data;
-    const areasArray: any[] | undefined = Array.isArray(body) ? body : (body as any)?.data;
-    if (Array.isArray(areasArray)) {
-      setOptions2(areasArray.map((area: any) => ({ label: area.area_name, value: area.area_name })));
+    
+    let areasArray: any[] = [];
+    const rawData = response.data;
+    if (Array.isArray(rawData)) {
+      areasArray = rawData;
+    } else {
+      const nested = (rawData as any)?.data;
+      if (Array.isArray(nested)) {
+        areasArray = nested;
+      } else if (Array.isArray((nested as any)?.data)) {
+        areasArray = (nested as any).data;
+      } else if (Array.isArray((rawData as any)?.dldAreas)) {
+        areasArray = (rawData as any).dldAreas;
+      }
+    }
+
+    if (areasArray.length > 0) {
+      setOptions2(areasArray.map((area: any) => ({ label: area.area_name || area.dld_area_name, value: area.area_name || area.dld_area_name })));
     } else {
       setOptions2([]);
     }

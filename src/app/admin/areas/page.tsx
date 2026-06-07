@@ -15,14 +15,21 @@ import {
 } from "@/components/ui/dialog";
 import { ChevronLeft, ChevronRight, AlertTriangle } from "lucide-react";
 import useDashboardAdminAreasData from "@/hooks/use-dashboardAdminAreas";
-import { AddAreaModal } from "@/components/modals/add-area-modal";
-import { ViewAreaModal } from "@/components/modals/view-area-modal";
-import { EditAreaModal } from "@/components/modals/edit-area-modal";
+import dynamic from "next/dynamic";
+
+const AddAreaModal = dynamic(() => import("@/components/modals/add-area-modal").then(mod => mod.AddAreaModal));
+const ViewAreaModal = dynamic(() => import("@/components/modals/view-area-modal").then(mod => mod.ViewAreaModal));
+const EditAreaModal = dynamic(() => import("@/components/modals/edit-area-modal").then(mod => mod.EditAreaModal));
+
+import { AdminAreasService } from "@/services/AdminAreasService";
 
 import { AreasHeader } from "./components/AreasHeader";
 import { AreasFilters } from "./components/AreasFilters";
 import { AreasTable, Area } from "./components/AreasTable";
 import { areasExportToExcel, areasExportToPDF } from "@/lib/handle-export";
+import { toast } from "sonner";
+import { TableSettings } from "@/components/table/table-settings";
+import { useTableSettings } from "@/hooks/use-table-settings";
 
 interface AreasPageProps {
   initialPage?: number;
@@ -38,7 +45,23 @@ export default function AreasPage({
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(initialPage);
-  const [itemsPerPageState, setItemsPerPage] = useState(itemsPerPage);
+  
+  const DEFAULT_COLUMNS = [
+    { id: "areaName", label: "Area Name", visible: true },
+    { id: "description", label: "Description", visible: true },
+    { id: "created", label: "Created", visible: true },
+    { id: "status", label: "Status", visible: true },
+    { id: "actions", label: "Actions", visible: true },
+  ];
+
+  const tableSettings = useTableSettings("areas", DEFAULT_COLUMNS);
+  
+  const [itemsPerPageState, setItemsPerPage] = useState(tableSettings.settings.itemsPerPage);
+  
+  useEffect(() => {
+    setItemsPerPage(tableSettings.settings.itemsPerPage);
+  }, [tableSettings.settings.itemsPerPage]);
+
   const [selectedAreas, setSelectedAreas] = useState<number[]>([]);
   const [areaStatuses, setAreaStatuses] = useState<Record<number, boolean>>({});
 
@@ -53,34 +76,14 @@ export default function AreasPage({
 
   const {
     areasData,
+    areas,
+    totalAreas,
     createAreaMutation,
     deleteAreaMutation,
     updateAreaMutation,
   } = useDashboardAdminAreasData(currentPage, itemsPerPageState);
 
-  const { data, isLoading, isError, error, isFetching, refetch } = areasData;
-
-  const rawData = data as { data?: any } | undefined;
-  const itemsArray = useMemo(() => rawData?.data?.data || [], [rawData?.data?.data]);
-
-  const areas: Area[] = useMemo(() => {
-    return itemsArray.map((area: any) => ({
-      area_id: area.id || area.dld_area_id,
-      area_name: area.dld_area_name || area.area_name || "N/A",
-      latitude: area.latitude || "",
-      longitude: area.longitude || "",
-      description: area.description || "",
-      created_at: area.created_at || "",
-      updated_at: area.updated_at || "",
-      deleted_at: area.deleted_at || null,
-      dld_area_id: area.dld_area_id,
-      locations_count: area.locations_count,
-      projects_count: area.projects_count,
-      status: !area.deleted_at,
-    }));
-  }, [itemsArray]);
-
-  const totalAreas = rawData?.data?.total || itemsArray.length || 0;
+  const { isLoading, isError, error, isFetching, refetch } = areasData;
   const totalPages = Math.ceil(Number(totalAreas) / itemsPerPageState);
   const startIndex = (currentPage - 1) * itemsPerPageState;
 
@@ -98,11 +101,86 @@ export default function AreasPage({
     });
   }, [areas, searchQuery, statusFilter, areaStatuses]);
 
-  const handleExport = (format: "pdf" | "xlsx" | "excel") => {
-    if (format === "pdf") {
-      areasExportToPDF(filteredAreas);
-    } else {
-      areasExportToExcel(filteredAreas);
+  const handleExport = async (format: "pdf" | "xlsx" | "excel") => {
+    toast.info("Preparing export... This might take a moment.", { duration: 3000 });
+    try {
+      let allExportedAreas: any[] = [];
+      let currentPage = 1;
+      let totalPagesToFetch = 1;
+      const batchSize = 100;
+      
+      do {
+        const response = await AdminAreasService.getAreas(currentPage, batchSize);
+        let batch: any[] = [];
+        let currentTotal = 0;
+        
+        const rawData = (response as any)?.data?.data?.data || (response as any)?.data?.data || (response as any)?.data || response || [];
+        
+        if (Array.isArray(rawData)) {
+          batch = rawData;
+          totalPagesToFetch = 1;
+        } else {
+          const nested = (response as any)?.data as { data?: unknown; total?: number; meta?: any } | undefined;
+          if (Array.isArray(nested?.data)) {
+            batch = nested.data as any[];
+            currentTotal = nested.total ?? nested.meta?.total ?? batch.length;
+          } else {
+            const doublyNested = (nested?.data as { data?: unknown; total?: number } | undefined);
+            if (Array.isArray(doublyNested?.data)) {
+              batch = doublyNested.data as any[];
+              currentTotal = doublyNested.total ?? batch.length;
+            }
+          }
+          if (currentTotal > 0) {
+            totalPagesToFetch = Math.ceil(currentTotal / batchSize);
+          } else {
+            totalPagesToFetch = 1;
+          }
+        }
+
+        allExportedAreas = [...allExportedAreas, ...batch];
+        currentPage++;
+      } while (currentPage <= totalPagesToFetch);
+
+      const formattedToExport = allExportedAreas.map((area: any) => ({
+        area_id: area.id || area.dld_area_id,
+        area_name: area.dld_area_name || area.area_name || "N/A",
+        latitude: area.latitude || "",
+        longitude: area.longitude || "",
+        description: area.description || "",
+        created_at: area.created_at || "",
+        updated_at: area.updated_at || "",
+        deleted_at: area.deleted_at || null,
+        dld_area_id: area.dld_area_id,
+        locations_count: area.locations_count,
+        projects_count: area.projects_count,
+        status: !area.deleted_at,
+      }));
+
+      // Apply filters if needed (optional for export all, but keeping consistency)
+      const exportData = formattedToExport.filter((area) => {
+        const matchesSearch = area.area_name.toLowerCase().includes(searchQuery.toLowerCase());
+        let matchesStatus = true;
+        if (statusFilter !== "all") {
+          const isActive = areaStatuses[area.area_id] ?? area.status;
+          matchesStatus = statusFilter === "active" ? isActive : !isActive;
+        }
+        return matchesSearch && matchesStatus;
+      });
+
+      if (exportData.length === 0) {
+        toast.info("No areas to export");
+        return;
+      }
+
+      if (format === "pdf") {
+        areasExportToPDF(exportData);
+      } else {
+        areasExportToExcel(exportData);
+      }
+      toast.success("Export successful");
+    } catch (error) {
+      toast.error("Failed to export areas");
     }
   };
 
@@ -116,7 +194,7 @@ export default function AreasPage({
         {} as Record<number, boolean>
       );
       setAreaStatuses((prev) => {
-        const isDifferent = 
+        const isDifferent =
           Object.keys(statusState).length !== Object.keys(prev).length ||
           Object.keys(statusState).some(
             (key) => statusState[Number(key)] !== prev[Number(key)]
@@ -221,11 +299,17 @@ export default function AreasPage({
         setSearchQuery={setSearchQuery}
         statusFilter={statusFilter}
         setStatusFilter={setStatusFilter}
-        onExport={handleExport}
-      />
+      >
+        <TableSettings 
+          settings={tableSettings} 
+          onExportExcel={() => handleExport("excel")} 
+          onExportCsv={() => handleExport("xlsx")} 
+        />
+      </AreasFilters>
 
       <div className="flex-1 min-h-0 w-full overflow-hidden">
         <AreasTable
+          settings={tableSettings}
           areas={filteredAreas}
           isLoading={isLoading}
           isError={isError}
@@ -301,36 +385,40 @@ export default function AreasPage({
         </div>
       )}
 
-      <AddAreaModal
-        isOpen={isAddAreaModalOpen}
-        onClose={() => setIsAddAreaModalOpen(false)}
-        onSubmit={(data) => {
-          createAreaMutation.mutate(data, {
-            onSuccess: () => setIsAddAreaModalOpen(false),
-          });
-        }}
-      />
+      {isAddAreaModalOpen && (
+        <AddAreaModal
+          isOpen={isAddAreaModalOpen}
+          onClose={() => setIsAddAreaModalOpen(false)}
+          onSubmit={(data) => {
+            createAreaMutation.mutate(data, {
+              onSuccess: () => setIsAddAreaModalOpen(false),
+            });
+          }}
+        />
+      )}
 
-      <ViewAreaModal
-        area={areaToView}
-        isOpen={viewAreaModalOpen}
-        onClose={() => {
-          setViewAreaModalOpen(false);
-          setAreaToView(null);
-        }}
-        onEdit={() => {
-          setViewAreaModalOpen(false);
-          if (areaToView) {
-            setAreaToEdit(areaToView.area_id);
-            setAreaToEditData(areaToView);
-            setEditAreaModalOpen(true);
-          }
-        }}
-        onDelete={() => {
-          setViewAreaModalOpen(false);
-          if (areaToView) handleDeleteArea(areaToView.area_id);
-        }}
-      />
+      {viewAreaModalOpen && (
+        <ViewAreaModal
+          area={areaToView}
+          isOpen={viewAreaModalOpen}
+          onClose={() => {
+            setViewAreaModalOpen(false);
+            setAreaToView(null);
+          }}
+          onEdit={() => {
+            setViewAreaModalOpen(false);
+            if (areaToView) {
+              setAreaToEdit(areaToView.area_id);
+              setAreaToEditData(areaToView);
+              setEditAreaModalOpen(true);
+            }
+          }}
+          onDelete={() => {
+            setViewAreaModalOpen(false);
+            if (areaToView) handleDeleteArea(areaToView.area_id);
+          }}
+        />
+      )}
 
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent className="sm:max-w-md w-[95vw] sm:w-full">
@@ -381,16 +469,18 @@ export default function AreasPage({
         </DialogContent>
       </Dialog>
 
-      <EditAreaModal
-        isOpen={editAreaModalOpen}
-        onClose={() => {
-          setEditAreaModalOpen(false);
-          setAreaToEdit(null);
-          setAreaToEditData(null);
-        }}
-        areaId={areaToEdit!}
-        initialArea={areaToEditData || undefined}
-      />
+      {editAreaModalOpen && (
+        <EditAreaModal
+          isOpen={editAreaModalOpen}
+          onClose={() => {
+            setEditAreaModalOpen(false);
+            setAreaToEdit(null);
+            setAreaToEditData(null);
+          }}
+          areaId={areaToEdit!}
+          initialArea={areaToEditData || undefined}
+        />
+      )}
     </div>
   );
 }

@@ -42,7 +42,7 @@ export function UsersFilters({
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Roles</SelectItem>
-          {roles.map((role: any) => {
+          {Array.isArray(roles) && roles.map((role: any) => {
             const rId = role.role_id ?? role.id;
             const rName = role.role_name ?? role.name;
             return (

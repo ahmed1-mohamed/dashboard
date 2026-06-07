@@ -152,6 +152,9 @@ export function EditProjectModal({
         status: formValues.status,
         project_type: formValues.project_type,
         developer_id: String(finalDeveloperId),
+        currency: formValues.currency || "AED",
+        is_active: raw?.is_active ?? "1",
+        is_visible: raw?.is_visible ?? "1",
       };
 
       if (formValues.total_units != null && formValues.total_units !== "") payload.total_units = String(formValues.total_units);
@@ -163,21 +166,18 @@ export function EditProjectModal({
       if (raw?.price_range) payload.price_range = String(raw.price_range);
       if (raw?.price_range_SQ) payload.price_range_SQ = String(raw.price_range_SQ);
 
-      // Only include location if city_id and area_id are present
-      if (cityId && areaId) {
-        payload.location = {
-          latitude: raw?.location?.latitude ?? 0,
-          longitude: raw?.location?.longitude ?? 0,
-          landmark: raw?.location?.landmark || "",
-          city_id: cityId,
-          area_id: areaId,
-          north_side: raw?.location?.north_side || "",
-          south_side: raw?.location?.south_side || "",
-          east_side: raw?.location?.east_side || "",
-          west_side: raw?.location?.west_side || "",
-          google_map_link: raw?.location?.google_map_link || "",
-        };
-      }
+      payload.location = {
+        latitude: raw?.location?.latitude ?? 0,
+        longitude: raw?.location?.longitude ?? 0,
+        landmark: raw?.location?.landmark || "",
+        city_id: cityId || "1",
+        area_id: areaId || "1",
+        north_side: raw?.location?.north_side || "",
+        south_side: raw?.location?.south_side || "",
+        east_side: raw?.location?.east_side || "",
+        west_side: raw?.location?.west_side || "",
+        google_map_link: raw?.location?.google_map_link || "",
+      };
 
       await AdminProjectsService.updateProject(projectId, payload);
       toast.success("Project updated successfully!");

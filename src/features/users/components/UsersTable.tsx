@@ -17,6 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { User } from "../types";
+import { useTableSettings } from "@/hooks/use-table-settings";
 
 const roleColors = {
   Admin: "bg-cyan-500 text-white",
@@ -36,14 +37,26 @@ const avatarColors = [
 ];
 
 interface UsersTableProps {
+  settings: ReturnType<typeof useTableSettings>;
   users: User[];
   onView: (user: User) => void;
   onEdit: (userId: number) => void;
   onDelete: (userId: number) => void;
 }
 
-export function UsersTable({ users, onView, onEdit, onDelete }: UsersTableProps) {
+export function UsersTable({ settings, users, onView, onEdit, onDelete }: UsersTableProps) {
   const getAvatarColor = (index: number) => avatarColors[index % avatarColors.length];
+
+  const getDensityClass = () => {
+    switch (settings.settings.density) {
+      case "compact": return "py-1.5 px-2";
+      case "spacious": return "py-4 px-2";
+      case "comfortable":
+      default: return "py-2.5 px-2";
+    }
+  };
+
+  const densityClass = getDensityClass();
 
   if (users.length === 0) {
     return (
@@ -64,109 +77,121 @@ export function UsersTable({ users, onView, onEdit, onDelete }: UsersTableProps)
       <Table>
         <TableHeader>
           <TableRow className="bg-gray-50 hover:bg-gray-50">
-            <TableHead className="font-semibold text-gray-900 w-[200px] px-3 text-sm">
-              Users
-            </TableHead>
-            <TableHead className="font-semibold text-gray-900 w-[110px] px-2 text-sm">
-              User Role
-            </TableHead>
-            <TableHead className="font-semibold text-gray-900 w-[180px] px-2 text-sm">
-              Email
-            </TableHead>
-            <TableHead className="font-semibold text-gray-900 w-[120px] px-2 text-sm">
-              Last Login
-            </TableHead>
-            <TableHead className="font-semibold text-gray-900 w-[100px] px-2 text-sm">
-              Status
-            </TableHead>
-            <TableHead className="font-semibold text-gray-900 w-[120px] px-2 text-sm">
-              Actions
-            </TableHead>
+            {settings.isColumnVisible("users") && (
+              <TableHead className="font-semibold text-gray-900 w-[200px] px-3 text-sm">Users</TableHead>
+            )}
+            {settings.isColumnVisible("role") && (
+              <TableHead className="font-semibold text-gray-900 w-[110px] px-2 text-sm">User Role</TableHead>
+            )}
+            {settings.isColumnVisible("email") && (
+              <TableHead className="font-semibold text-gray-900 w-[180px] px-2 text-sm">Email</TableHead>
+            )}
+            {settings.isColumnVisible("lastLogin") && (
+              <TableHead className="font-semibold text-gray-900 w-[120px] px-2 text-sm">Last Login</TableHead>
+            )}
+            {settings.isColumnVisible("status") && (
+              <TableHead className="font-semibold text-gray-900 w-[100px] px-2 text-sm">Status</TableHead>
+            )}
+            {settings.isColumnVisible("actions") && (
+              <TableHead className="font-semibold text-gray-900 w-[120px] px-2 text-sm">Actions</TableHead>
+            )}
           </TableRow>
         </TableHeader>
         <TableBody>
             {users.map((user, index) => (
               <TableRow key={user.user_id}>
-                <TableCell className="px-3">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`h-9 w-9 rounded-full ${getAvatarColor(
-                        index,
-                      )} flex items-center justify-center flex-shrink-0 text-white overflow-hidden`}
-                    >
-                      {user.profile_picture && user.profile_picture !== "U" ? (
-                        <img
-                          src={user.profile_picture}
-                          alt={user.name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <span className="text-sm font-semibold">
-                          {user.name.charAt(0).toUpperCase()}
-                        </span>
-                      )}
-                    </div>
-                    <button
-                      onClick={() => onView(user)}
-                      className="text-gray-900 text-sm font-medium hover:text-teal-600 active:text-teal-800 transition-colors cursor-pointer text-left focus:outline-none"
-                    >
-                      {user.name}
-                    </button>
-                  </div>
-                </TableCell>
-                <TableCell className="px-2">
-                  <Badge
-                    className={`${roleColors[user.role_name as keyof typeof roleColors] ||
-                      roleColors.Viewer
-                      } text-xs px-2 py-0.5 flex items-center gap-1 w-fit`}
-                  >
-                    {user.role_name === "Viewer" && <span className="text-[10px]">👁</span>}
-                    {user.role_name}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-gray-900 px-2 text-sm truncate max-w-[180px]">
-                  {user.email}
-                </TableCell>
-                <TableCell className="text-gray-900 px-2 text-sm">
-                  {user.lastLogin}
-                </TableCell>
-                <TableCell className="px-2">
-                  <div className="flex items-center gap-2">
-                    <div
-                      className={`h-2 w-2 rounded-full ${user.status === "Active"
-                        ? "bg-green-500"
-                        : user.status === "Inactive"
-                          ? "bg-red-500"
-                          : "bg-gray-400"
-                        }`}
-                    />
-                    <span className="text-gray-900 text-sm">{user.status}</span>
-                  </div>
-                </TableCell>
-                <TableCell className="px-2 text-left" onClick={(e) => e.stopPropagation()}>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="h-8 w-8 p-0">
-                        <span className="sr-only">Open menu</span>
-                        <MoreVertical className="h-4 w-4 text-gray-600" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-[160px] bg-white z-50">
-                      <DropdownMenuItem onClick={() => onView(user)} className="cursor-pointer">
-                        <Eye className="h-4 w-4 mr-2" /> View Details
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onEdit(user.user_id)} className="cursor-pointer">
-                        <Edit className="h-4 w-4 mr-2" /> Edit User
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => onDelete(user.user_id)}
-                        className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
+                {settings.isColumnVisible("users") && (
+                  <TableCell className={`px-3 ${densityClass}`}>
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`h-9 w-9 rounded-full ${getAvatarColor(
+                          index,
+                        )} flex items-center justify-center flex-shrink-0 text-white overflow-hidden`}
                       >
-                        <Trash2 className="h-4 w-4 mr-2" /> Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
+                        {user.profile_picture && user.profile_picture !== "U" ? (
+                          <img
+                            src={user.profile_picture}
+                            alt={user.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-sm font-semibold">
+                            {user.name.charAt(0).toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => onView(user)}
+                        className="text-gray-900 text-sm font-medium hover:text-teal-600 active:text-teal-800 transition-colors cursor-pointer text-left focus:outline-none"
+                      >
+                        {user.name}
+                      </button>
+                    </div>
+                  </TableCell>
+                )}
+                {settings.isColumnVisible("role") && (
+                  <TableCell className={`px-2 ${densityClass}`}>
+                    <Badge
+                      className={`${roleColors[user.role_name as keyof typeof roleColors] ||
+                        roleColors.Viewer
+                        } text-xs px-2 py-0.5 flex items-center gap-1 w-fit`}
+                    >
+                      {user.role_name === "Viewer" && <span className="text-[10px]">👁</span>}
+                      {user.role_name}
+                    </Badge>
+                  </TableCell>
+                )}
+                {settings.isColumnVisible("email") && (
+                  <TableCell className={`text-gray-900 px-2 text-sm truncate max-w-[180px] ${densityClass}`}>
+                    {user.email}
+                  </TableCell>
+                )}
+                {settings.isColumnVisible("lastLogin") && (
+                  <TableCell className={`text-gray-900 px-2 text-sm ${densityClass}`}>
+                    {user.lastLogin}
+                  </TableCell>
+                )}
+                {settings.isColumnVisible("status") && (
+                  <TableCell className={`px-2 ${densityClass}`}>
+                    <div className="flex items-center gap-2">
+                      <div
+                        className={`h-2 w-2 rounded-full ${user.status === "Active"
+                          ? "bg-green-500"
+                          : user.status === "Inactive"
+                            ? "bg-red-500"
+                            : "bg-gray-400"
+                          }`}
+                      />
+                      <span className="text-gray-900 text-sm">{user.status}</span>
+                    </div>
+                  </TableCell>
+                )}
+                {settings.isColumnVisible("actions") && (
+                  <TableCell className={`px-2 text-left ${densityClass}`} onClick={(e) => e.stopPropagation()}>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                          <span className="sr-only">Open menu</span>
+                          <MoreVertical className="h-4 w-4 text-gray-600" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-[160px] bg-white z-50">
+                        <DropdownMenuItem onClick={() => onView(user)} className="cursor-pointer">
+                          <Eye className="h-4 w-4 mr-2" /> View Details
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onEdit(user.user_id)} className="cursor-pointer">
+                          <Edit className="h-4 w-4 mr-2" /> Edit User
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => onDelete(user.user_id)}
+                          className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" /> Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                )}
               </TableRow>
             ))}
         </TableBody>
