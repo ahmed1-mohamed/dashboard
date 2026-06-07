@@ -1,38 +1,30 @@
 import { apiClient } from "@/lib/apiClient";
 
 export const AdminSubscriptionsService = {
-  /**
-   * Get all packages
-   */
+
+  getCustomerPlans: () => {
+    return apiClient.get("/dashboard/subs/customerPlans");
+  },
+
+  getCustomerPlanById: (id: number | string) => {
+    return apiClient.get(`/subs/customerPlans/${id}`);
+  },
+
   getPackages: () => {
-    return apiClient.get("/dashboard/ad-credit-packages");
+    return apiClient.get("/ad-credit-packages");
   },
 
-  /**
-   * Get all features
-   */
-  getFeatures: () => {
-    return apiClient.get("/dashboard/badge-features");
+
+  createCustomerPlan: (data: Record<string, unknown>) => {
+    return apiClient.post("/subs/customerPlans", data);
   },
 
-  /**
-   * Delete a package
-   */
+  updateCustomerPlan: (id: number | string, data: Record<string, unknown>) => {
+    return apiClient.put(`/subs/customerPlans/${id}`, data);
+  },
+
+
   deletePackage: (packageId: number) => {
     return apiClient.delete(`/ad-credit-packages/${packageId}`);
-  },
-
-  /**
-   * Create a feature
-   */
-  createFeature: (data: Record<string, unknown>) => {
-    return apiClient.post("/dashboard/badge-features", data);
-  },
-
-  /**
-   * Delete a feature
-   */
-  deleteFeature: (featureId: number) => {
-    return apiClient.delete(`/dashboard/badge-features/${featureId}`);
   },
 };

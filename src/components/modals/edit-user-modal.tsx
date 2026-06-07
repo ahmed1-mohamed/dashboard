@@ -68,7 +68,7 @@ export function EditUserModal({
   const { data: userData, isLoading: userLoading } = useQuery({
     queryKey: ["user-detail", userId],
     queryFn: () => AdminUsersService.getUser(userId),
-    enabled: !!token && !!userId && isOpen,
+    enabled: !!token && userId != null && isOpen,
   });
 
   // Fetch roles

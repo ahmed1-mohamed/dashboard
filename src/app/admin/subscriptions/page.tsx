@@ -14,6 +14,9 @@ import {
   Sparkles,
   Layers,
   Check,
+  MoreHorizontal,
+  Eye,
+  Edit,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -22,6 +25,12 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Dialog,
   DialogContent,
@@ -35,19 +44,17 @@ import {
 import useDashboardAdminSubscriptions from "@/hooks/use-dashboardAdminSubscriptions";
 
 import AddDeveloperPackageModal from "@/components/modals/create-developer-package-modal";
-import { AddFeatureModal } from "@/components/modals/add-feature-modal";
+import AddCustomerPlanModal from "@/components/modals/add-customer-plan-modal";
+import ViewCustomerPlanModal from "@/components/modals/view-customer-plan-modal";
+import UpdateCustomerPlanModal from "@/components/modals/update-customer-plan-modal";
 import { toast } from "sonner";
 
-// ============================================
-// Tab Types
-// ============================================
 
-type TabType = "customer-plans" | "developer-packages" | "features" | "addons";
+type TabType = "customer-plans" | "developer-packages" | "addons";
 
 const TAB_CONFIG = {
   "customer-plans": { label: "Customer Plans", icon: Users },
   "developer-packages": { label: "Developer", icon: Package },
-  features: { label: "Features", icon: Sparkles },
   addons: { label: "Add-ons", icon: Layers },
 } as const;
 
@@ -60,7 +67,7 @@ interface PackageItem {
 }
 
 interface Feature {
-  badge_id:number;
+  badge_id: number;
   name: string;
   code: string;
   applies_to: string;
@@ -69,10 +76,6 @@ interface Feature {
 interface PackagesResponse {
   packages: PackageItem[];
 }
-
-// ============================================
-// Helper Components
-// ============================================
 
 const LoadingSkeleton = () => (
   <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -127,10 +130,6 @@ const EmptyState = ({
   </div>
 );
 
-// ============================================
-// Package Card
-// ============================================
-
 function PackageCard({
   pkg,
   isBestValue,
@@ -157,7 +156,6 @@ function PackageCard({
         </div>
       )}
 
-      {/* Delete Button - Positioned in top-right corner */}
       <div className="absolute top-3 right-3 z-10">
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
@@ -227,7 +225,6 @@ function PackageCard({
       </div>
 
       <CardContent className="p-5 space-y-3">
-        {/* Name */}
         <div className="flex items-start justify-between pr-10">
           <div>
             <h3 className="font-semibold text-lg text-gray-900">{pkg.name}</h3>
@@ -238,7 +235,6 @@ function PackageCard({
           <span className="text-xs text-gray-400">ID: {pkg.id}</span>
         </div>
 
-        {/* Price */}
         <div>
           <span className="text-purple-600 font-semibold text-lg">
             AED {pkg.price}
@@ -248,12 +244,10 @@ function PackageCard({
           </div>
         </div>
 
-        {/* Subscribers */}
         <div className="text-xs text-gray-400">
           Subscribers: {pkg.subscribers}
         </div>
 
-        {/* Status */}
         <div className="flex justify-between items-center pt-2">
           <span className="text-sm text-gray-500">Status</span>
           <Badge
@@ -267,7 +261,6 @@ function PackageCard({
           </Badge>
         </div>
 
-        {/* Button */}
         {pkg.status && (
           <Button className="w-full bg-teal-600 hover:bg-teal-700 text-white">
             Select Package
@@ -278,9 +271,93 @@ function PackageCard({
   );
 }
 
-// ============================================
-// Feature Card (same design as Package Card)
-// ============================================
+
+function CustomerPlanCard({ plan, onView, onEdit }: { plan: any, onView: (id: number | string) => void, onEdit: (id: number | string) => void }) {
+  const featuresList: string[] = [];
+  if (plan.features) {
+    Object.entries(plan.features).forEach(([key, value]) => {
+      let formattedKey = key
+        .split('_')
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+
+      if (key === 'map_filters') formattedKey = 'Map & Filters';
+      if (key === 'chat_support') formattedKey = 'Chat & Support';
+
+      let label = formattedKey;
+      if (typeof value === 'boolean') {
+        if (!value) return;
+      } else if (value !== null && value !== '') {
+        label = `${formattedKey} (${value})`;
+      }
+      featuresList.push(label);
+    });
+  }
+
+  const description = plan.description || "For registered users only";
+
+  return (
+    <Card className="relative border hover:border-teal-500 hover:shadow-xl hover:-translate-y-1 hover:scale-[1.02] transition-all duration-300 bg-white group cursor-pointer">
+      <CardContent className="p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-xl font-bold text-gray-900 group-hover:text-teal-700 transition-colors">{plan.name}</h3>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-gray-900">
+                <MoreHorizontal className="w-5 h-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-40">
+              <DropdownMenuItem className="gap-2 cursor-pointer" onClick={() => onView(plan.id)}>
+                <Eye className="w-4 h-4 text-gray-500" />
+                View
+              </DropdownMenuItem>
+              <DropdownMenuItem className="gap-2 cursor-pointer" onClick={() => onEdit(plan.id)}>
+                <Edit className="w-4 h-4 text-blue-500" />
+                Update
+              </DropdownMenuItem>
+              <DropdownMenuItem className="gap-2 cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50" onClick={() => toast.info('Delete clicked')}>
+                <Trash2 className="w-4 h-4" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        <div className="flex items-baseline gap-1">
+          <span className="text-4xl font-extrabold text-gray-900">
+            ${plan.price}
+          </span>
+          <span className="text-sm font-medium text-gray-500">
+            /{plan.interval === 'month' ? 'month' : plan.interval === 'year' ? 'year' : 'Forever'}
+          </span>
+        </div>
+
+        <p className="text-sm text-gray-500 pb-2">{description}</p>
+
+        <div className="h-px bg-gray-100 -mx-6" />
+
+        <ul className="space-y-3 pt-2">
+          {featuresList.map((feature, idx) => (
+            <li key={idx} className="flex items-center gap-3 text-sm text-gray-600">
+              <div className="flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-full border border-teal-500 bg-teal-50/50">
+                <Check className="w-3.5 h-3.5 text-teal-600" />
+              </div>
+              {feature}
+            </li>
+          ))}
+          {featuresList.length === 0 && (
+            <li className="text-sm text-gray-400 italic flex items-center justify-center py-2">
+              No features listed
+            </li>
+          )}
+        </ul>
+      </CardContent>
+    </Card>
+  );
+}
+
 
 function FeatureCard({
   feature,
@@ -304,22 +381,18 @@ function FeatureCard({
 
   return (
     <Card
-      className={`relative border transition-all duration-200 ${
-        isSelected
-          ? "border-teal-500 ring-2 ring-teal-500/20"
-          : "hover:border-teal-500"
-      }`}
+      className={`relative border transition-all duration-200 ${isSelected
+        ? "border-teal-500 ring-2 ring-teal-500/20"
+        : "hover:border-teal-500"
+        }`}
     >
-      {/* Selection indicator */}
       {isSelected && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
           <Badge className="bg-teal-600 text-white">Selected</Badge>
         </div>
       )}
 
-      {/* Action buttons */}
       <div className="absolute top-3 right-3 z-10 flex gap-1">
-        {/* Delete Button */}
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button
@@ -462,11 +535,10 @@ function FeatureCard({
         {/* Select Button */}
         <Button
           onClick={() => onSelect(feature.badge_id)}
-          className={`w-full gap-2 ${
-            isSelected
-              ? "bg-teal-600 hover:bg-teal-700 text-white"
-              : "bg-gray-100 hover:bg-gray-200 text-gray-900"
-          }`}
+          className={`w-full gap-2 ${isSelected
+            ? "bg-teal-600 hover:bg-teal-700 text-white"
+            : "bg-gray-100 hover:bg-gray-200 text-gray-900"
+            }`}
         >
           {isSelected ? (
             <>
@@ -506,22 +578,19 @@ function AddonsPlaceholder() {
 // ============================================
 
 export default function SubscriptionsPage() {
-  // Use custom hook
-  const {
-    packagesQuery,
-    featuresQuery,
-    deletePackageMutation,
-    createFeatureMutation,
-    deleteFeatureMutation,
-  } = useDashboardAdminSubscriptions();
-
   const [activeTab, setActiveTab] = useState<TabType>("customer-plans");
   const [searchQuery, setSearchQuery] = useState("");
   const [createAdModalOpen, setCreateAdModalOpen] = useState(false);
-  const [selectedFeatures, setSelectedFeatures] = useState<Set<number>>(
-    new Set(),
-  );
-  const [createFeatureModalOpen, setCreateFeatureModalOpen] = useState(false);
+  const [createCustomerPlanModalOpen, setCreateCustomerPlanModalOpen] = useState(false);
+  const [viewPlanId, setViewPlanId] = useState<number | string | null>(null);
+  const [updatePlanId, setUpdatePlanId] = useState<number | string | null>(null);
+
+  // Use custom hook
+  const {
+    packagesQuery,
+    customerPlansQuery,
+    deletePackageMutation,
+  } = useDashboardAdminSubscriptions(activeTab);
 
   // Delete Package
   const handleDeletePackage = useCallback(
@@ -540,71 +609,17 @@ export default function SubscriptionsPage() {
     [deletePackageMutation],
   );
 
-  // Toggle Feature Selection
-  const handleToggleFeature = useCallback((featureId: number) => {
-    setSelectedFeatures((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(featureId)) {
-        newSet.delete(featureId);
-      } else {
-        newSet.add(featureId);
-      }
-      return newSet;
-    });
-  }, []);
-
-  // Create Feature
-  const handleCreateFeature = useCallback(
-    (data: {
-      name: string;
-      applies_to: string;
-      monthly_price_credits: number;
-      priority_boost?: number;
-      max_entities?: number;
-      is_active?: boolean;
-    }) => {
-      createFeatureMutation.mutate(data, {
-        onSuccess: () => {
-          toast.success("Feature created successfully");
-          setCreateFeatureModalOpen(false);
-        },
-        onError: (error) => {
-          const message =
-            error instanceof Error ? error.message : "Failed to create feature";
-          toast.error(message);
-        },
-      });
-    },
-    [createFeatureMutation],
-  );
-
-  // Delete Feature
-  const handleDeleteFeature = useCallback(
-    (featureId: number) => {
-      deleteFeatureMutation.mutate(featureId, {
-        onSuccess: () => {
-          toast.success("Feature deleted successfully");
-          // Remove from selected if selected
-          setSelectedFeatures((prev) => {
-            const newSet = new Set(prev);
-            newSet.delete(featureId);
-            return newSet;
-          });
-        },
-        onError: (error) => {
-          const message =
-            error instanceof Error ? error.message : "Failed to delete feature";
-          toast.error(message);
-        },
-      });
-    },
-    [deleteFeatureMutation],
-  );
-
   // Get data from queries
   const packages =
     (packagesQuery.data?.data as PackagesResponse | undefined)?.packages || [];
-  const features = (featuresQuery.data?.data as Feature[]) || [];
+  const customerPlans = (customerPlansQuery.data?.data as any)?.data || [];
+
+  // Filtering for customer plans
+  const filteredCustomerPlans = customerPlans.filter(
+    (plan: any) =>
+      plan.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      plan.code.toLowerCase().includes(searchQuery.toLowerCase()),
+  );
 
   // Filtering for packages
   const filteredPackages = packages.filter(
@@ -624,17 +639,46 @@ export default function SubscriptionsPage() {
     }
   });
 
-  // Filtering for features
-  const filteredFeatures = features.filter(
-    (f) =>
-      f.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      f.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      f.applies_to.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
   // Render content based on active tab
   const renderContent = () => {
     switch (activeTab) {
       case "customer-plans":
+        if (customerPlansQuery.isLoading) {
+          return <LoadingSkeleton />;
+        }
+        if (customerPlansQuery.isError) {
+          return (
+            <ErrorState
+              error={
+                customerPlansQuery.error instanceof Error
+                  ? customerPlansQuery.error.message
+                  : "Failed to load customer plans"
+              }
+              onRetry={() => customerPlansQuery.refetch()}
+            />
+          );
+        }
+        if (customerPlans.length === 0) {
+          return (
+            <EmptyState
+              title="No customer plans found"
+              message="There are no customer plans available at the moment."
+            />
+          );
+        }
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {filteredCustomerPlans.map((plan: any, index: number) => (
+              <CustomerPlanCard
+                key={plan.id || plan.code || `plan-${index}`}
+                plan={plan}
+                onView={(id) => setViewPlanId(id)}
+                onEdit={(id) => setUpdatePlanId(id)}
+              />
+            ))}
+          </div>
+        );
+
       case "developer-packages":
         if (packagesQuery.isLoading) {
           return <LoadingSkeleton />;
@@ -676,48 +720,6 @@ export default function SubscriptionsPage() {
           </div>
         );
 
-      case "features":
-        if (featuresQuery.isLoading) {
-          return <LoadingSkeleton />;
-        }
-        if (featuresQuery.isError) {
-          return (
-            <ErrorState
-              error={
-                featuresQuery.error instanceof Error
-                  ? featuresQuery.error.message
-                  : "Failed to load features"
-              }
-              onRetry={() => featuresQuery.refetch()}
-            />
-          );
-        }
-        if (features.length === 0) {
-          return (
-            <EmptyState
-              title="No features found"
-              message="There are no badge features available at the moment."
-            />
-          );
-        }
-        return (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredFeatures.map((feature) => (
-              <FeatureCard
-                key={feature.badge_id}
-                feature={feature}
-                isSelected={selectedFeatures.has(feature.badge_id)}
-                onSelect={handleToggleFeature}
-                onDelete={handleDeleteFeature}
-                isDeleting={
-                  deleteFeatureMutation.isPending &&
-                  deleteFeatureMutation.variables === feature.badge_id
-                }
-              />
-            ))}
-          </div>
-        );
-
       case "addons":
         return <AddonsPlaceholder />;
 
@@ -743,8 +745,31 @@ export default function SubscriptionsPage() {
           </p>
         </div>
 
-        {(activeTab === "customer-plans" ||
-          activeTab === "developer-packages") && (
+        {activeTab === "customer-plans" && (
+          <div className="flex gap-2">
+            <Button
+              onClick={() => setCreateCustomerPlanModalOpen(true)}
+              className="bg-teal-600 hover:bg-teal-700 text-white gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Add Plan
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={() => customerPlansQuery.refetch()}
+              disabled={customerPlansQuery.isFetching}
+              className="gap-2"
+            >
+              <RefreshCw
+                className={`w-4 h-4 ${customerPlansQuery.isFetching ? "animate-spin" : ""}`}
+              />
+              Refresh
+            </Button>
+          </div>
+        )}
+
+        {activeTab === "developer-packages" && (
           <div className="flex gap-2">
             <Button
               onClick={() => setCreateAdModalOpen(true)}
@@ -767,30 +792,6 @@ export default function SubscriptionsPage() {
             </Button>
           </div>
         )}
-
-        {activeTab === "features" && (
-          <div className="flex gap-2">
-            <Button
-              onClick={() => setCreateFeatureModalOpen(true)}
-              className="bg-teal-600 hover:bg-teal-700 text-white gap-2"
-            >
-              <Plus className="w-4 h-4" />
-              Add Feature
-            </Button>
-
-            <Button
-              variant="outline"
-              onClick={() => featuresQuery.refetch()}
-              disabled={featuresQuery.isFetching}
-              className="gap-2"
-            >
-              <RefreshCw
-                className={`w-4 h-4 ${featuresQuery.isFetching ? "animate-spin" : ""}`}
-              />
-              Refresh
-            </Button>
-          </div>
-        )}
       </div>
 
       {/* Tab Navigation */}
@@ -803,11 +804,10 @@ export default function SubscriptionsPage() {
               <button
                 key={key}
                 onClick={() => setActiveTab(key as TabType)}
-                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-                  isActive
-                    ? "border-teal-600 text-teal-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                }`}
+                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${isActive
+                  ? "border-teal-600 text-teal-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  }`}
               >
                 <Icon className="w-4 h-4" />
                 {config.label}
@@ -819,22 +819,21 @@ export default function SubscriptionsPage() {
 
       {/* Search */}
       {(activeTab === "customer-plans" ||
-        activeTab === "developer-packages" ||
-        activeTab === "features") && (
-        <div className="relative w-72">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <Input
-            placeholder={
-              activeTab === "features"
-                ? "Search features..."
-                : "Search packages..."
-            }
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-      )}
+        activeTab === "developer-packages") && (
+          <div className="relative w-72">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Input
+              placeholder={
+                activeTab === "customer-plans"
+                  ? "Search plans..."
+                  : "Search packages..."
+              }
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+        )}
 
       {/* Content */}
       {renderContent()}
@@ -848,17 +847,33 @@ export default function SubscriptionsPage() {
         }}
       />
 
-      {/* Create Feature Modal */}
-      {createFeatureModalOpen && (
-        <AddFeatureModal
-          isOpen={createFeatureModalOpen}
-          onClose={() => setCreateFeatureModalOpen(false)}
-          onSuccess={() => {
-            featuresQuery.refetch();
-            setCreateFeatureModalOpen(false);
-          }}
-        />
-      )}
+      {/* Create Customer Plan Modal */}
+      <AddCustomerPlanModal
+        open={createCustomerPlanModalOpen}
+        onClose={() => setCreateCustomerPlanModalOpen(false)}
+        onSuccess={() => {
+          customerPlansQuery.refetch();
+          setCreateCustomerPlanModalOpen(false);
+        }}
+      />
+
+      {/* View Customer Plan Modal */}
+      <ViewCustomerPlanModal
+        open={viewPlanId !== null}
+        onClose={() => setViewPlanId(null)}
+        planId={viewPlanId}
+      />
+
+      {/* Update Customer Plan Modal */}
+      <UpdateCustomerPlanModal
+        open={updatePlanId !== null}
+        onClose={() => setUpdatePlanId(null)}
+        planId={updatePlanId}
+        onSuccess={() => {
+          customerPlansQuery.refetch();
+          setUpdatePlanId(null);
+        }}
+      />
     </div>
   );
 }

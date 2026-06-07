@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import { AdminSubscriptionsService } from "@/services/AdminSubscriptionsService";
 
-export default function useDashboardAdminSubscriptions() {
+export default function useDashboardAdminSubscriptions(activeTab?: string) {
   const { data: session } = useSession();
   const token = session?.user?.accessToken;
   const queryClient = useQueryClient();
@@ -12,13 +12,13 @@ export default function useDashboardAdminSubscriptions() {
   const packagesQuery = useQuery({
     queryKey: ["subscriptions", "packages"],
     queryFn: () => AdminSubscriptionsService.getPackages(),
-    enabled: !!token,
+    enabled: !!token && activeTab === "developer-packages",
   });
 
-  const featuresQuery = useQuery({
-    queryKey: ["subscriptions", "features"],
-    queryFn: () => AdminSubscriptionsService.getFeatures(),
-    enabled: !!token,
+  const customerPlansQuery = useQuery({
+    queryKey: ["subscriptions", "customerPlans"],
+    queryFn: () => AdminSubscriptionsService.getCustomerPlans(),
+    enabled: !!token && activeTab === "customer-plans",
   });
 
   const deletePackageMutation = useMutation({
@@ -28,25 +28,26 @@ export default function useDashboardAdminSubscriptions() {
     },
   });
 
-  const createFeatureMutation = useMutation({
-    mutationFn: (data: Record<string, unknown>) => AdminSubscriptionsService.createFeature(data),
+  const createCustomerPlanMutation = useMutation({
+    mutationFn: (data: Record<string, unknown>) => AdminSubscriptionsService.createCustomerPlan(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["subscriptions", "features"] });
+      queryClient.invalidateQueries({ queryKey: ["subscriptions", "customerPlans"] });
     },
   });
 
-  const deleteFeatureMutation = useMutation({
-    mutationFn: (featureId: number) => AdminSubscriptionsService.deleteFeature(featureId),
+  const updateCustomerPlanMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number | string; data: Record<string, unknown> }) =>
+      AdminSubscriptionsService.updateCustomerPlan(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["subscriptions", "features"] });
+      queryClient.invalidateQueries({ queryKey: ["subscriptions", "customerPlans"] });
     },
   });
 
   return {
     packagesQuery,
-    featuresQuery,
+    customerPlansQuery,
     deletePackageMutation,
-    createFeatureMutation,
-    deleteFeatureMutation,
+    createCustomerPlanMutation,
+    updateCustomerPlanMutation,
   };
 }

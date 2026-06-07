@@ -147,7 +147,7 @@ export const AdminProjectsService = {
   },
 
   updateProject: async (projectId: number, data: Record<string, unknown>) => {
-    const response = await apiClient.post(`/dashboard/projects/${projectId}`, data);
+    const response = await apiClient.post(`/dashboard/projects/${projectId}`, { ...data, _method: "PUT" });
     return response.data;
   },
 

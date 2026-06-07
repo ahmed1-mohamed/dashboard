@@ -49,7 +49,13 @@ export function Modal({
       >
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
-          {description && <DialogDescription>{description}</DialogDescription>}
+          {description ? (
+            <DialogDescription>{description}</DialogDescription>
+          ) : (
+            <DialogDescription className="sr-only">
+              {title} Modal
+            </DialogDescription>
+          )}
         </DialogHeader>
         <div className={`py-4 ${scrollable ? "flex-1 overflow-y-auto" : ""}`}>
           {children}

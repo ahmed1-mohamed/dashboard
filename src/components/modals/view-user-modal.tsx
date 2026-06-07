@@ -87,7 +87,7 @@ export function ViewUserModal({
   const { data: userData, isLoading } = useQuery<any>({
     queryKey: ["userDetails", userId],
     queryFn: () => fetchUsersDetails(userId!, token!),
-    enabled: !!userId && !!token && isOpen,
+    enabled: userId != null && !!token && isOpen,
     select: (response: any) => {
       if (response?.data && response.data.user_id) {
         return response.data as UserDetailResponse;

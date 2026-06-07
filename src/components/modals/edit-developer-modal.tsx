@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
+import { useQuery } from "@tanstack/react-query";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
@@ -14,12 +15,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Upload } from "lucide-react";
+import { Upload, Loader2 } from "lucide-react";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { Switch } from "@/components/ui/switch";
 import { developerSchema, type FormValues } from "@/validators/developerSchema";
 import { useDeveloperActions } from "@/hooks/use-developer-actions";
 import { DeveloperFormData } from "@/hooks/use-developer-actions";
+import { AdminDevelopersService } from "@/features/developers/services/AdminDevelopersService";
 
 const statusOptions = [
   { label: "Active", value: "active" },
@@ -42,7 +44,6 @@ interface EditDeveloperModalProps {
   isOpen: boolean;
   onClose: () => void;
   developerId: number | null;
-  data: DeveloperData | undefined;
   onSuccess?: () => void;
 }
 
@@ -50,7 +51,6 @@ export function EditDeveloperModal({
   isOpen,
   onClose,
   developerId,
-  data,
   onSuccess,
 }: EditDeveloperModalProps) {
   const { updateDeveloper, isUpdating } = useDeveloperActions();
@@ -78,6 +78,18 @@ export function EditDeveloperModal({
       is_top: false,
     },
   });
+
+  const { data: queryData, isLoading, isError } = useQuery({
+    queryKey: ["developers", "developer", developerId],
+    queryFn: () => {
+      if (developerId == null) return null;
+      return AdminDevelopersService.getDeveloper(developerId);
+    },
+    enabled: developerId != null && isOpen,
+  });
+
+  const responsePayload = (queryData as any)?.data || queryData;
+  const data = responsePayload?.data || responsePayload || null;
 
   // Reset form when data changes
   useEffect(() => {
@@ -142,7 +154,7 @@ export function EditDeveloperModal({
       isOpen={isOpen}
       onClose={handleClose}
       title="Edit Developer"
-      size="xl"
+      size="3xl"
       showCloseButton={false}
       footer={
         <div className="flex gap-3">
@@ -156,199 +168,211 @@ export function EditDeveloperModal({
           <Button
             className="bg-teal-600 hover:bg-teal-700 text-white"
             onClick={handleSubmit(onSubmit)}
-            disabled={isUpdating}
+            disabled={isUpdating || isLoading || isError}
           >
             {isUpdating ? "Updating..." : "Update Developer"}
           </Button>
         </div>
       }
     >
-      <div className="max-h-[calc(100vh-280px)] overflow-y-auto pr-2">
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          {/* Upload Developer Logo */}
-          <div>
-            <Label className="text-sm font-medium text-gray-900 mb-2 block">
-              Upload developer logo
-            </Label>
-            <div className="flex items-start gap-4">
-              {/* Logo Preview */}
-              <div className="w-20 h-20 rounded-lg bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden flex-shrink-0">
-                {logoPreview ? (
-                  <img
-                    src={logoPreview}
-                    alt="Logo preview"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <Upload className="h-8 w-8 text-gray-400" />
+      {isLoading ? (
+        <div className="flex flex-col items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-teal-600 mb-4" />
+          <p className="text-gray-500">Loading developer details...</p>
+        </div>
+      ) : isError ? (
+        <div className="flex flex-col items-center justify-center py-12">
+          <p className="text-red-500 mb-2">Failed to load developer details.</p>
+          <Button variant="outline" onClick={handleClose}>Cancel</Button>
+        </div>
+      ) : (
+        <div className="max-h-[calc(100vh-280px)] overflow-y-auto pr-2">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            {/* Upload Developer Logo */}
+            <div>
+              <Label className="text-sm font-medium text-gray-900 mb-2 block">
+                Upload developer logo
+              </Label>
+              <div className="flex items-start gap-4">
+                {/* Logo Preview */}
+                <div className="w-20 h-20 rounded-lg bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden flex-shrink-0">
+                  {logoPreview ? (
+                    <img
+                      src={logoPreview}
+                      alt="Logo preview"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <Upload className="h-8 w-8 text-gray-400" />
+                  )}
+                </div>
+
+                {/* File Input */}
+                <div className="flex-1">
+                  <div className="relative">
+                    <input
+                      type="file"
+                      id="logo-upload-edit"
+                      accept="image/svg+xml,image/png,image/jpeg,image/jpg,image/gif"
+                      onChange={handleLogoChange}
+                      className="sr-only"
+                    />
+                    <label
+                      htmlFor="logo-upload-edit"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer"
+                    >
+                      Choose files
+                    </label>
+                    <span className="ml-3 text-sm text-gray-500">
+                      {logoFile
+                        ? logoFile.name
+                        : existingLogo
+                          ? "Current logo"
+                          : "No file chosen"}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    SVG, PNG, JPG or GIF (MAX. 800x400px).
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Developer Name and Email Row */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="developer-name" className="required">
+                  Developer name <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="developer-name"
+                  placeholder="e.g. Emaar Properties"
+                  {...register("name")}
+                  className="mt-1"
+                />
+                {errors.name && (
+                  <p className="text-xs text-red-500 mt-1">
+                    {errors.name.message}
+                  </p>
                 )}
               </div>
-
-              {/* File Input */}
-              <div className="flex-1">
-                <div className="relative">
-                  <input
-                    type="file"
-                    id="logo-upload-edit"
-                    accept="image/svg+xml,image/png,image/jpeg,image/jpg,image/gif"
-                    onChange={handleLogoChange}
-                    className="sr-only"
-                  />
-                  <label
-                    htmlFor="logo-upload-edit"
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer"
-                  >
-                    Choose files
-                  </label>
-                  <span className="ml-3 text-sm text-gray-500">
-                    {logoFile
-                      ? logoFile.name
-                      : existingLogo
-                        ? "Current logo"
-                        : "No file chosen"}
-                  </span>
-                </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  SVG, PNG, JPG or GIF (MAX. 800x400px).
-                </p>
+              <div>
+                <Label htmlFor="email" className="required">
+                  Email <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="info@p-adviser.com"
+                  {...register("email")}
+                  className="mt-1"
+                />
+                {errors.email && (
+                  <p className="text-xs text-red-500 mt-1">
+                    {errors.email.message}
+                  </p>
+                )}
               </div>
             </div>
-          </div>
 
-          {/* Developer Name and Email Row */}
-          <div className="grid grid-cols-2 gap-4">
+            {/* Contact Number */}
             <div>
-              <Label htmlFor="developer-name" className="required">
-                Developer name <span className="text-red-500">*</span>
+              <Label htmlFor="contact-number" className="required">
+                Contact Number <span className="text-red-500">*</span>
               </Label>
               <Input
-                id="developer-name"
-                placeholder="e.g. Emaar Properties"
-                {...register("name")}
+                id="contact-number"
+                type="tel"
+                placeholder="+20 115 4285 418"
+                {...register("phone_number")}
                 className="mt-1"
               />
-              {errors.name && (
+              {errors.phone_number && (
                 <p className="text-xs text-red-500 mt-1">
-                  {errors.name.message}
+                  {errors.phone_number.message}
                 </p>
               )}
             </div>
+
+            {/* Website */}
             <div>
-              <Label htmlFor="email" className="required">
-                Email <span className="text-red-500">*</span>
+              <Label htmlFor="website" className="required">
+                Website <span className="text-red-500">*</span>
               </Label>
               <Input
-                id="email"
-                type="email"
-                placeholder="info@p-adviser.com"
-                {...register("email")}
+                id="website"
+                type="url"
+                placeholder="www.p-adviser.com"
+                {...register("website")}
                 className="mt-1"
               />
-              {errors.email && (
+              {errors.website && (
                 <p className="text-xs text-red-500 mt-1">
-                  {errors.email.message}
+                  {errors.website.message}
                 </p>
               )}
             </div>
-          </div>
 
-          {/* Contact Number */}
-          <div>
-            <Label htmlFor="contact-number" className="required">
-              Contact Number <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              id="contact-number"
-              type="tel"
-              placeholder="+20 115 4285 418"
-              {...register("phone_number")}
-              className="mt-1"
-            />
-            {errors.phone_number && (
-              <p className="text-xs text-red-500 mt-1">
-                {errors.phone_number.message}
-              </p>
-            )}
-          </div>
+            {/* Status */}
+            <div>
+              <Label htmlFor="status">Status</Label>
+              <Controller
+                name="status"
+                control={control}
+                render={({ field: { value, onChange } }) => (
+                  <Select value={value || ""} onValueChange={onChange}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Select Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {statusOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </div>
 
-          {/* Website */}
-          <div>
-            <Label htmlFor="website" className="required">
-              Website <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              id="website"
-              type="url"
-              placeholder="www.p-adviser.com"
-              {...register("website")}
-              className="mt-1"
-            />
-            {errors.website && (
-              <p className="text-xs text-red-500 mt-1">
-                {errors.website.message}
-              </p>
-            )}
-          </div>
+            {/* Is Top Developer */}
+            <div className="flex items-center gap-3">
+              <Controller
+                name="is_top"
+                control={control}
+                render={({ field: { value, onChange } }) => (
+                  <Switch
+                    id="is-top-developer"
+                    checked={value || false}
+                    onCheckedChange={onChange}
+                  />
+                )}
+              />
+              <Label htmlFor="is-top-developer" className="cursor-pointer">
+                Is Top Developer
+              </Label>
+            </div>
 
-          {/* Status */}
-          <div>
-            <Label htmlFor="status">Status</Label>
-            <Controller
-              name="status"
-              control={control}
-              render={({ field: { value, onChange } }) => (
-                <Select value={value || ""} onValueChange={onChange}>
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Select Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {statusOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            {/* Short Description */}
+            <div>
+              <Label htmlFor="description" className="required">
+                Short Description <span className="text-red-500">*</span>
+              </Label>
+              <RichTextEditor
+                content={watch("description") || ""}
+                onChange={(value: string) => setValue("description", value)}
+                placeholder="Write text here ..."
+              />
+              {errors.description && (
+                <p className="text-xs text-red-500 mt-1">
+                  {errors.description.message}
+                </p>
               )}
-            />
-          </div>
-
-          {/* Is Top Developer */}
-          <div className="flex items-center gap-3">
-            <Controller
-              name="is_top"
-              control={control}
-              render={({ field: { value, onChange } }) => (
-                <Switch
-                  id="is-top-developer"
-                  checked={value || false}
-                  onCheckedChange={onChange}
-                />
-              )}
-            />
-            <Label htmlFor="is-top-developer" className="cursor-pointer">
-              Is Top Developer
-            </Label>
-          </div>
-
-          {/* Short Description */}
-          <div>
-            <Label htmlFor="description" className="required">
-              Short Description <span className="text-red-500">*</span>
-            </Label>
-            <RichTextEditor
-              content={watch("description") || ""}
-              onChange={(value: string) => setValue("description", value)}
-              placeholder="Write text here ..."
-            />
-            {errors.description && (
-              <p className="text-xs text-red-500 mt-1">
-                {errors.description.message}
-              </p>
-            )}
-          </div>
-        </form>
-      </div>
+            </div>
+          </form>
+        </div>
+      )}
     </Modal>
   );
 }

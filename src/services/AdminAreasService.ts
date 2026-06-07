@@ -26,10 +26,10 @@ export const AdminAreasService = {
 
 
   updateArea: (areaId: number, data: AreaInput) => {
-    return apiClient.put(`/areas/${areaId}`, data);
+    return apiClient.put(`/dashboard/dldAreas/${areaId}`, data);
   },
 
   deleteArea: (areaId: number) => {
-    return apiClient.delete(`/areas/${areaId}`);
+    return apiClient.delete(`/dashboard/dldAreas/${areaId}`);
   },
 };

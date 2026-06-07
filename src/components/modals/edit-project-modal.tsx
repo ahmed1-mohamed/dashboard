@@ -94,7 +94,7 @@ export function EditProjectModal({
   const { data: projectData, isLoading: projectLoading } = useQuery({
     queryKey: ["project-detail-edit", projectId],
     queryFn: () => AdminProjectsService.getProject(projectId!),
-    enabled: !!token && !!projectId && isOpen,
+    enabled: !!token && projectId != null && isOpen,
   });
 
   // Fetch developers

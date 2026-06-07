@@ -67,7 +67,7 @@ export function EditRoleModal({
       const response = await AdminRolesService.getRole(roleId);
       return (response as any).data?.data || (response as any).data || response;
     },
-    enabled: isOpen && !!roleId,
+    enabled: isOpen && roleId != null,
   });
 
   const {

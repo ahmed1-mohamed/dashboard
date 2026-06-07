@@ -407,7 +407,6 @@ function DevelopersPageContent() {
             setSelectedDeveloperData(undefined);
           }}
           developerId={selectedDeveloperId}
-          data={selectedDeveloperData}
           onSuccess={() => {
             setEditModalOpen(false);
             setSelectedDeveloperId(null);

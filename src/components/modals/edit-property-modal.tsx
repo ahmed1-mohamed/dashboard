@@ -120,7 +120,7 @@ export function EditPropertyModal({
   const { data: propertyData, isLoading: propertyLoading } = useQuery({
     queryKey: ["property-detail", propertyId],
     queryFn: () => AdminPropertiesService.getProperty(propertyId),
-    enabled: !!token && !!propertyId && isOpen,
+    enabled: !!token && propertyId != null && isOpen,
   });
 
   // Fetch property types

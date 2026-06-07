@@ -12,6 +12,8 @@ import { areaSchema, type AreaInput } from "@/validators/area.schema";
 import { toast } from "sonner";
 import { useState, useRef, useEffect } from "react";
 import { MapPin, Loader2, Search } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { AdminAreasService } from "@/services/AdminAreasService";
 
 interface EditAreaModalProps {
   isOpen: boolean;
@@ -50,17 +52,29 @@ export function EditAreaModal({ isOpen, onClose, areaId, initialArea, onSuccess 
     },
   });
 
+  // Fetch area details
+  const { data: areaData, isLoading: isFetching, isError } = useQuery({
+    queryKey: ["areaDetails", areaId],
+    queryFn: async () => {
+      const response = await AdminAreasService.getArea(areaId);
+      return (response as any).data?.data || (response as any).data || response;
+    },
+    enabled: isOpen && areaId != null,
+  });
+
+  const displayArea = areaData || initialArea;
+
   // Reset form when initialArea is provided
   useEffect(() => {
-    if (initialArea) {
+    if (displayArea) {
       reset({
-        dld_area_name: initialArea.area_name || "",
-        latitude: initialArea.latitude ? Number(initialArea.latitude) : undefined,
-        longitude: initialArea.longitude ? Number(initialArea.longitude) : undefined,
-        description: initialArea.description || "",
+        dld_area_name: displayArea.area_name || displayArea.dld_area_name || "",
+        latitude: displayArea.latitude ? Number(displayArea.latitude) : undefined,
+        longitude: displayArea.longitude ? Number(displayArea.longitude) : undefined,
+        description: displayArea.description || "",
       });
     }
-  }, [initialArea, reset]);
+  }, [displayArea, reset]);
 
   const handleClose = () => {
     reset();
@@ -201,7 +215,21 @@ export function EditAreaModal({ isOpen, onClose, areaId, initialArea, onSuccess 
       }
     >
       <div ref={modalContentRef} className="max-h-[70vh] overflow-y-auto pr-2">
-        <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-5">
+        <p className="text-sm text-gray-500 mb-6">
+          Update the details of the area including its location and description.
+        </p>
+
+        {isFetching ? (
+          <div className="flex flex-col items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-teal-600 mb-4" />
+            <p className="text-gray-500">Loading area details...</p>
+          </div>
+        ) : isError ? (
+          <div className="flex flex-col items-center justify-center py-12">
+            <p className="text-red-500 mb-2">Failed to load area details.</p>
+          </div>
+        ) : (
+        <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-6">
           {/* Google Maps Link */}
           <div>
             <Label htmlFor="google_map_link_edit">
@@ -289,6 +317,7 @@ export function EditAreaModal({ isOpen, onClose, areaId, initialArea, onSuccess 
             />
           </div>
         </form>
+        )}
       </div>
     </Modal>
   );

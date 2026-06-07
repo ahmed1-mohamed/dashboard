@@ -37,14 +37,14 @@ export function ViewRoleModal({
   onEdit,
   onDelete,
 }: ViewRoleModalProps) {
-  
+
   const { data: roleDetails, isLoading } = useQuery({
     queryKey: ["roleDetails", roleId],
     queryFn: async () => {
       const response = await AdminRolesService.getRole(roleId);
       return (response as any).data?.data || (response as any).data || response;
     },
-    enabled: isOpen && !!roleId,
+    enabled: isOpen && roleId != null,
   });
 
   if (!isOpen) return null;
@@ -53,7 +53,6 @@ export function ViewRoleModal({
     ? description
     : typeof description === 'string' ? [description] : ["No specific description"];
 
-  // Use permissions from detail fetch if available, otherwise fallback
   let rawPerms = roleDetails?.permissions || listPermissions || {};
   if (typeof rawPerms === "string") {
     try { rawPerms = JSON.parse(rawPerms); } catch (e) { rawPerms = {}; }
@@ -111,7 +110,7 @@ export function ViewRoleModal({
               <div className="space-y-2">
                 {SECTIONS.map((section) => {
                   const sectionPerms = permissions?.[section] || {};
-                  
+
                   return (
                     <div key={section} className="grid grid-cols-5 gap-4 items-center bg-white p-4 rounded-lg border border-gray-100 shadow-sm opacity-90">
                       <div className="col-span-1">

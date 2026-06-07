@@ -52,7 +52,7 @@ export function EditFeatureModal2({
       const response = await AdminFeaturesService.getFeature(feature!.id);
       return (response as any).data?.data || (response as any).data || response;
     },
-    enabled: isOpen && !!feature?.id,
+    enabled: isOpen && feature?.id != null,
   });
 
   useEffect(() => {
