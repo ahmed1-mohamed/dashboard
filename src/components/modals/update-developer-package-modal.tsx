@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { toast } from "sonner";
 import {
@@ -29,14 +29,16 @@ interface Props {
   open: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  packageData?: any;
 }
 
-export default function AddDeveloperPackageModal({
+export default function UpdateDeveloperPackageModal({
   open,
   onClose,
   onSuccess,
+  packageData,
 }: Props) {
-  const { createPackageMutation } = useDashboardAdminSubscriptions();
+  const { updatePackageMutation } = useDashboardAdminSubscriptions();
   const [apiError, setApiError] = useState<string | null>(null);
 
   const {
@@ -55,6 +57,19 @@ export default function AddDeveloperPackageModal({
       is_active: true,
     },
   });
+
+  useEffect(() => {
+    if (open && packageData) {
+      reset({
+        code: packageData.code || "",
+        name: packageData.name || "",
+        price_dollars: packageData.price_cents ? packageData.price_cents / 100 : (packageData.price || 0),
+        credits: packageData.credits || 1,
+        is_active: packageData.is_active !== undefined ? packageData.is_active : (packageData.status !== undefined ? packageData.status : true),
+      });
+      setApiError(null);
+    }
+  }, [open, packageData, reset]);
 
   const validateForm = (
     data: FormValues,
@@ -104,10 +119,10 @@ export default function AddDeveloperPackageModal({
         currency: "AED",
       };
 
-      await createPackageMutation.mutateAsync(payload);
+      await updatePackageMutation.mutateAsync({ id: packageData.id, data: payload });
 
-      toast.success("Package created successfully", {
-        description: `Package "${data.name}" has been created.`,
+      toast.success("Package updated successfully", {
+        description: `Package "${data.name}" has been updated.`,
       });
 
       // Reset form and close modal
@@ -119,24 +134,24 @@ export default function AddDeveloperPackageModal({
       const errorMessage =
         error instanceof Error
           ? error.message
-          : "Failed to create package. Please try again.";
+          : "Failed to update package. Please try again.";
       setApiError(errorMessage);
 
-      toast.error("Failed to create package", {
+      toast.error("Failed to update package", {
         description: errorMessage,
       });
     }
   };
 
   const handleClose = () => {
-    if (!createPackageMutation.isPending) {
+    if (!updatePackageMutation.isPending) {
       reset();
       setApiError(null);
       onClose();
     }
   };
 
-  const isLoading = createPackageMutation.isPending;
+  const isLoading = updatePackageMutation.isPending;
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -144,7 +159,7 @@ export default function AddDeveloperPackageModal({
         {/* Header */}
         <DialogHeader className="flex flex-row items-center justify-between space-y-0">
           <DialogTitle className="text-lg font-semibold">
-            Add Developer Package
+            Update Developer Package
           </DialogTitle>
         </DialogHeader>
 
@@ -299,10 +314,10 @@ export default function AddDeveloperPackageModal({
               {isLoading ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Creating...
+                  Updating...
                 </>
               ) : (
-                "Create package"
+                "Update package"
               )}
             </Button>
           </DialogFooter>

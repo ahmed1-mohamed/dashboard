@@ -17,16 +17,20 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Trash2, AlertTriangle, Loader2, MoreHorizontal } from "lucide-react";
+import { Trash2, AlertTriangle, Loader2, MoreHorizontal, Edit, Eye } from "lucide-react";
 
 export function PackageCard({
   pkg,
   isBestValue,
+  onView,
+  onEdit,
   onDelete,
   isDeleting,
 }: {
   pkg: any;
   isBestValue: boolean;
+  onView: (pkg: any) => void;
+  onEdit: (pkg: any) => void;
   onDelete: (packageId: number) => void;
   isDeleting: boolean;
 }) {
@@ -46,15 +50,17 @@ export function PackageCard({
 
   return (
     <>
-      <Card className="border border-gray-200 shadow-sm rounded-xl bg-white overflow-hidden flex flex-col">
+      <Card className="border border-gray-200 shadow-sm hover:shadow-xl rounded-xl bg-white overflow-hidden flex flex-col transition-all duration-300 hover:-translate-y-1 group">
         <CardContent className="p-5 flex-1 flex flex-col">
           {/* Header Row */}
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-xs text-gray-500 font-mono mb-1">{pkg.code}</p>
-              <h3 className="text-xl text-gray-800 font-medium">
+              <button 
+                onClick={() => onView(pkg)}
+                className="text-xl text-gray-800 font-medium group-hover:text-teal-600 transition-colors no-underline text-left outline-none focus:text-teal-600"
+              >
                 {pkg.name}
-              </h3>
+              </button>
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -63,6 +69,14 @@ export function PackageCard({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-40 rounded-xl shadow-lg border-gray-100">
+                <DropdownMenuItem className="gap-2 cursor-pointer rounded-lg m-1" onSelect={(e) => { e.preventDefault(); onView(pkg); }}>
+                  <Eye className="w-4 h-4" />
+                  View
+                </DropdownMenuItem>
+                <DropdownMenuItem className="gap-2 cursor-pointer rounded-lg m-1" onSelect={(e) => { e.preventDefault(); onEdit(pkg); }}>
+                  <Edit className="w-4 h-4" />
+                  Edit
+                </DropdownMenuItem>
                 <DropdownMenuItem className="gap-2 cursor-pointer text-red-600 focus:text-red-700 focus:bg-red-50 rounded-lg m-1" onSelect={(e) => { e.preventDefault(); setDialogOpen(true); }}>
                   <Trash2 className="w-4 h-4" />
                   Delete

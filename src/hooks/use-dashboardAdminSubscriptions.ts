@@ -18,13 +18,89 @@ export default function useDashboardAdminSubscriptions(activeTab?: string) {
   const customerPlansQuery = useQuery({
     queryKey: ["subscriptions", "customerPlans"],
     queryFn: () => AdminSubscriptionsService.getCustomerPlans(),
-    enabled: !!token && activeTab === "customer-plans",
+    enabled: activeTab === "customer-plans" || !activeTab,
+  });
+
+  const badgesQuery = useQuery({
+    queryKey: ["subscriptions", "badges"],
+    queryFn: () => AdminSubscriptionsService.getBadges(),
+    enabled: activeTab === "features",
+  });
+
+  const addonsQuery = useQuery({
+    queryKey: ["subscriptions", "addons"],
+    queryFn: () => AdminSubscriptionsService.getAddons(),
+    enabled: activeTab === "addons",
+  });
+
+  const addonTypesQuery = useQuery({
+    queryKey: ["subscriptions", "addonTypes"],
+    queryFn: () => AdminSubscriptionsService.getAddonTypes(),
   });
 
   const deletePackageMutation = useMutation({
     mutationFn: (packageId: number) => AdminSubscriptionsService.deletePackage(packageId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["subscriptions", "packages"] });
+    },
+  });
+
+  const createPackageMutation = useMutation({
+    mutationFn: (data: Record<string, unknown>) => AdminSubscriptionsService.createPackage(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["subscriptions", "packages"] });
+    },
+  });
+
+  const updatePackageMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number | string; data: Record<string, unknown> }) =>
+      AdminSubscriptionsService.updatePackage(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["subscriptions", "packages"] });
+    },
+  });
+
+  const createBadgeMutation = useMutation({
+    mutationFn: (data: Record<string, unknown>) => AdminSubscriptionsService.createBadge(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["subscriptions", "badges"] });
+    },
+  });
+
+  const updateBadgeMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number | string; data: Record<string, unknown> }) =>
+      AdminSubscriptionsService.updateBadge(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["subscriptions", "badges"] });
+    },
+  });
+
+  const deleteBadgeMutation = useMutation({
+    mutationFn: (id: number | string) => AdminSubscriptionsService.deleteBadge(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["subscriptions", "badges"] });
+    },
+  });
+
+  const createAddonMutation = useMutation({
+    mutationFn: (data: Record<string, unknown>) => AdminSubscriptionsService.createAddon(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["subscriptions", "addons"] });
+    },
+  });
+
+  const updateAddonMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number | string; data: Record<string, unknown> }) =>
+      AdminSubscriptionsService.updateAddon(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["subscriptions", "addons"] });
+    },
+  });
+
+  const deleteAddonMutation = useMutation({
+    mutationFn: (id: number | string) => AdminSubscriptionsService.deleteAddon(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["subscriptions", "addons"] });
     },
   });
 
@@ -53,7 +129,18 @@ export default function useDashboardAdminSubscriptions(activeTab?: string) {
   return {
     packagesQuery,
     customerPlansQuery,
+    badgesQuery,
+    addonsQuery,
+    addonTypesQuery,
     deletePackageMutation,
+    createPackageMutation,
+    updatePackageMutation,
+    createBadgeMutation,
+    updateBadgeMutation,
+    deleteBadgeMutation,
+    createAddonMutation,
+    updateAddonMutation,
+    deleteAddonMutation,
     createCustomerPlanMutation,
     updateCustomerPlanMutation,
     deleteCustomerPlanMutation,
