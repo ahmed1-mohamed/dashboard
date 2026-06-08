@@ -154,7 +154,7 @@ export default function OffersPage({
 
   const toggleStatusMutation = useMutation({
     mutationFn: (data: { offerId: number; payload: any; token: string }) =>
-      AdminOffersService.toggleStatus(data.offerId, data.payload, data.token),
+      AdminOffersService.toggleStatus(data.offerId, data.payload, data?.token),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["offers"] });
       toast.success("Offer status updated successfully");
@@ -167,12 +167,12 @@ export default function OffersPage({
 
   const handleStatusToggle = (offer: any, checked: boolean) => {
     setUpdatingOfferId(offer.offer_id);
-    
+
     // We only need to send the field we are updating
     const payload = {
       is_active: checked,
     };
-    
+
     toggleStatusMutation.mutate({
       offerId: Number(offer.offer_id),
       payload: payload,
@@ -366,7 +366,7 @@ export default function OffersPage({
           )}
         </div>
       )}
-      
+
       <AddOfferModal
         open={createModalOpen}
         onClose={() => setCreateModalOpen(false)}

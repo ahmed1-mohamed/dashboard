@@ -90,7 +90,7 @@ export const DashboardAdminService = {
    * Confirm/approve a booking
    */
   confirmBooking: (bookingId: number, formData: FormData) => {
-    return apiClient.post(`/dashboard/admin/reservations/${bookingId}/confirm`, formData);
+    return apiClient.put(`/dashboard/reservations/${bookingId}`, formData);
   },
 
   /**

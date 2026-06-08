@@ -130,7 +130,7 @@ export const AdminBookingsService = {
     formData.append("status", "confirmed");
     if (comments) formData.append("comments", comments);
     return apiClient.post(
-      `/dashboard/admin/reservations/${bookingId}/confirm`,
+      `/dashboard/admin/reservations/${bookingId}`,
       formData,
     );
   },
