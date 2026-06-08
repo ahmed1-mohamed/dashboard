@@ -229,6 +229,7 @@ export function Sidebar({
                       <li key={item.href}>
                         <Link
                           href={item.href}
+                          prefetch={false}
                           className={cn(
                             "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                             isActive
@@ -288,6 +289,7 @@ export function Sidebar({
                       <li key={item.href}>
                         <Link
                           href={item.href}
+                          prefetch={false}
                           className={cn(
                             "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                             isActive
@@ -345,6 +347,7 @@ export function Sidebar({
                                 <li key={item.href}>
                                   <Link
                                     href={item.href}
+                                    prefetch={false}
                                     className={cn(
                                       "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                                       isActive
@@ -382,6 +385,7 @@ export function Sidebar({
                       <li key={item.href}>
                         <Link
                           href={item.href}
+                          prefetch={false}
                           className={cn(
                             "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                             isActive
@@ -415,15 +419,16 @@ export function Sidebar({
 
                   return (
                     <li key={item.href}>
-                      <Link
-                        href={item.href}
-                        className={cn(
-                          "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-                          isActive
-                            ? "bg-teal-50 text-teal-600"
-                            : "text-gray-700 hover:bg-gray-50 hover:text-gray-900",
-                        )}
-                      >
+                        <Link
+                          href={item.href}
+                          prefetch={false}
+                          className={cn(
+                            "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                            isActive
+                              ? "bg-teal-50 text-teal-600"
+                              : "text-gray-700 hover:bg-gray-50 hover:text-gray-900",
+                          )}
+                        >
                         <item.icon
                           className={cn(
                             "h-5 w-5",

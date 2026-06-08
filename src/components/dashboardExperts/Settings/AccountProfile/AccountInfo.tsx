@@ -58,17 +58,17 @@ export default function AccountInfo() {
 
     reset({
       full_name: profileData.display_name,
-      email: profileData.user.email,
-      phone_number: profileData.user.phone_number,
+      email: profileData.user?.email ?? "",
+      phone_number: profileData.user?.phone_number ?? "",
       title: profileData.title ?? "",
       bio: profileData.bio ?? "",
       years_experience: profileData.years_experience,
       website: profileData.website ?? "",
       linkedin: profileData.linkedin ?? "",
-      languages: profileData.languages.map((l) => l.language_id),
-      categories: profileData.categories.map((c) => c.category_id),
-      countries: profileData.countries.map((c) => c.id),
-      certifications: profileData.certifications,
+      languages: profileData.languages?.map((l: any) => l.language_id) ?? [],
+      categories: profileData.categories?.map((c: any) => c.category_id) ?? [],
+      countries: profileData.countries?.map((c: any) => c.id) ?? [],
+      certifications: profileData.certifications ?? [],
       podcast: Boolean(profileData.podcast),
       photo: profileData.photo_url
         ? { url: profileData.photo_url, existingFile: true }

@@ -8,8 +8,9 @@ import { Button, Input } from "@/components/ui";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { AdminSubscriptionsService } from "@/services/AdminSubscriptionsService";
+import { useCustomerPlans } from "@/hooks/use-dashboardAdminSubscriptions";
 import { AdminFeaturesService } from "@/services/AdminFeaturesService";
+import { AdminSubscriptionsService } from "@/services/AdminSubscriptionsService";
 
 interface AddCustomerPlanModalProps {
   open: boolean;
@@ -23,7 +24,7 @@ export default function AddCustomerPlanModal({
   onSuccess,
 }: AddCustomerPlanModalProps) {
   const queryClient = useQueryClient();
-  const [selectedFeatures, setSelectedFeatures] = useState<{feature_id: number, limit: number | null}[]>([]);
+  const [selectedFeatures, setSelectedFeatures] = useState<{ feature_id: number, limit: number | null }[]>([]);
 
   const {
     register,
@@ -44,13 +45,29 @@ export default function AddCustomerPlanModal({
   });
 
   const { data: featuresQuery, isLoading: loadingFeatures } = useQuery({
-    queryKey: ["dashboard", "features"],
-    queryFn: AdminFeaturesService.getFeatures,
+    queryKey: ["dashboard", "badges"],
+    queryFn: () => AdminSubscriptionsService.getBadges(),
     enabled: open,
   });
 
   const featuresResponse = (featuresQuery as any)?.data;
-  const availableFeatures = Array.isArray(featuresResponse) ? featuresResponse : (featuresResponse?.data || []);
+  let availableFeatures: any[] = [];
+  
+  if (Array.isArray(featuresResponse)) {
+    availableFeatures = featuresResponse;
+  } else if (featuresResponse && typeof featuresResponse === 'object') {
+    // Find the first array property at the top level
+    const topLevelArrays = Object.values(featuresResponse).filter(Array.isArray);
+    if (topLevelArrays.length > 0) {
+      availableFeatures = topLevelArrays[0] as any[];
+    } else if (featuresResponse.data && typeof featuresResponse.data === 'object') {
+      // Find the first array property inside the .data object
+      const nestedArrays = Object.values(featuresResponse.data).filter(Array.isArray);
+      if (nestedArrays.length > 0) {
+        availableFeatures = nestedArrays[0] as any[];
+      }
+    }
+  }
 
   const mutation = useMutation({
     mutationFn: (data: any) => AdminSubscriptionsService.createCustomerPlan(data),
@@ -83,7 +100,7 @@ export default function AddCustomerPlanModal({
 
   const updateFeatureLimit = (featureId: number, limitVal: string) => {
     setSelectedFeatures(
-      selectedFeatures.map(f => 
+      selectedFeatures.map(f =>
         f.feature_id === featureId ? { ...f, limit: limitVal ? Number(limitVal) : null } : f
       )
     );
@@ -123,7 +140,7 @@ export default function AddCustomerPlanModal({
             <Label>Plan Code</Label>
             <Input placeholder="e.g. premium_monthly" {...register("code", { required: true })} />
           </div>
-          
+
           <div className="space-y-1.5">
             <Label>Plan Name</Label>
             <Input placeholder="e.g. Premium Monthly" {...register("name", { required: true })} />
@@ -187,7 +204,6 @@ export default function AddCustomerPlanModal({
           ) : (
             <div className="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-100 max-h-60 overflow-y-auto">
               {availableFeatures.map((feature: any) => {
-                // Determine the correct ID. Backend usually returns feature_id or id
                 const fId = feature.feature_id || feature.badge_id || feature.id;
                 const isSelected = selectedFeatures.some(f => f.feature_id === fId);
                 const selectedData = selectedFeatures.find(f => f.feature_id === fId);
@@ -204,15 +220,15 @@ export default function AddCustomerPlanModal({
                         />
                       </div>
                       <div className="flex flex-col">
-                        <span className="text-sm font-medium text-gray-900">{feature.name || feature.code}</span>
-                        <span className="text-xs text-gray-500">{feature.description || feature.applies_to}</span>
+                        <span className="text-sm font-medium text-black">{feature.feature_name || feature.name || feature.code}</span>
+                        <span className="text-xs text-black">{feature.description || feature.applies_to}</span>
                       </div>
                     </label>
 
                     {isSelected && (
                       <div className="ml-7 pl-1">
                         <div className="flex items-center gap-2">
-                          <Label className="text-xs text-gray-500">Limit (optional):</Label>
+                          <Label className="text-xs">Limit (optional):</Label>
                           <Input
                             type="number"
                             className="h-7 w-24 text-xs"

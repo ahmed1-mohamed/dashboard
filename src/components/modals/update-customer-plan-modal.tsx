@@ -6,10 +6,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Modal } from "@/components/ui/modal";
 import { Button, Input } from "@/components/ui";
 import { Label } from "@/components/ui/label";
-import { Loader2 } from "lucide-react";
-import { toast } from "sonner";
-import { AdminSubscriptionsService } from "@/services/AdminSubscriptionsService";
+import { AlertCircle, Loader2 } from "lucide-react";
+import { useCustomerPlans } from "@/hooks/use-dashboardAdminSubscriptions";
 import { AdminFeaturesService } from "@/services/AdminFeaturesService";
+import { AdminSubscriptionsService } from "@/services/AdminSubscriptionsService";
+import { toast } from "sonner";
 
 interface UpdateCustomerPlanModalProps {
   open: boolean;
@@ -25,6 +26,7 @@ export default function UpdateCustomerPlanModal({
   onSuccess,
 }: UpdateCustomerPlanModalProps) {
   const queryClient = useQueryClient();
+  const [apiError, setApiError] = useState<string | null>(null);
   const [selectedFeatures, setSelectedFeatures] = useState<{feature_id: number, limit: number | null}[]>([]);
 
   const {
@@ -55,13 +57,29 @@ export default function UpdateCustomerPlanModal({
   });
 
   const { data: featuresQuery, isLoading: loadingFeatures } = useQuery({
-    queryKey: ["dashboard", "features"],
-    queryFn: AdminFeaturesService.getFeatures,
+    queryKey: ["dashboard", "badges"],
+    queryFn: () => AdminSubscriptionsService.getBadges(),
     enabled: open,
   });
 
   const featuresResponse = (featuresQuery as any)?.data;
-  const availableFeatures = Array.isArray(featuresResponse) ? featuresResponse : (featuresResponse?.data || []);
+  let availableFeatures: any[] = [];
+  
+  if (Array.isArray(featuresResponse)) {
+    availableFeatures = featuresResponse;
+  } else if (featuresResponse && typeof featuresResponse === 'object') {
+    // Find the first array property at the top level
+    const topLevelArrays = Object.values(featuresResponse).filter(Array.isArray);
+    if (topLevelArrays.length > 0) {
+      availableFeatures = topLevelArrays[0] as any[];
+    } else if (featuresResponse.data && typeof featuresResponse.data === 'object') {
+      // Find the first array property inside the .data object
+      const nestedArrays = Object.values(featuresResponse.data).filter(Array.isArray);
+      if (nestedArrays.length > 0) {
+        availableFeatures = nestedArrays[0] as any[];
+      }
+    }
+  }
 
   useEffect(() => {
     if (open && planId != null) {
@@ -235,15 +253,15 @@ export default function UpdateCustomerPlanModal({
           </div>
 
           <div className="space-y-3 mt-6 border-t pt-4">
-            <Label className="text-base font-semibold">Included Features</Label>
+            <Label className="text-base font-semibold text-black">Included Features</Label>
             {loadingFeatures ? (
-              <div className="flex items-center gap-2 text-sm text-gray-500">
-                <Loader2 className="h-4 w-4 animate-spin" /> Loading features...
+              <div className="flex items-center gap-2 text-sm text-black">
+                <Loader2 className="h-4 w-4 animate-spin text-black" /> Loading features...
               </div>
             ) : availableFeatures.length === 0 ? (
-              <p className="text-sm text-gray-500 italic">No features found in the system.</p>
+              <p className="text-sm text-black italic">No features found in the system.</p>
             ) : (
-              <div className="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-100 max-h-60 overflow-y-auto">
+              <div className="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-100 max-h-60 overflow-y-auto text-black">
                 {availableFeatures.map((feature: any) => {
                   const fId = feature.feature_id || feature.badge_id || feature.id;
                   const isSelected = selectedFeatures.some(f => f.feature_id === fId);
@@ -261,18 +279,18 @@ export default function UpdateCustomerPlanModal({
                           />
                         </div>
                         <div className="flex flex-col">
-                          <span className="text-sm font-medium text-gray-900">{feature.name || feature.code}</span>
-                          <span className="text-xs text-gray-500">{feature.description || feature.applies_to}</span>
+                          <span className="text-sm font-medium text-black">{feature.feature_name || feature.name || feature.code}</span>
+                          <span className="text-xs text-black">{feature.description || feature.applies_to}</span>
                         </div>
                       </label>
 
                       {isSelected && (
                         <div className="ml-7 pl-1">
                           <div className="flex items-center gap-2">
-                            <Label className="text-xs text-gray-500">Limit (optional):</Label>
+                            <Label className="text-xs text-black">Limit (optional):</Label>
                             <Input
                               type="number"
-                              className="h-7 w-24 text-xs"
+                              className="h-7 w-24 text-xs text-black"
                               placeholder="Unlimited"
                               value={selectedData?.limit || ''}
                               onChange={(e) => updateFeatureLimit(fId, e.target.value)}

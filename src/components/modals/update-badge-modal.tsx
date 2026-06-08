@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AlertCircle, Loader2 } from "lucide-react";
-import useDashboardAdminSubscriptions from "@/hooks/use-dashboardAdminSubscriptions";
+import { useFeatures } from "@/hooks/use-dashboardAdminSubscriptions";
 
 type FormValues = {
   name: string;
@@ -45,7 +45,7 @@ interface Props {
 }
 
 export default function UpdateBadgeModal({ open, onClose, onSuccess, badgeData }: Props) {
-  const { updateBadgeMutation } = useDashboardAdminSubscriptions();
+  const { updateBadgeMutation } = useFeatures();
   const [apiError, setApiError] = useState<string | null>(null);
 
   const {

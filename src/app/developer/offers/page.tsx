@@ -1,11 +1,7 @@
-import React from 'react'
+"use client";
 
-function page() {
-  return (
-    <div>
-      
-    </div>
-  )
+import OffersPage from "@/app/admin/offers/page";
+
+export default function DeveloperOffersPage() {
+  return <OffersPage />;
 }
-
-export default page

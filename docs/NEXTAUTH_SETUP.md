@@ -261,7 +261,6 @@ export default function ProjectsList() {
   const loadProjects = async () => {
     if (!token) return;
     const projects = await fetchProjects(token);
-    console.log(projects);
   };
 
   return <button onClick={loadProjects}>Load Projects</button>;

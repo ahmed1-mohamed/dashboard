@@ -37,22 +37,11 @@ const args = process.argv.slice(2);
 const command = args[0] || "dev";
 
 try {
-  if (command === "dev") {
-    console.log(`📡 Starting dev server on port ${port} with API: ${process.env.NEXT_PUBLIC_API_URL}`);
-    execSync(`next dev -p ${port}`, { stdio: "inherit", env: process.env });
-  } else if (command === "build") {
-    console.log(`🔨 Building app with API: ${process.env.NEXT_PUBLIC_API_URL}`);
-    execSync("next build", { stdio: "inherit", env: process.env });
-    console.log("✅ Build completed successfully!");
-  } else if (command === "start" || command === "prod") {
-    console.log(`🚀 Starting production server on port ${port} with API: ${process.env.NEXT_PUBLIC_API_URL}`);
-    execSync(`next start -p ${port}`, { stdio: "inherit", env: process.env });
+  if (command === "dev" || command === "start") {
+    execSync(`npx next ${command} -p ${port}`, { stdio: "inherit" });
   } else {
-    console.error(`❌ Unknown command: ${command}`);
-    console.error(`Available commands: dev, build, start`);
-    process.exit(1);
+    execSync(`npx next ${command}`, { stdio: "inherit" });
   }
 } catch (error) {
-  console.error(`❌ Command failed`);
   process.exit(1);
 }

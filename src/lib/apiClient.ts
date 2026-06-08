@@ -1,3 +1,4 @@
+
 "use client";
 
 import axios, {
@@ -178,13 +179,13 @@ class ApiClient {
     this.refreshQueue = [];
   }
 
-  // HTTP Methods - Country is automatically added via interceptor
   private buildHeaders(data?: unknown, config?: any) {
     const isFormData = data instanceof FormData;
-    return {
-      ...config?.headers,
-      "Content-Type": isFormData ? "multipart/form-data" : "application/json",
-    };
+    const headers: Record<string, string> = { ...config?.headers };
+    if (!isFormData) {
+      headers["Content-Type"] = "application/json";
+    }
+    return headers;
   }
 
   async get<T>(endpoint: string, config?: any): Promise<AxiosResponse<T>> {

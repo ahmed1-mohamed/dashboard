@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, Loader2, X } from "lucide-react";
-import useDashboardAdminSubscriptions from "@/hooks/use-dashboardAdminSubscriptions";
+import { useDeveloperPackages } from "@/hooks/use-dashboardAdminSubscriptions";
 
 type FormValues = {
   code: string;
@@ -38,7 +38,7 @@ export default function UpdateDeveloperPackageModal({
   onSuccess,
   packageData,
 }: Props) {
-  const { updatePackageMutation } = useDashboardAdminSubscriptions();
+  const { updatePackageMutation } = useDeveloperPackages();
   const [apiError, setApiError] = useState<string | null>(null);
 
   const {

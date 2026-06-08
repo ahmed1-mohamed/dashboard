@@ -15,6 +15,7 @@ export const AdminAdsService = {
     const params = new URLSearchParams({
       page: page.toString(),
       per_page: perPage.toString(),
+      type: "ad",
     });
 
     if (filters?.status && filters.status !== "all") {
@@ -36,7 +37,7 @@ export const AdminAdsService = {
 
 
   getAdsTotals: async () => {
-    const response = await apiClient.get("/dashboard/ads/totals");
+    const response = await apiClient.get("/dashboard/ads/totals?type=ad");
     return response.data;
   },
 

@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AlertCircle, Loader2, Info } from "lucide-react";
-import useDashboardAdminSubscriptions from "@/hooks/use-dashboardAdminSubscriptions";
+import { useAddons } from "@/hooks/use-dashboardAdminSubscriptions";
 
 type FormValues = {
   feature_id: string;
@@ -40,7 +40,7 @@ interface Props {
 }
 
 export default function CreateAddonModal({ open, onClose, onSuccess }: Props) {
-  const { createAddonMutation, addonTypesQuery } = useDashboardAdminSubscriptions();
+  const { createAddonMutation, addonTypesQuery } = useAddons();
   const [apiError, setApiError] = useState<string | null>(null);
 
   const {
@@ -62,7 +62,7 @@ export default function CreateAddonModal({ open, onClose, onSuccess }: Props) {
   });
 
   const selectedFeatureId = watch("feature_id");
-  const addonTypesData = addonTypesQuery.data?.data;
+  const addonTypesData = (addonTypesQuery.data as any)?.data;
   const addonTypes = Array.isArray(addonTypesData) ? addonTypesData : (addonTypesData?.data || []);
 
   const selectedFeature = addonTypes.find((t: any) => String(t.feature_id) === String(selectedFeatureId));
