@@ -585,9 +585,6 @@ export const toggleAdStatus = (
   return patchData(`/dashboard/ads/${adId}/toggle-status`, newStatus, token);
 };
 
-// ============================================
-// Developers
-// ============================================
 
 export interface FetchDevelopersParams {
   page?: number;
@@ -606,12 +603,6 @@ export interface FetchDevelopersResult {
   };
 }
 
-/**
- * Fetches developers with pagination support
- * @param token - Authentication token
- * @param params - Pagination and filter parameters
- * @returns Promise with developers and pagination metadata
- */
 export const fetchDevelopersPaginated = async (
   token: string,
   params: FetchDevelopersParams = {},
@@ -658,9 +649,6 @@ export const fetchDevelopersPaginated = async (
   }
 };
 
-// ============================================
-// Ad Credit Packages
-// ============================================
 
 export interface PaginationMeta {
   page: number;
@@ -684,13 +672,6 @@ export interface CreateAdCreditPackageInput {
   is_active: boolean;
 }
 
-/**
- * Input for creating an AD Credit Package
- * @param name - The display name of the package
- * @param price_cents - Price in cents (minimum 0)
- * @param credits - Number of credits (minimum 1)
- * @param is_active - Whether the package is active (default: true)
- */
 export interface CreateAdCreditPackageParams {
   name: string;
   price_cents: number;
@@ -698,40 +679,24 @@ export interface CreateAdCreditPackageParams {
   is_active?: boolean;
 }
 
-/**
- * Response from creating an AD Credit Package
- */
 export interface CreateAdCreditPackageResponse {
   success: boolean;
   data: AdCreditPackage;
   message?: string;
 }
 
-/**
- * API Error response for package creation
- */
 export interface CreateAdCreditPackageApiError {
   success: boolean;
   message: string;
   errors?: Record<string, string[]>;
 }
 
-/**
- * Generates a unique code for AD Credit Packages
- * Format: AD-PKG-{timestamp}-{randomSuffix}
- * @returns Unique code string
- */
 export const generateAdCreditPackageCode = (): string => {
   const timestamp = Date.now();
   const randomSuffix = Math.random().toString(36).substring(2, 8).toUpperCase();
   return `AD-PKG-${timestamp}-${randomSuffix}`;
 };
 
-/**
- * Validates the input parameters for creating an AD Credit Package
- * @param params - The input parameters to validate
- * @throws Error if validation fails
- */
 const validateCreateAdCreditPackageParams = (
   params: CreateAdCreditPackageParams,
 ): void => {
@@ -748,21 +713,12 @@ const validateCreateAdCreditPackageParams = (
   }
 };
 
-/**
- * Creates a new AD Credit Package by making a POST request to the API
- * @param token - Authentication token
- * @param params - Package creation parameters
- * @returns Promise resolving to the created package response
- * @throws Error with validation message or API error details
- */
 export const createAdCreditPackage = async (
   token: string,
   params: CreateAdCreditPackageParams,
 ): Promise<CreateAdCreditPackageResponse> => {
-  // Validate input parameters
   validateCreateAdCreditPackageParams(params);
 
-  // Generate unique code
   const code = generateAdCreditPackageCode();
 
   try {
@@ -795,7 +751,6 @@ export const createAdCreditPackage = async (
 
     return response.data;
   } catch (error) {
-    // Handle API errors with proper type casting
     const axiosError = error as {
       response?: {
         data?: CreateAdCreditPackageApiError;
@@ -806,7 +761,6 @@ export const createAdCreditPackage = async (
     const errorData = axiosError.response?.data;
 
     if (errorData?.errors && Object.keys(errorData.errors).length > 0) {
-      // Format validation errors from API
       const errorMessages = Object.entries(errorData.errors)
         .map(([field, messages]) => `${field}: ${messages.join(", ")}`)
         .join("; ");
@@ -822,7 +776,6 @@ export const createAdCreditPackage = async (
       throw apiError;
     }
 
-    // Re-throw with user-friendly message
     const errorMessage =
       errorData?.message ||
       (axiosError.message
@@ -834,36 +787,22 @@ export const createAdCreditPackage = async (
   }
 };
 
-/**
- * Response from deleting an AD Credit Package
- */
 export interface DeleteAdCreditPackageResponse {
   success: boolean;
   message?: string;
   data?: AdCreditPackage;
 }
 
-/**
- * API Error response for package deletion
- */
 export interface DeleteAdCreditPackageApiError {
   success: boolean;
   message: string;
   errors?: Record<string, string[]>;
 }
 
-/**
- * Deletes an AD Credit Package by making a DELETE request to the API
- * @param token - Authentication token
- * @param packageId - The ID of the package to delete
- * @returns Promise resolving to the delete response
- * @throws Error with user-friendly error message on failure
- */
 export const deleteAdCreditPackage = async (
   token: string,
   packageId: number,
 ): Promise<DeleteAdCreditPackageResponse> => {
-  // Validate input parameters
   if (!packageId || packageId <= 0) {
     throw new Error("Invalid package ID");
   }
@@ -890,7 +829,6 @@ export const deleteAdCreditPackage = async (
 
     return response.data;
   } catch (error) {
-    // Handle API errors with proper type casting
     const axiosError = error as {
       response?: {
         data?: DeleteAdCreditPackageApiError;
@@ -901,7 +839,6 @@ export const deleteAdCreditPackage = async (
     const errorData = axiosError.response?.data;
 
     if (errorData?.errors && Object.keys(errorData.errors).length > 0) {
-      // Format validation errors from API
       const errorMessages = Object.entries(errorData.errors)
         .map(([field, messages]) => `${field}: ${messages.join(", ")}`)
         .join("; ");
@@ -917,7 +854,6 @@ export const deleteAdCreditPackage = async (
       throw apiError;
     }
 
-    // Re-throw with user-friendly message
     const errorMessage =
       errorData?.message ||
       (axiosError.message
@@ -942,7 +878,6 @@ export const fetchAdCreditPackages = async (
       headers["Authorization"] = `Bearer ${token}`;
     }
 
-    // Build query params
     const queryParams = new URLSearchParams();
     if (params?.page) {
       queryParams.append("page", params.page.toString());
@@ -984,11 +919,6 @@ export const fetchAdCreditPackages = async (
   }
 };
 
-/**
- * Fetch badge features from the API
- * @param token - Authentication token
- * @returns Promise containing badge features data
- */
 export const fetchBadgeFeatures = async (
   token: string,
 ): Promise<BadgeFeaturesResponse> => {
@@ -1014,13 +944,6 @@ export const fetchBadgeFeatures = async (
     throw error;
   }
 };
-
-/**
- * Create a new badge
- * @param token - Authentication token
- * @param data - Badge creation data
- * @returns Promise containing created badge data
- */
 export const createBadge = async (
   token: string,
   data: CreateBadgeParams,
@@ -1047,12 +970,6 @@ export const createBadge = async (
   }
 };
 
-/**
- * Create a new badge feature
- * @param token - Authentication token
- * @param data - Feature data
- * @returns Promise containing created feature data
- */
 export const createBadgeFeature = async (
   token: string,
   data: {
@@ -1087,12 +1004,6 @@ export const createBadgeFeature = async (
   }
 };
 
-/**
- * Delete a badge feature by ID
- * @param token - Authentication token
- * @param featureId - Feature ID to delete
- * @returns Promise containing deletion result
- */
 export const deleteBadgeFeature = async (
   token: string,
   featureId: number,
@@ -1223,7 +1134,6 @@ export const fetchPermissions = (token: string) =>
 export const fetchRoles = (token: string) =>
   fetchData("/dashboard/roles", token);
 
-// FETCH DATA ID
 export const fetchAreaDetails = (areaId: number, token: string) =>
   fetchData(`/areas/${areaId}`, token);
 export const fetchDldAreaDetails = (dldAreaId: number, token: string) =>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
@@ -61,8 +61,11 @@ export default function AddOfferModal({
     enabled: open,
   });
 
-  const availableEntities = Array.isArray(entitiesData?.data) ? entitiesData.data : (Array.isArray(entitiesData) ? entitiesData : []);
-
+  const availableEntities = Array.isArray((entitiesData as any)?.data)
+    ? (entitiesData as any).data
+    : Array.isArray(entitiesData)
+      ? entitiesData
+      : [];
   const mutation = useMutation({
     mutationFn: (data: any) => AdminOffersService.createOffer(data, token as string),
     onSuccess: () => {

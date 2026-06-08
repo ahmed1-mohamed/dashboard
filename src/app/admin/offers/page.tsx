@@ -154,7 +154,7 @@ export default function OffersPage({
 
   const toggleStatusMutation = useMutation({
     mutationFn: (data: { offerId: number; payload: any; token: string }) =>
-      AdminOffersService.toggleStatus(data.offerId, data.payload, data?.token),
+      AdminOffersService.toggleStatus(data.offerId, data.payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["offers"] });
       toast.success("Offer status updated successfully");
@@ -175,7 +175,7 @@ export default function OffersPage({
 
     toggleStatusMutation.mutate({
       offerId: Number(offer.offer_id),
-      payload: payload,
+      payload: payload as any,
       token: token as string,
     });
   };
