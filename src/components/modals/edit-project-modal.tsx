@@ -118,18 +118,29 @@ export function EditProjectModal({
     else if (lowerType === "residential") mappedProjectType = "residential";
     else if (lowerType === "commercial") mappedProjectType = "commercial";
 
+    let mappedStatus = ((p.status as string) || "").toLowerCase();
+    if (mappedStatus === "under construction" || mappedStatus === "ongoing") mappedStatus = "ongoing";
+    else if (mappedStatus === "upcoming" || mappedStatus === "planned") mappedStatus = "upcoming";
+    else if (mappedStatus === "completed") mappedStatus = "completed";
+    else mappedStatus = "ongoing"; // fallback
+
+    let mappedCurrency = ((p.currency as string) || "AED").toUpperCase();
+    if (!["AED", "SAR", "USD", "EGP"].includes(mappedCurrency)) mappedCurrency = "AED";
+
+    const devId = String((p.developer as any)?.developer_id || p.developer_id || (p.developer as any)?.id || "");
+
     reset({
       project_name: (p.project_name as string) ?? "",
-      status: (p.status as string) ?? "",
+      status: mappedStatus,
       project_type: mappedProjectType,
       total_units: p.total_units != null ? String(p.total_units) : "",
       available_units: p.available_units != null ? String(p.available_units) : "",
       launch_date: (p.launch_date as string) ?? "",
       completion_date: (p.completion_date as string) ?? "",
-      currency: (p.currency as string) ?? "AED",
+      currency: mappedCurrency,
       project_size: (p.project_size as string) ?? "",
       description: p.description ? String(p.description).replace(/<[^>]*>?/gm, '') : "",
-      developer_id: String((p.developer as any)?.developer_id || p.developer_id || ""),
+      developer_id: devId,
     });
   }, [projectData, reset]);
 
@@ -143,41 +154,38 @@ export function EditProjectModal({
     setIsSubmitting(true);
     try {
       const raw = (projectData as { data?: any }).data ?? projectData;
-      const cityId = String(raw?.location?.city?.id || (raw?.location as any)?.city_id || "");
-      const areaId = String(raw?.location?.area?.area_id || (raw?.location as any)?.area_id || "");
-      const finalDeveloperId = formValues.developer_id || String(raw?.developer?.developer_id || raw?.developer_id || "");
+      const cityId = String(raw?.location?.city?.id || (raw?.location as any)?.city_id || "1");
+      const areaId = String(raw?.location?.area?.area_id || (raw?.location as any)?.area_id || "1");
 
       const payload: Record<string, unknown> = {
         project_name: formValues.project_name,
         status: formValues.status,
         project_type: formValues.project_type,
-        developer_id: String(finalDeveloperId),
+        developer_id: String(formValues.developer_id),
         currency: formValues.currency || "AED",
-        is_active: raw?.is_active ?? "1",
-        is_visible: raw?.is_visible ?? "1",
+        price_range: String(raw?.price_range || "0-0"),
+        price_range_SQ: String(raw?.price_range_SQ || "0-0"),
+        is_active: String(raw?.is_active ?? "1"),
+        location: {
+          latitude: raw?.location?.latitude ?? 0,
+          longitude: raw?.location?.longitude ?? 0,
+          landmark: raw?.location?.landmark || "",
+          city_id: cityId,
+          area_id: areaId,
+          north_side: raw?.location?.north_side || "",
+          south_side: raw?.location?.south_side || "",
+          east_side: raw?.location?.east_side || "",
+          west_side: raw?.location?.west_side || "",
+          google_map_link: raw?.location?.google_map_link || "",
+        }
       };
 
-      if (formValues.total_units != null && formValues.total_units !== "") payload.total_units = String(formValues.total_units);
-      if (formValues.available_units != null && formValues.available_units !== "") payload.available_units = String(formValues.available_units);
+      if (formValues.total_units) payload.total_units = String(formValues.total_units);
+      if (formValues.available_units) payload.available_units = String(formValues.available_units);
       if (formValues.launch_date) payload.launch_date = formValues.launch_date;
       if (formValues.completion_date) payload.completion_date = formValues.completion_date;
       if (formValues.project_size) payload.project_size = String(formValues.project_size);
       if (formValues.description) payload.description = formValues.description;
-      if (raw?.price_range) payload.price_range = String(raw.price_range);
-      if (raw?.price_range_SQ) payload.price_range_SQ = String(raw.price_range_SQ);
-
-      payload.location = {
-        latitude: raw?.location?.latitude ?? 0,
-        longitude: raw?.location?.longitude ?? 0,
-        landmark: raw?.location?.landmark || "",
-        city_id: cityId || "1",
-        area_id: areaId || "1",
-        north_side: raw?.location?.north_side || "",
-        south_side: raw?.location?.south_side || "",
-        east_side: raw?.location?.east_side || "",
-        west_side: raw?.location?.west_side || "",
-        google_map_link: raw?.location?.google_map_link || "",
-      };
 
       await AdminProjectsService.updateProject(projectId, payload);
       toast.success("Project updated successfully!");
@@ -206,7 +214,17 @@ export function EditProjectModal({
           </Button>
           <Button
             className="bg-teal-600 hover:bg-teal-700 text-white"
-            onClick={handleSubmit(onSubmit)}
+            onClick={handleSubmit(onSubmit, (errors) => {
+              console.log("Validation errors:", errors);
+              toast.error("Please fill in all required fields correctly.");
+              const firstErrorKey = Object.keys(errors)[0];
+              if (firstErrorKey) {
+                const errorElement = document.getElementById(`error-${firstErrorKey}`) || document.getElementsByName(firstErrorKey)[0];
+                if (errorElement) {
+                  errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+              }
+            })}
             disabled={isSubmitting || projectLoading}
           >
             {isSubmitting ? "Updating..." : "Update Project"}
@@ -224,7 +242,7 @@ export function EditProjectModal({
             {/* Basic Info */}
             <h3 className="text-sm font-semibold text-gray-900">Basic Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
+              <div id="error-project_name">
                 <Label htmlFor="ep-project-name">
                   Project Name <span className="text-red-500">*</span>
                 </Label>
@@ -232,21 +250,22 @@ export function EditProjectModal({
                   id="ep-project-name"
                   {...register("project_name", { required: "Project name is required" })}
                   placeholder="e.g. Emaar Downtown"
-                  className="mt-1"
+                  className={`mt-1 ${errors.project_name ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                 />
                 {errors.project_name && (
                   <p className="text-xs text-red-500 mt-1">{errors.project_name.message}</p>
                 )}
               </div>
 
-              <div>
-                <Label>Status</Label>
+              <div id="error-status">
+                <Label>Status <span className="text-red-500">*</span></Label>
                 <Controller
                   name="status"
                   control={control}
+                  rules={{ required: "Status is required" }}
                   render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger className="mt-1">
+                    <Select key={field.value || "status-empty"} value={field.value ? String(field.value) : ""} onValueChange={field.onChange}>
+                      <SelectTrigger className={`mt-1 ${errors.status ? "border-red-500 focus:ring-red-500" : ""}`}>
                         <SelectValue placeholder="Select Status" />
                       </SelectTrigger>
                       <SelectContent>
@@ -257,16 +276,18 @@ export function EditProjectModal({
                     </Select>
                   )}
                 />
+                {errors.status && <p className="text-xs text-red-500 mt-1">{errors.status.message}</p>}
               </div>
 
-              <div>
-                <Label>Developer</Label>
+              <div id="error-developer_id">
+                <Label>Developer <span className="text-red-500">*</span></Label>
                 <Controller
                   name="developer_id"
                   control={control}
+                  rules={{ required: "Developer is required" }}
                   render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger className="mt-1">
+                    <Select key={`dev-${developersList?.length}-${field.value || "empty"}`} value={field.value ? String(field.value) : ""} onValueChange={field.onChange}>
+                      <SelectTrigger className={`mt-1 ${errors.developer_id ? "border-red-500 focus:ring-red-500" : ""}`}>
                         <SelectValue placeholder="Select Developer" />
                       </SelectTrigger>
                       <SelectContent>
@@ -279,20 +300,27 @@ export function EditProjectModal({
                             </SelectItem>
                           );
                         })}
+                        {field.value && !developersList?.some((d: any) => String(d.developer_id || d.id) === String(field.value)) && (
+                          <SelectItem key={field.value} value={field.value}>
+                            {String(((projectData as any)?.data ?? projectData)?.developer?.developer_name || ((projectData as any)?.data ?? projectData)?.developer?.name || `Developer ${field.value}`)}
+                          </SelectItem>
+                        )}
                       </SelectContent>
                     </Select>
                   )}
                 />
+                {errors.developer_id && <p className="text-xs text-red-500 mt-1">{errors.developer_id.message}</p>}
               </div>
 
-              <div>
-                <Label>Project Type</Label>
+              <div id="error-project_type">
+                <Label>Project Type <span className="text-red-500">*</span></Label>
                 <Controller
                   name="project_type"
                   control={control}
+                  rules={{ required: "Project type is required" }}
                   render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger className="mt-1">
+                    <Select key={field.value || "type-empty"} value={field.value ? String(field.value) : ""} onValueChange={field.onChange}>
+                      <SelectTrigger className={`mt-1 ${errors.project_type ? "border-red-500 focus:ring-red-500" : ""}`}>
                         <SelectValue placeholder="Select Type" />
                       </SelectTrigger>
                       <SelectContent>
@@ -303,6 +331,7 @@ export function EditProjectModal({
                     </Select>
                   )}
                 />
+                {errors.project_type && <p className="text-xs text-red-500 mt-1">{errors.project_type.message}</p>}
               </div>
 
               <div>
@@ -311,7 +340,7 @@ export function EditProjectModal({
                   name="currency"
                   control={control}
                   render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange}>
+                    <Select key={field.value || "curr-empty"} value={field.value ? String(field.value) : ""} onValueChange={field.onChange}>
                       <SelectTrigger className="mt-1">
                         <SelectValue placeholder="Currency" />
                       </SelectTrigger>
@@ -329,13 +358,15 @@ export function EditProjectModal({
             {/* Units */}
             <h3 className="text-sm font-semibold text-gray-900 mt-2">Units</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <Label htmlFor="ep-total-units">Total Units</Label>
-                <Input id="ep-total-units" type="number" {...register("total_units")} placeholder="Total units" className="mt-1" />
+              <div id="error-total_units">
+                <Label htmlFor="ep-total-units">Total Units <span className="text-red-500">*</span></Label>
+                <Input id="ep-total-units" type="number" {...register("total_units", { required: "Total units is required" })} placeholder="Total units" className={`mt-1 ${errors.total_units ? "border-red-500 focus-visible:ring-red-500" : ""}`} />
+                {errors.total_units && <p className="text-xs text-red-500 mt-1">{errors.total_units.message}</p>}
               </div>
-              <div>
-                <Label htmlFor="ep-available-units">Available Units</Label>
-                <Input id="ep-available-units" type="number" {...register("available_units")} placeholder="Available units" className="mt-1" />
+              <div id="error-available_units">
+                <Label htmlFor="ep-available-units">Available Units <span className="text-red-500">*</span></Label>
+                <Input id="ep-available-units" type="number" {...register("available_units", { required: "Available units is required" })} placeholder="Available units" className={`mt-1 ${errors.available_units ? "border-red-500 focus-visible:ring-red-500" : ""}`} />
+                {errors.available_units && <p className="text-xs text-red-500 mt-1">{errors.available_units.message}</p>}
               </div>
               <div>
                 <Label htmlFor="ep-project-size">Project Size</Label>
@@ -346,9 +377,10 @@ export function EditProjectModal({
             {/* Dates */}
             <h3 className="text-sm font-semibold text-gray-900 mt-2">Dates</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="ep-launch-date">Launch Date</Label>
-                <Input id="ep-launch-date" type="date" {...register("launch_date")} className="mt-1" />
+              <div id="error-launch_date">
+                <Label htmlFor="ep-launch-date">Launch Date <span className="text-red-500">*</span></Label>
+                <Input id="ep-launch-date" type="date" {...register("launch_date", { required: "Launch date is required" })} className={`mt-1 ${errors.launch_date ? "border-red-500 focus-visible:ring-red-500" : ""}`} />
+                {errors.launch_date && <p className="text-xs text-red-500 mt-1">{errors.launch_date.message}</p>}
               </div>
               <div>
                 <Label htmlFor="ep-completion-date">Completion Date</Label>

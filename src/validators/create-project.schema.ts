@@ -22,9 +22,8 @@ export const createProjectSchema = z
     price_range_SQ: z.string().optional(),
     description: z.string().optional(),
     project_size: z.string().optional(),
-    developer_id: z.string().min(1, "Developer ID is required"),
-    
-    // Flat location fields before they are nested
+    developer_id: z.string().min(1, "Developer is required"),
+
     latitude: z.number().min(-90).max(90),
     longitude: z.number().min(-180).max(180),
     landmark: z.string().max(255).optional(),

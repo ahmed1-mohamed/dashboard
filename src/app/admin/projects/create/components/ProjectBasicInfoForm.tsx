@@ -44,18 +44,18 @@ export function ProjectBasicInfoForm({
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-6">Basic Information</h2>
         <div className="space-y-4">
-          <div>
+          <div id="error-project_name">
             <Label htmlFor="project-name">Project Name <span className="text-red-500">*</span></Label>
-            <Input id="project-name" placeholder="e.g. Gulf Tower" className="mt-1" {...register("project_name")} />
+            <Input id="project-name" placeholder="e.g. Gulf Tower" className={`mt-1 ${errors.project_name ? "border-red-500 focus-visible:ring-red-500" : ""}`} {...register("project_name")} />
             {errors.project_name && <p className="text-sm text-red-500 mt-1">{errors.project_name.message}</p>}
           </div>
-          <div>
+          <div id="error-developer_id">
             <Label htmlFor="developer">Developer <span className="text-red-500">*</span></Label>
             <Select
               value={String(watch("developer_id") || "")}
               onValueChange={(value) => setValue("developer_id", value)}
             >
-              <SelectTrigger className="mt-1"><SelectValue placeholder="Select developer" /></SelectTrigger>
+              <SelectTrigger className={`mt-1 ${errors.developer_id ? "border-red-500 focus:ring-red-500" : ""}`}><SelectValue placeholder="Select developer" /></SelectTrigger>
               <SelectContent>
                 {developersData?.map((developer: any) => {
                   const id = developer.developer_id || developer.id;
@@ -70,10 +70,10 @@ export function ProjectBasicInfoForm({
             </Select>
             {errors.developer_id && <p className="text-sm text-red-500 mt-1">{errors.developer_id.message}</p>}
           </div>
-          <div>
+          <div id="error-project_type">
             <Label htmlFor="project-type">Project type <span className="text-red-500">*</span></Label>
             <Select value={watch("project_type") || ""} onValueChange={(value) => setValue("project_type", value as any)}>
-              <SelectTrigger className="mt-1"><SelectValue placeholder="Select type" /></SelectTrigger>
+              <SelectTrigger className={`mt-1 ${errors.project_type ? "border-red-500 focus:ring-red-500" : ""}`}><SelectValue placeholder="Select type" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="residential">Residential</SelectItem>
                 <SelectItem value="commercial">Commercial</SelectItem>
@@ -93,16 +93,17 @@ export function ProjectBasicInfoForm({
               </SelectContent>
             </Select>
           </div>
-          <div>
+          <div id="error-status">
             <Label htmlFor="status">Status <span className="text-red-500">*</span></Label>
             <Select value={watch("status") || ""} onValueChange={(value) => setValue("status", value as any)}>
-              <SelectTrigger className="mt-1"><SelectValue placeholder="Select Status" /></SelectTrigger>
+              <SelectTrigger className={`mt-1 ${errors.status ? "border-red-500 focus:ring-red-500" : ""}`}><SelectValue placeholder="Select Status" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="ongoing">Ongoing</SelectItem>
+                <SelectItem value="ongoing">Under Construction / Ongoing</SelectItem>
                 <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="upcoming">Upcoming</SelectItem>
+                <SelectItem value="upcoming">Upcoming / Planned</SelectItem>
               </SelectContent>
             </Select>
+            {errors.status && <p className="text-sm text-red-500 mt-1">{errors.status.message}</p>}
           </div>
         </div>
       </div>

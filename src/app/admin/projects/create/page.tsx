@@ -145,6 +145,13 @@ export default function CreateProjectPage() {
             onClick={form.handleSubmit(handleSubmitForm, (errors) => {
               console.log("Validation errors:", errors);
               toast.error("Please fill in all required fields correctly.");
+              const firstErrorKey = Object.keys(errors)[0];
+              if (firstErrorKey) {
+                const errorElement = document.getElementById(`error-${firstErrorKey}`) || document.getElementsByName(firstErrorKey)[0];
+                if (errorElement) {
+                  errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+              }
             })} 
             disabled={isCreating || !!dateValidationError}
           >

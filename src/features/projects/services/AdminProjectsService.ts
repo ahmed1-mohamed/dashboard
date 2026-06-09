@@ -66,7 +66,7 @@ export const AdminProjectsService = {
     data: CreateProjectInput,
   ): Promise<CreateProjectResponse> => {
     const formData = new FormData();
-    
+
     // Append top-level fields
     formData.append("project_name", data.project_name);
     formData.append("status", data.status);
@@ -77,7 +77,7 @@ export const AdminProjectsService = {
     formData.append("total_units", String(data.total_units));
     formData.append("price_range", String(data.price_range));
     formData.append("price_range_SQ", String(data.price_range_SQ));
-    
+
     // Optional top-level fields
     if (data.completion_date) formData.append("completion_date", data.completion_date);
     if (data.milestone_id) formData.append("milestone_id", String(data.milestone_id));
@@ -93,10 +93,10 @@ export const AdminProjectsService = {
     formData.append("location[google_map_link]", data.google_map_link || "");
     formData.append("location[latitude]", String(data.latitude || 0));
     formData.append("location[longitude]", String(data.longitude || 0));
-    
+
     if (data.area_id) formData.append("location[area_id]", String(data.area_id));
     if (data.city_id) formData.append("location[city_id]", String(data.city_id));
-    
+
     if (data.north_side) formData.append("location[north_side]", data.north_side);
     if (data.south_side) formData.append("location[south_side]", data.south_side);
     if (data.east_side) formData.append("location[east_side]", data.east_side);
@@ -104,11 +104,7 @@ export const AdminProjectsService = {
     if (data.landmark) formData.append("location[landmark]", data.landmark);
     if (data.location_description) formData.append("location[description]", data.location_description);
 
-    const response = await apiClient.post("/dashboard/projects", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
+    const response = await apiClient.post("/dashboard/projects", formData);
     return response.data as CreateProjectResponse;
   },
 
@@ -190,7 +186,24 @@ export const AdminProjectsService = {
   },
 
   updateProject: async (projectId: number, data: Record<string, unknown>) => {
-    const response = await apiClient.post(`/dashboard/projects/${projectId}`, { ...data });
+    const formData = new FormData();
+    formData.append("_method", "POST");
+
+    Object.entries(data).forEach(([key, value]) => {
+      if (key === "location" && typeof value === "object" && value !== null) {
+        Object.entries(value).forEach(([locKey, locValue]) => {
+          if (locValue !== undefined && locValue !== null) {
+            formData.append(`location[${locKey}]`, String(locValue));
+          }
+        });
+      } else if (Array.isArray(value)) {
+        value.forEach((val) => formData.append(`${key}[]`, String(val)));
+      } else if (value !== undefined && value !== null) {
+        formData.append(key, String(value));
+      }
+    });
+
+    const response = await apiClient.post(`/dashboard/projects/${projectId}`, formData);
     return response.data;
   },
 
