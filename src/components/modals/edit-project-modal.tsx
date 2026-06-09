@@ -154,8 +154,8 @@ export function EditProjectModal({
     setIsSubmitting(true);
     try {
       const raw = (projectData as { data?: any }).data ?? projectData;
-      const cityId = String(raw?.location?.city?.id || (raw?.location as any)?.city_id || "1");
-      const areaId = String(raw?.location?.area?.area_id || (raw?.location as any)?.area_id || "1");
+      const cityId = String(raw?.location?.city?.city_name || raw?.location?.city?.name || (raw?.location as any)?.city_id || "");
+      const areaId = String(raw?.location?.area?.area_name || raw?.location?.area?.dld_area_name || raw?.location?.area?.name || (raw?.location as any)?.area_id || "");
 
       const payload: Record<string, unknown> = {
         project_name: formValues.project_name,

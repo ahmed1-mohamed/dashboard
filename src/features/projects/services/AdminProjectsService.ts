@@ -187,7 +187,6 @@ export const AdminProjectsService = {
 
   updateProject: async (projectId: number, data: Record<string, unknown>) => {
     const formData = new FormData();
-    formData.append("_method", "POST");
 
     Object.entries(data).forEach(([key, value]) => {
       if (key === "location" && typeof value === "object" && value !== null) {
@@ -222,8 +221,8 @@ export const AdminProjectsService = {
     else if (lowerType === "residential") mappedProjectType = "residential";
     else if (lowerType === "commercial") mappedProjectType = "commercial";
 
-    const cityId = String(raw.location?.city?.id || raw.location?.city_id || "1");
-    const areaId = String(raw.location?.area?.area_id || raw.location?.area_id || "1");
+    const cityId = String(raw.location?.city?.city_name || raw.location?.city?.name || raw.location?.city_id || "");
+    const areaId = String(raw.location?.area?.area_name || raw.location?.area?.dld_area_name || raw.location?.area?.name || raw.location?.area_id || "");
     const developerId = String(raw.developer?.developer_id || raw.developer_id || "1");
 
     const payload: Record<string, unknown> = {
