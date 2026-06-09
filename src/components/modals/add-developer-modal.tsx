@@ -81,7 +81,7 @@ export function AddDeveloperModal({ isOpen, onClose }: AddDeveloperModalProps) {
       ...data,
       logo: logoFile || undefined,
     };
-    
+
     try {
       await createDeveloper(formData);
       handleClose();
@@ -119,13 +119,11 @@ export function AddDeveloperModal({ isOpen, onClose }: AddDeveloperModalProps) {
     >
       <div className="max-h-[calc(100vh-280px)] overflow-y-auto pr-2">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          {/* Upload Developer Logo */}
           <div>
             <Label className="text-sm font-medium text-gray-900 mb-2 block">
               Upload developer logo
             </Label>
             <div className="flex items-start gap-4">
-              {/* Logo Preview */}
               <div className="w-20 h-20 rounded-lg bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden flex-shrink-0">
                 {logoPreview ? (
                   <img
@@ -138,7 +136,6 @@ export function AddDeveloperModal({ isOpen, onClose }: AddDeveloperModalProps) {
                 )}
               </div>
 
-              {/* File Input */}
               <div className="flex-1">
                 <div className="relative">
                   <input

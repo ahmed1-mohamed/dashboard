@@ -23,44 +23,47 @@ export interface TableSettingsState {
 }
 
 export function useTableSettings(tableId: string, defaultColumns: ColumnConfig[]) {
-  const [settings, setSettings] = useState<TableSettingsState>(() => {
+  const [settings, setSettings] = useState<TableSettingsState>({
+    columns: defaultColumns,
+    density: "comfortable",
+    itemsPerPage: 10,
+    sort: null,
+  });
+
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  useEffect(() => {
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem(`table-settings-${tableId}`);
       if (stored) {
         try {
           const parsed = JSON.parse(stored) as Partial<TableSettingsState>;
-          // Merge parsed columns with defaultColumns to keep new columns visible by default
           const parsedColumns = parsed.columns || [];
           const mergedColumns = defaultColumns.map((defCol) => {
             const found = parsedColumns.find((pCol) => pCol.id === defCol.id);
             return found ? { ...defCol, visible: found.visible } : defCol;
           });
 
-          return {
+          setSettings({
             columns: mergedColumns,
             density: parsed.density || "comfortable",
             itemsPerPage: parsed.itemsPerPage || 10,
             sort: parsed.sort || null,
-          };
+          });
         } catch (error) {
           console.error("Failed to parse table settings from localStorage", error);
         }
       }
+      setIsInitialized(true);
     }
-    return {
-      columns: defaultColumns,
-      density: "comfortable",
-      itemsPerPage: 10,
-      sort: null,
-    };
-  });
+  }, [tableId]);
 
   // Save to localStorage whenever settings change
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    if (isInitialized && typeof window !== "undefined") {
       localStorage.setItem(`table-settings-${tableId}`, JSON.stringify(settings));
     }
-  }, [settings, tableId]);
+  }, [settings, tableId, isInitialized]);
 
   const toggleColumn = (columnId: string) => {
     setSettings((prev) => ({

@@ -81,7 +81,7 @@ export function AddFeatureModal2({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <div className="bg-white rounded-xl shadow-lg w-full max-w-xl overflow-hidden relative flex flex-col">
         {/* Header */}
         <div className="p-6 pb-4 relative">

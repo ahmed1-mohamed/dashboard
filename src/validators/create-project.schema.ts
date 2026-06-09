@@ -2,29 +2,46 @@ import { z } from "zod";
 
 export const createProjectSchema = z
   .object({
-    project_name: z.string().min(1, "Project name is required"),
-    project_type: z.string().min(1, "Project type is required"),
-    total_units: z.number().min(0, "Total units cannot be negative"),
-    available_units: z.number().min(0, "Available units cannot be negative"),
-    launch_date: z.string(),
+    project_name: z.string().min(1, "Project name is required").max(255, "Project name cannot exceed 255 characters"),
+    project_type: z.enum(["residential", "commercial", "mixed-use"], {
+      message: "Project type is required",
+    }),
+    total_units: z.string().min(1, "Total units is required"),
+    available_units: z.string().min(1, "Available units is required"),
+    launch_date: z.string().min(1, "Launch date is required"),
     completion_date: z.string().optional(),
-    status: z.string(),
-    currency: z.string().min(1, "Currency is required"),
+    status: z.enum(["ongoing", "completed", "upcoming"], {
+      message: "Status is required",
+    }),
+    currency: z.string().max(50, "Currency cannot exceed 50 characters").optional(),
     price_min: z.string().min(1, "Min price is required"),
     price_max: z.string().min(1, "Max price is required"),
     price_sq_min: z.string().min(1, "Min price per sq is required"),
     price_sq_max: z.string().min(1, "Max price per sq is required"),
-    description: z.string().optional(),
-    project_size: z.string().optional(),
-    developer_id: z.number(),
-    location_id: z.number().optional(),
     price_range: z.string().optional(),
     price_range_SQ: z.string().optional(),
-    is_active: z.number().optional(),
-    // New fields for the nested payload structure
-    milestone_id: z.number().optional(),
+    description: z.string().optional(),
+    project_size: z.string().optional(),
+    developer_id: z.string().min(1, "Developer ID is required"),
+    
+    // Flat location fields before they are nested
+    latitude: z.number().min(-90).max(90),
+    longitude: z.number().min(-180).max(180),
+    landmark: z.string().max(255).optional(),
+    city_id: z.string().min(1, "City ID is required"),
+    area_id: z.string().optional(),
+    north_side: z.string().max(255).optional(),
+    south_side: z.string().max(255).optional(),
+    east_side: z.string().max(255).optional(),
+    west_side: z.string().max(255).optional(),
+    google_map_link: z.string().max(2048).url("Must be a valid URL"),
+    location_description: z.string().optional(),
+
+    is_active: z.enum(["0", "1", "2"]).optional(),
+    milestone_id: z.string().optional(),
     phase: z.string().optional(),
-    permit_no: z.string().optional(),
+    permit_no: z.string().max(20).optional(),
+    barcode: z.any().optional(), // File type
   })
   .superRefine((data, ctx) => {
     // Only validate when both dates are provided

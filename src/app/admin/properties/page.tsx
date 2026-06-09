@@ -40,6 +40,11 @@ export default function PropertiesPage() {
   );
 }
 
+const INITIAL_FILTERS = {
+  type: "all",
+  status: "all",
+};
+
 function PropertiesPageContent() {
   const router = useRouter();
 
@@ -70,10 +75,7 @@ function PropertiesPageContent() {
   } = useServerPagination({
     initialPage: 1,
     initialPerPage: tableSettings.settings.itemsPerPage,
-    initialFilters: {
-      type: "all",
-      status: "all",
-    },
+    initialFilters: INITIAL_FILTERS,
   });
 
   React.useEffect(() => {

@@ -29,6 +29,12 @@ export default function ActivityLogPage() {
   );
 }
 
+const INITIAL_FILTERS = {
+  action: "all",
+  entity: "all",
+  date: "all",
+};
+
 function ActivityLogPageContent() {
   const router = useRouter();
   const {
@@ -44,11 +50,7 @@ function ActivityLogPageContent() {
   } = useServerPagination({
     initialPage: 1,
     initialPerPage: 10,
-    initialFilters: {
-      action: "all",
-      entity: "all",
-      date: "all",
-    },
+    initialFilters: INITIAL_FILTERS,
   });
 
   const { paginatedActivityData } = useActivityLogs(

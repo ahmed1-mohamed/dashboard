@@ -18,7 +18,7 @@ export const DashboardAdminService = {
     return response.data;
   },
   getProjects: async () => {
-    const response = await apiClient.get("/projects");
+    const response = await apiClient.get("/dashboard/projects");
     return response.data;
   },
   getProjectsPaginated: async (page: number, limit: number, search?: string) => {
@@ -26,11 +26,11 @@ export const DashboardAdminService = {
     params.append("page", page.toString());
     params.append("per_page", limit.toString());
     if (search) params.append("search", search);
-    const response = await apiClient.get(`/projects?${params.toString()}`);
+    const response = await apiClient.get(`/dashboard/projects?${params.toString()}`);
     return response.data;
   },
   getProjectDetails: async (projectId: number) => {
-    const response = await apiClient.get(`/projects/${projectId}`);
+    const response = await apiClient.get(`/dashboard/projects/${projectId}`);
     return response.data;
   },
   getProperties: async () => {

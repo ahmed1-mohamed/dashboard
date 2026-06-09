@@ -15,7 +15,7 @@ import {
 import { TableActions } from "@/components/table/table-actions";
 import { useRouter } from "next/navigation";
 import { Project } from "../types";
-import { Eye, EyeOff, CheckCircle2, XCircle, Download } from "lucide-react";
+import { Eye, EyeOff, CheckCircle2, XCircle, Download, Building, MapPin, Tag } from "lucide-react";
 import { useTableSettings } from "@/hooks/use-table-settings";
 
 interface ProjectsTableProps {
@@ -69,8 +69,103 @@ export function ProjectsTable({
   }
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white overflow-hidden overflow-x-auto">
-      <Table>
+    <div className="rounded-lg border border-gray-200 bg-white overflow-hidden overflow-x-auto w-full">
+      {/* Mobile Card View */}
+      <div className="block md:hidden">
+        {projects.map((project) => (
+          <div key={project.id} className="p-4 border-b border-gray-100 last:border-b-0 space-y-4 hover:bg-gray-50 transition-colors">
+            <div className="flex items-start justify-between">
+              <div className="flex items-start gap-3">
+                <Checkbox
+                  checked={selectedProjects.includes(project.id)}
+                  onCheckedChange={(checked) =>
+                    onSelectProject(project.id, checked as boolean)
+                  }
+                  className="mt-1"
+                />
+                <div>
+                  <button
+                    onClick={() => router.push(`/admin/projects/${project.id}`)}
+                    className="text-gray-900 text-sm font-semibold hover:text-teal-600 transition-colors text-left focus:outline-none"
+                  >
+                    {project.name}
+                  </button>
+                  <div className="text-xs text-gray-500 mt-0.5 flex items-center gap-1">
+                    <Building className="w-3 h-3" /> {project.developer_name}
+                  </div>
+                </div>
+              </div>
+              <TableActions
+                onView={() => router.push(`/admin/projects/${project.id}`)}
+                onEdit={() => onEdit(project.id)}
+                onDelete={() => onDelete(project.id)}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-y-2 text-sm pl-7">
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[10px] uppercase text-gray-400 font-semibold tracking-wider">City</span>
+                <span className="text-gray-700 flex items-center gap-1">
+                  <MapPin className="w-3 h-3 text-gray-400" /> {project.city_name || "N/A"}
+                </span>
+              </div>
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[10px] uppercase text-gray-400 font-semibold tracking-wider">Type</span>
+                <span className="text-gray-700 flex items-center gap-1">
+                  <Tag className="w-3 h-3 text-gray-400" /> {project.projectType || "N/A"}
+                </span>
+              </div>
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[10px] uppercase text-gray-400 font-semibold tracking-wider">Status</span>
+                <Badge
+                  variant="outline"
+                  className={
+                    project.status?.toLowerCase() === "under construction" ||
+                      project.status?.toLowerCase() === "upcoming"
+                      ? "bg-blue-50 text-blue-700 border-blue-200 text-[10px] px-1 w-fit"
+                      : project.status?.toLowerCase() === "completed" ||
+                        project.status?.toLowerCase() === "ready for handover"
+                        ? "bg-green-50 text-green-700 border-green-200 text-[10px] px-1 w-fit"
+                        : "bg-gray-50 text-gray-700 border-gray-200 text-[10px] px-1 w-fit"
+                  }
+                >
+                  {project.status || "Unknown"}
+                </Badge>
+              </div>
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[10px] uppercase text-gray-400 font-semibold tracking-wider">Price</span>
+                <span className="text-gray-900 font-medium">{project.price_range || "N/A"}</span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pl-7 pt-2 border-t border-gray-50">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-500">Active:</span>
+                <Switch
+                  checked={project.is_active ?? false}
+                  onCheckedChange={(checked) => onActiveToggle(project.id, checked)}
+                  className="data-[state=checked]:bg-green-500 scale-75 origin-left"
+                />
+              </div>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onImport?.(project.id, project.name);
+                }}
+                className="h-7 text-xs bg-white border-gray-200 shadow-sm hover:bg-teal-50"
+              >
+                <Download className="w-3 h-3 mr-1" /> Import
+              </Button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop Table View */}
+      <Table className="hidden md:table">
         <TableHeader>
           <TableRow className="bg-gray-50 hover:bg-gray-50">
             <TableHead className="w-[35px] px-2">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { fetchDevelopers, fetchProjectsByDeveloper, fetchPropertiesByDeveloper } from "@/data/api-client";
 
@@ -14,6 +14,10 @@ export function useCreateAdData(isOpen: boolean, developerSearch: string, countr
   const [developerPage, setDeveloperPage] = useState(1);
   const [developerPerPage, setDeveloperPerPage] = useState(15);
   const [developerHasMore, setDeveloperHasMore] = useState(true);
+  const developerHasMoreRef = useRef(true);
+  useEffect(() => {
+    developerHasMoreRef.current = developerHasMore;
+  }, [developerHasMore]);
   const [loading, setLoading] = useState(false);
   const [projectsLoading, setProjectsLoading] = useState(false);
   const [propertiesLoading, setPropertiesLoading] = useState(false);
@@ -25,7 +29,7 @@ export function useCreateAdData(isOpen: boolean, developerSearch: string, countr
     isNewSearch = false,
   ) => {
     if (!token) return;
-    if (!isNewSearch && !developerHasMore) return;
+    if (!isNewSearch && !developerHasMoreRef.current) return;
 
     setLoading(true);
     try {
@@ -49,7 +53,7 @@ export function useCreateAdData(isOpen: boolean, developerSearch: string, countr
     } finally {
       setLoading(false);
     }
-  }, [token, developerHasMore, country]);
+  }, [token, country]);
 
   const loadProjects = useCallback(async (devId: number, search?: string) => {
     if (!token) return;
@@ -110,39 +114,23 @@ export function useCreateAdData(isOpen: boolean, developerSearch: string, countr
     }
   }, [isOpen]);
 
-  useEffect(() => {
-    if (isOpen && token) {
-      loadDevelopers(1, 15, "", true);
-    }
-  }, [isOpen, token, loadDevelopers]);
+
 
   useEffect(() => {
     if (isOpen && token) {
-      if (developerSearch !== "") {
-        loadDevelopers(1, 15, developerSearch, true);
-      } else {
-        loadDevelopers(1, 15, "", true);
-      }
+      loadDevelopers(1, 15, developerSearch || "", true);
     }
   }, [developerSearch, isOpen, token, loadDevelopers]);
 
   useEffect(() => {
     if (developerId && projectSearch !== undefined) {
-      if (projectSearch !== "") {
-        loadProjects(parseInt(developerId), projectSearch);
-      } else {
-        loadProjects(parseInt(developerId), "");
-      }
+      loadProjects(parseInt(developerId), projectSearch || "");
     }
   }, [developerId, projectSearch, loadProjects]);
 
   useEffect(() => {
     if (developerId && propertySearch !== undefined) {
-      if (propertySearch !== "") {
-        loadProperties(parseInt(developerId), propertySearch);
-      } else {
-        loadProperties(parseInt(developerId), "");
-      }
+      loadProperties(parseInt(developerId), propertySearch || "");
     }
   }, [developerId, propertySearch, loadProperties]);
 

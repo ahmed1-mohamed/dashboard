@@ -94,7 +94,7 @@ export const PropertiesTemplate = () => {
   const worksheet = XLSX.utils.aoa_to_sheet([headers]);
 
   const columnWidths = headers.map((header) => ({
-    wch: header.length + 5, 
+    wch: header.length + 5,
   }));
 
   worksheet["!cols"] = columnWidths;
@@ -114,7 +114,7 @@ export const PropertiesFilledTemplate = async (
   let projectName = "";
   try {
     const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/projects/${projectId}`,
+      `${process.env.NEXT_PUBLIC_API_URL}/dashboard/projects/${projectId}`,
       {
         headers: {
           "Content-Type": "application/json",
@@ -188,7 +188,7 @@ export const PropertiesFilledTemplate = async (
   const worksheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
 
   const columnWidths = headers.map((header) => ({
-    wch: header.length + 5, 
+    wch: header.length + 5,
   }));
 
   worksheet["!cols"] = columnWidths;

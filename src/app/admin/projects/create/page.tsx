@@ -42,7 +42,10 @@ export default function CreateProjectPage() {
       available_units: undefined, launch_date: "", completion_date: "",
       project_size: "", description: "", currency: "", price_min: "",
       price_max: "", price_sq_min: "", price_sq_max: "", price_range: "",
-      price_range_SQ: "", project_type: undefined, developer_id: undefined,
+      price_range_SQ: "", project_type: undefined, developer_id: "",
+      latitude: 0, longitude: 0, landmark: "", city_id: "", area_id: "",
+      north_side: "", south_side: "", east_side: "", west_side: "",
+      google_map_link: "", location_description: "",
     },
   });
 
@@ -62,9 +65,23 @@ export default function CreateProjectPage() {
   // Auto-set developer_id based on roleId
   useEffect(() => {
     if (roleId === 3 && developersList?.[0]?.developer_id) {
-      setValue("developer_id", developersList[0].developer_id, { shouldValidate: true });
+      setValue("developer_id", String(developersList[0].developer_id), { shouldValidate: true });
     }
   }, [roleId, developersList, setValue]);
+
+  // Sync locationData to form for validation
+  useEffect(() => {
+    setValue("latitude", locationData.latitude);
+    setValue("longitude", locationData.longitude);
+    setValue("city_id", locationData.city_id);
+    setValue("area_id", locationData.area_id || "");
+    setValue("landmark", locationData.landmark);
+    setValue("north_side", locationData.north_side);
+    setValue("south_side", locationData.south_side);
+    setValue("east_side", locationData.east_side);
+    setValue("west_side", locationData.west_side);
+    setValue("google_map_link", locationData.google_map_link);
+  }, [locationData, setValue]);
 
   // Real-time date validation
   useEffect(() => {
@@ -88,8 +105,14 @@ export default function CreateProjectPage() {
     if (!locationData.city_id) { toast.error("Please select a valid city"); return; }
     if (!locationData.google_map_link) { toast.error("Please provide a Google Maps link"); return; }
 
+    const formValues = form.getValues();
+    const price_range = `${formValues.price_min}-${formValues.price_max}`;
+    const price_range_SQ = `${formValues.price_sq_min}-${formValues.price_sq_max}`;
+
     const formData: CreateProjectWithMediaParams = {
-      ...form.getValues(),
+      ...formValues,
+      price_range,
+      price_range_SQ,
       location: locationData as any,
       mediaItems: mediaItems.map((item) => ({
         file: item.file, description: item.description,
@@ -100,7 +123,7 @@ export default function CreateProjectPage() {
 
     try {
       await createProject(formData);
-      // Optional: router.push or clear form
+      router.push("/admin/projects");
     } catch (error) {
       console.error("Failed to create project:", error);
     }
@@ -117,7 +140,14 @@ export default function CreateProjectPage() {
             </div>
             <p className="text-sm text-gray-500">Home &gt; Projects &gt; Create Project</p>
           </div>
-          <Button className="bg-teal-600 hover:bg-teal-700 text-white" onClick={form.handleSubmit(handleSubmitForm)} disabled={isCreating || !!dateValidationError}>
+          <Button 
+            className="bg-teal-600 hover:bg-teal-700 text-white" 
+            onClick={form.handleSubmit(handleSubmitForm, (errors) => {
+              console.log("Validation errors:", errors);
+              toast.error("Please fill in all required fields correctly.");
+            })} 
+            disabled={isCreating || !!dateValidationError}
+          >
             {isCreating ? "Creating..." : "Create"}
           </Button>
         </div>
@@ -126,6 +156,7 @@ export default function CreateProjectPage() {
       <div className="max-w-7xl mx-auto px-6 py-8">
         <form onSubmit={form.handleSubmit(handleSubmitForm)} className="space-y-6">
           <ProjectLocationForm
+            form={form}
             locationData={locationData}
             setLocationData={setLocationData}
             country={country}

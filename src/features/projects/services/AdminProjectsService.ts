@@ -65,7 +65,50 @@ export const AdminProjectsService = {
   createProject: async (
     data: CreateProjectInput,
   ): Promise<CreateProjectResponse> => {
-    const response = await apiClient.post("/dashboard/projects", data);
+    const formData = new FormData();
+    
+    // Append top-level fields
+    formData.append("project_name", data.project_name);
+    formData.append("status", data.status);
+    formData.append("project_type", data.project_type);
+    formData.append("launch_date", data.launch_date);
+    formData.append("developer_id", String(data.developer_id));
+    formData.append("available_units", String(data.available_units));
+    formData.append("total_units", String(data.total_units));
+    formData.append("price_range", String(data.price_range));
+    formData.append("price_range_SQ", String(data.price_range_SQ));
+    
+    // Optional top-level fields
+    if (data.completion_date) formData.append("completion_date", data.completion_date);
+    if (data.milestone_id) formData.append("milestone_id", String(data.milestone_id));
+    if (data.description) formData.append("description", data.description);
+    if (data.project_size) formData.append("project_size", String(data.project_size));
+    if (data.phase) formData.append("phase", data.phase);
+    if (data.is_active !== undefined) formData.append("is_active", String(data.is_active));
+    if (data.currency) formData.append("currency", data.currency);
+    if (data.permit_no) formData.append("permit_no", data.permit_no);
+    if (data.barcode) formData.append("barcode", data.barcode);
+
+    // Location object mapping
+    formData.append("location[google_map_link]", data.google_map_link || "");
+    formData.append("location[latitude]", String(data.latitude || 0));
+    formData.append("location[longitude]", String(data.longitude || 0));
+    
+    if (data.area_id) formData.append("location[area_id]", String(data.area_id));
+    if (data.city_id) formData.append("location[city_id]", String(data.city_id));
+    
+    if (data.north_side) formData.append("location[north_side]", data.north_side);
+    if (data.south_side) formData.append("location[south_side]", data.south_side);
+    if (data.east_side) formData.append("location[east_side]", data.east_side);
+    if (data.west_side) formData.append("location[west_side]", data.west_side);
+    if (data.landmark) formData.append("location[landmark]", data.landmark);
+    if (data.location_description) formData.append("location[description]", data.location_description);
+
+    const response = await apiClient.post("/dashboard/projects", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
     return response.data as CreateProjectResponse;
   },
 
@@ -97,7 +140,7 @@ export const AdminProjectsService = {
     };
 
     const projectResponse = await AdminProjectsService.createProject(
-      flattenedProjectData as CreateProjectInput,
+      flattenedProjectData as unknown as CreateProjectInput,
     );
 
     const projectId = projectResponse.data?.project_id;

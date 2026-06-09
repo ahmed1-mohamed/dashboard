@@ -22,7 +22,7 @@ export function ProjectPricingForm({ form }: ProjectPricingFormProps) {
       <h2 className="text-lg font-semibold text-gray-900 mb-6">Pricing</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div>
-          <Label htmlFor="currency">Currency <span className="text-red-500">*</span></Label>
+          <Label htmlFor="currency">Currency</Label>
           <Select value={watch("currency") || ""} onValueChange={(value) => setValue("currency", value)}>
             <SelectTrigger className="mt-1"><SelectValue placeholder="Select currency" /></SelectTrigger>
             <SelectContent>

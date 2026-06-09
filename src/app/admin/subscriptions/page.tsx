@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Package, Users, Sparkles, Layers } from "lucide-react";
 
 import { CustomerPlansTab } from "./tabs/customer-plans-tab";
@@ -18,15 +18,18 @@ const TAB_CONFIG = {
 } as const;
 
 export default function SubscriptionsPage() {
-  const [activeTab, setActiveTab] = useState<TabType>(() => {
+  const [activeTab, setActiveTab] = useState<TabType>("customer-plans");
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  useEffect(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("subscriptions_active_tab");
       if (saved && (saved === "customer-plans" || saved === "developer-packages" || saved === "features" || saved === "addons")) {
-        return saved as TabType;
+        setActiveTab(saved as TabType);
       }
+      setIsInitialized(true);
     }
-    return "customer-plans";
-  });
+  }, []);
 
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab);

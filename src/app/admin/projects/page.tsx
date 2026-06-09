@@ -33,6 +33,11 @@ export default function ProjectsPage() {
   );
 }
 
+const INITIAL_FILTERS = {
+  status: "all",
+  projectType: "all",
+};
+
 function ProjectsPageContent() {
   const router = useRouter();
   const [isMounted, setIsMounted] = useState(false);
@@ -54,10 +59,7 @@ function ProjectsPageContent() {
   } = useServerPagination({
     initialPage: 1,
     initialPerPage: 10,
-    initialFilters: {
-      status: "all",
-      projectType: "all",
-    },
+    initialFilters: INITIAL_FILTERS,
   });
 
   const {

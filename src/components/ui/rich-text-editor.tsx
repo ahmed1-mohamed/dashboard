@@ -38,26 +38,28 @@ interface RichTextEditorProps {
   placeholder?: string;
 }
 
+const extensions = [
+  StarterKit,
+  Underline,
+  TextAlign.configure({
+    types: ["heading", "paragraph"],
+  }),
+  TextStyle,
+  Color,
+  Highlight.configure({ multicolor: true }),
+  Link.configure({
+    openOnClick: false,
+  }),
+  Image,
+];
+
 export function RichTextEditor({
   content,
   onChange,
   placeholder = "Write something...",
 }: RichTextEditorProps) {
   const editor = useEditor({
-    extensions: [
-      StarterKit,
-      Underline,
-      TextAlign.configure({
-        types: ["heading", "paragraph"],
-      }),
-      TextStyle,
-      Color,
-      Highlight.configure({ multicolor: true }),
-      Link.configure({
-        openOnClick: false,
-      }),
-      Image,
-    ],
+    extensions,
     content: content,
     immediatelyRender: false,
     onUpdate: ({ editor }) => {

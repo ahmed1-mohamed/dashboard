@@ -41,6 +41,8 @@ export default function UsersPage() {
   );
 }
 
+const INITIAL_FILTERS = { status: "all", role_id: "all" };
+
 function UsersPageContent() {
   const queryClient = useQueryClient();
 
@@ -68,7 +70,7 @@ function UsersPageContent() {
   } = useServerPagination({
     initialPage: 1,
     initialPerPage: tableSettings.settings.itemsPerPage,
-    initialFilters: { status: "all", role_id: "all" },
+    initialFilters: INITIAL_FILTERS,
   });
 
   React.useEffect(() => {

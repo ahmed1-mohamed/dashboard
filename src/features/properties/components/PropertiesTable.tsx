@@ -61,8 +61,76 @@ export function PropertiesTable({
   }
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white overflow-hidden overflow-x-auto">
-      <Table>
+    <div className="rounded-lg border border-gray-200 bg-white overflow-hidden overflow-x-auto w-full">
+      {/* Mobile Card View */}
+      <div className="block md:hidden">
+        {properties.map((property) => (
+          <div key={property.id} className="p-4 border-b border-gray-100 last:border-b-0 space-y-4 hover:bg-gray-50 transition-colors">
+            <div className="flex items-start justify-between">
+              <div className="flex items-start gap-3">
+                <Checkbox
+                  checked={selectedProperties.includes(property.id)}
+                  onCheckedChange={(checked) =>
+                    onSelectProperty(property.id, checked as boolean)
+                  }
+                  className="mt-1"
+                />
+                <div>
+                  <button
+                    onClick={() => router.push(`/admin/properties/${property.id}`)}
+                    className="text-gray-900 text-sm font-semibold hover:text-teal-600 transition-colors text-left focus:outline-none"
+                  >
+                    {property.unitNumber} {property.property_name && `- ${property.property_name}`}
+                  </button>
+                  <div className="text-xs text-gray-500 mt-0.5 flex items-center gap-1">
+                    {property.project_name}
+                  </div>
+                </div>
+              </div>
+              <TableActions
+                onView={() => router.push(`/admin/properties/${property.id}`)}
+                onEdit={() => onEdit(property.id)}
+                onDelete={() => onDelete(property.id)}
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-y-2 text-sm pl-7">
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[10px] uppercase text-gray-400 font-semibold tracking-wider">Type</span>
+                <span className="text-gray-700 flex items-center gap-1">
+                  {property.type || "N/A"}
+                </span>
+              </div>
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[10px] uppercase text-gray-400 font-semibold tracking-wider">Area</span>
+                <span className="text-gray-700 flex items-center gap-1">
+                  {property.area || "N/A"}
+                </span>
+              </div>
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[10px] uppercase text-gray-400 font-semibold tracking-wider">Price</span>
+                <span className="text-gray-900 font-medium">{property.price || "N/A"}</span>
+              </div>
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[10px] uppercase text-gray-400 font-semibold tracking-wider">Status</span>
+                <Badge
+                  variant="outline"
+                  className={
+                    property.status === "Reserved"
+                      ? "bg-orange-50 text-orange-700 border-orange-200 text-[10px] px-1 w-fit"
+                      : "bg-green-50 text-green-700 border-green-200 text-[10px] px-1 w-fit"
+                  }
+                >
+                  {property.status || "Unknown"}
+                </Badge>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop Table View */}
+      <Table className="hidden md:table">
         <TableHeader>
           <TableRow className="bg-gray-50 hover:bg-gray-50">
             <TableHead className="w-[35px] px-2">

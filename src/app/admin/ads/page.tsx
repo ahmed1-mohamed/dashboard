@@ -12,12 +12,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, TrendingUp, Users, MousePointerClick, Percent, AlertCircle } from "lucide-react";
 import { CreateAdModal } from "@/components/modals/create-ad-modal";
+import { EditAdModal } from "@/components/modals/edit-ad-modal";
 import { DeleteAdDialog } from "@/components/modals/delete-ad-dialog";
 import useDashboardAdminAdsData from "@/hooks/use-dashboardAdminAds";
 import { toast } from "sonner";
 import { apiClient } from "@/lib/apiClient";
 import { AdminAdsService } from "@/services/AdminAdsService";
 import { useAdActions } from "@/hooks/use-ad-actions";
+import { useUrlFilters } from "@/hooks/use-url-filters";
 
 import { AdsTable } from "@/features/ads/components/AdsTable";
 import { AdsFilters } from "@/features/ads/components/AdsFilters";
@@ -45,19 +47,37 @@ export default function AdsPage({
   const token = session?.user?.accessToken;
   const queryClient = useQueryClient();
 
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filterPlatform, setFilterPlatform] = useState("all");
-  const [filterStatus, setFilterStatus] = useState("all");
-  const [filterType, setFilterType] = useState("all");
-  const [currentPage, setCurrentPage] = useState(initialPage);
+  const { filters, setFilter } = useUrlFilters({
+    search: "",
+    platform: "all",
+    status: "all",
+    format: "all",
+    page: initialPage,
+  });
+
+  const [searchQuery, setSearchQuery] = useState(filters.search as string);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (filters.search !== searchQuery) {
+        setFilter("search", searchQuery);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery, setFilter, filters.search]);
+
+  // Sync local query when URL changes (e.g. back button)
+  useEffect(() => {
+    setSearchQuery(filters.search as string);
+  }, [filters.search]);
+
   const [itemsPerPage, setItemsPerPage] = useState(initialItemsPerPage);
   const [selectedAds, setSelectedAds] = useState<string[]>([]);
   const [createAdModalOpen, setCreateAdModalOpen] = useState(false);
+  const [editAdModalOpen, setEditAdModalOpen] = useState(false);
   const [deleteAdDialogOpen, setDeleteAdDialogOpen] = useState(false);
   const [selectedAd, setSelectedAd] = useState<any | null>(null);
   const [updatingAdId, setUpdatingAdId] = useState<string | null>(null);
-
-  const [debouncedSearch, setDebouncedSearch] = useState(searchQuery);
 
   const tableSettings = useTableSettings("ads", DEFAULT_COLUMNS);
 
@@ -69,29 +89,18 @@ export default function AdsPage({
     return tableSettings.settings.columns.find((c) => c.id === colId)?.visible !== false;
   };
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(searchQuery);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [filterStatus, filterPlatform, filterType, debouncedSearch]);
-
   const adsFilters = useMemo(
     () => ({
-      status: filterStatus,
-      platform: filterPlatform,
-      format: filterType,
-      search: debouncedSearch,
+      status: filters.status as string,
+      platform: filters.platform as string,
+      format: filters.format as string,
+      search: filters.search as string,
     }),
-    [filterStatus, filterPlatform, filterType, debouncedSearch],
+    [filters.status, filters.platform, filters.format, filters.search],
   );
 
   const { adsData, totalsData } = useDashboardAdminAdsData(
-    currentPage,
+    Number(filters.page),
     itemsPerPage,
     adsFilters,
   );
@@ -102,7 +111,7 @@ export default function AdsPage({
   const ads = ((data as any)?.data || data || []) as any[];
   const totalItems = (data as any)?.meta?.total || (data as any)?.total || ads.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
-  const startIndex = (currentPage - 1) * itemsPerPage;
+  const startIndex = (Number(filters.page) - 1) * itemsPerPage;
 
   const adsTotals = useMemo(() => {
     if (!totals) return [];
@@ -220,8 +229,8 @@ export default function AdsPage({
       }
     } else {
       pages.push(1);
-      const start = Math.max(2, currentPage - 1);
-      const end = Math.min(totalPages - 1, currentPage + 1);
+      const start = Math.max(2, Number(filters.page) - 1);
+      const end = Math.min(totalPages - 1, Number(filters.page) + 1);
 
       if (start > 2) pages.push("...");
       for (let i = start; i <= end; i++) {
@@ -232,7 +241,7 @@ export default function AdsPage({
     }
 
     return pages;
-  }, [currentPage, totalPages]);
+  }, [filters.page, totalPages]);
 
   return (
     <div className="p-6 space-y-6 max-w-[1600px] mx-auto">
@@ -301,12 +310,12 @@ export default function AdsPage({
               <AdsFilters
                 searchQuery={searchQuery}
                 onSearchChange={setSearchQuery}
-                statusFilter={filterStatus}
-                onStatusChange={setFilterStatus}
-                platformFilter={filterPlatform}
-                onPlatformChange={setFilterPlatform}
-                typeFilter={filterType}
-                onTypeChange={setFilterType}
+                statusFilter={filters.status as string}
+                onStatusChange={(val) => setFilter("status", val)}
+                platformFilter={filters.platform as string}
+                onPlatformChange={(val) => setFilter("platform", val)}
+                typeFilter={filters.format as string}
+                onTypeChange={(val) => setFilter("format", val)}
               />
             </div>
           </div>
@@ -328,7 +337,7 @@ export default function AdsPage({
                 <div className="text-sm text-gray-500">
                   Showing{" "}
                   <span className="font-medium">
-                    {totalItems > 0 ? `${Math.max(startIndex + 1, 0)}-${Math.min(currentPage * itemsPerPage, totalItems)}` : "0-0"}
+                    {totalItems > 0 ? `${Math.max(startIndex + 1, 0)}-${Math.min(Number(filters.page) * itemsPerPage, totalItems)}` : "0-0"}
                   </span>{" "}
                   of <span className="font-medium">{totalItems}</span>
                 </div>
@@ -339,7 +348,7 @@ export default function AdsPage({
                     value={itemsPerPage.toString()}
                     onValueChange={(value) => {
                       setItemsPerPage(Number(value));
-                      setCurrentPage(1);
+                      setFilter("page", 1);
                     }}
                   >
                     <SelectTrigger className="h-8 w-20 bg-gray-50 border-gray-200">
@@ -358,8 +367,8 @@ export default function AdsPage({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
+                  onClick={() => setFilter("page", Math.max(1, Number(filters.page) - 1))}
+                  disabled={Number(filters.page) === 1}
                   className="h-8"
                 >
                   Previous
@@ -368,11 +377,11 @@ export default function AdsPage({
                   {getPageNumbers().map((pageNum, idx) => (
                     <Button
                       key={idx}
-                      variant={pageNum === currentPage ? "default" : "outline"}
+                      variant={pageNum === Number(filters.page) ? "default" : "outline"}
                       size="sm"
-                      onClick={() => typeof pageNum === "number" && setCurrentPage(pageNum)}
+                      onClick={() => typeof pageNum === "number" && setFilter("page", pageNum)}
                       disabled={pageNum === "..."}
-                      className={`h-8 w-8 p-0 ${pageNum === currentPage ? "bg-teal-600 text-white hover:bg-teal-700" : "text-gray-600 border-gray-200"
+                      className={`h-8 w-8 p-0 ${pageNum === Number(filters.page) ? "bg-teal-600 text-white hover:bg-teal-700" : "text-gray-600 border-gray-200"
                         }`}
                     >
                       {pageNum}
@@ -382,8 +391,8 @@ export default function AdsPage({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages}
+                  onClick={() => setFilter("page", Math.min(totalPages, Number(filters.page) + 1))}
+                  disabled={Number(filters.page) === totalPages}
                   className="h-8"
                 >
                   Next
@@ -398,6 +407,17 @@ export default function AdsPage({
         <CreateAdModal 
           isOpen={createAdModalOpen} 
           onClose={() => setCreateAdModalOpen(false)} 
+          onSuccess={() => refetch()}
+        />
+      )}
+
+      {selectedAd && (
+        <EditAdModal
+          ad={selectedAd}
+          isOpen={editAdModalOpen}
+          onClose={() => {
+            setEditAdModalOpen(false);
+          }}
           onSuccess={() => refetch()}
         />
       )}

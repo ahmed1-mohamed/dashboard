@@ -49,6 +49,8 @@ export default function DevelopersPage() {
   );
 }
 
+const INITIAL_FILTERS = { status: "all", country: "all" };
+
 function DevelopersPageContent() {
   const DEFAULT_COLUMNS = [
     { id: "developer", label: "Developer", visible: true },
@@ -77,7 +79,7 @@ function DevelopersPageContent() {
   } = useServerPagination({
     initialPage: 1,
     initialPerPage: tableSettings.settings.itemsPerPage,
-    initialFilters: { status: "all", country: "all" },
+    initialFilters: INITIAL_FILTERS,
   });
 
   React.useEffect(() => {

@@ -50,10 +50,10 @@ export function ProjectBasicInfoForm({
             {errors.project_name && <p className="text-sm text-red-500 mt-1">{errors.project_name.message}</p>}
           </div>
           <div>
-            <Label htmlFor="developer">Developer</Label>
+            <Label htmlFor="developer">Developer <span className="text-red-500">*</span></Label>
             <Select
               value={String(watch("developer_id") || "")}
-              onValueChange={(value) => setValue("developer_id", parseInt(value))}
+              onValueChange={(value) => setValue("developer_id", value)}
             >
               <SelectTrigger className="mt-1"><SelectValue placeholder="Select developer" /></SelectTrigger>
               <SelectContent>
@@ -94,7 +94,7 @@ export function ProjectBasicInfoForm({
             </Select>
           </div>
           <div>
-            <Label htmlFor="status">Status</Label>
+            <Label htmlFor="status">Status <span className="text-red-500">*</span></Label>
             <Select value={watch("status") || ""} onValueChange={(value) => setValue("status", value as any)}>
               <SelectTrigger className="mt-1"><SelectValue placeholder="Select Status" /></SelectTrigger>
               <SelectContent>

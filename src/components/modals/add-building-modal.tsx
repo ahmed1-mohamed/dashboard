@@ -96,9 +96,9 @@ export function AddBuildingModal({
 
       const flatMessages = errorList
         ? Object.values(errorList)
-            .map((errObj) => Object.values(errObj))
-            .flat()
-            .join(", ")
+          .map((errObj) => Object.values(errObj))
+          .flat()
+          .join(", ")
         : "";
 
       const fallbackMessage =
@@ -179,8 +179,6 @@ export function AddBuildingModal({
             {errors.root.message}
           </div>
         )}
-
-        {/* Building Name */}
         <div>
           <Label>
             Building Name <span className="text-red-500">*</span>
@@ -196,8 +194,6 @@ export function AddBuildingModal({
             </p>
           )}
         </div>
-
-        {/* Construction Status */}
         <div>
           <Label>
             Construction Status <span className="text-red-500">*</span>
@@ -225,9 +221,7 @@ export function AddBuildingModal({
           )}
         </div>
 
-        {/* Building Type and Built Type Row */}
         <div className="grid grid-cols-2 gap-4">
-          {/* Building Type */}
           <div>
             <Label>
               Building Type <span className="text-red-500">*</span>
@@ -254,8 +248,6 @@ export function AddBuildingModal({
               </p>
             )}
           </div>
-
-          {/* Built Type */}
           <div>
             <Label>
               Built Type <span className="text-red-500">*</span>
@@ -283,10 +275,7 @@ export function AddBuildingModal({
             )}
           </div>
         </div>
-
-        {/* Total Floors and Total Units Row */}
         <div className="grid grid-cols-2 gap-4">
-          {/* Total Floors */}
           <div>
             <Label>
               Total Floors <span className="text-red-500">*</span>
@@ -302,8 +291,6 @@ export function AddBuildingModal({
               </p>
             )}
           </div>
-
-          {/* Total Units */}
           <div>
             <Label>
               Total Units <span className="text-red-500">*</span>
@@ -320,10 +307,7 @@ export function AddBuildingModal({
             )}
           </div>
         </div>
-
-        {/* Parking Spaces and Completion Date Row */}
         <div className="grid grid-cols-2 gap-4">
-          {/* Parking Spaces */}
           <div>
             <Label>Parking Spaces</Label>
             <Input
@@ -332,8 +316,6 @@ export function AddBuildingModal({
               className="mt-1"
             />
           </div>
-
-          {/* Completion Date */}
           <div>
             <Label>
               Completion Date <span className="text-red-500">*</span>
@@ -350,8 +332,6 @@ export function AddBuildingModal({
             )}
           </div>
         </div>
-
-        {/* Description */}
         <div>
           <Label>Description</Label>
           <Textarea

@@ -18,7 +18,11 @@ import useExpandUrl from "@/hooks/use-expand-url";
 import useGetNearby from "@/hooks/use-get-nearby";
 import useGetLocationDetails from "@/hooks/use-get-location-details";
 
+import { UseFormReturn } from "react-hook-form";
+import { CreateProjectInput } from "@/validators/create-project.schema";
+
 interface ProjectLocationFormProps {
+  form: UseFormReturn<CreateProjectInput>;
   locationData: LocationData;
   setLocationData: React.Dispatch<React.SetStateAction<LocationData>>;
   country: string;
@@ -27,12 +31,14 @@ interface ProjectLocationFormProps {
 }
 
 export function ProjectLocationForm({
+  form,
   locationData,
   setLocationData,
   country,
   setCountry,
   setCountryId,
 }: ProjectLocationFormProps) {
+  const { formState: { errors } } = form;
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
   const [googleMapsLinkError, setGoogleMapsLinkError] = useState<string | null>(null);
   const [cityFound, setCityFound] = useState(true);
@@ -71,7 +77,9 @@ export function ProjectLocationForm({
     }
 
     if (citiesArray.length > 0) {
-      setOptions(citiesArray.map((city: any) => ({ label: city.name || city.city_name, value: city.name || city.city_name })));
+      const mapped = citiesArray.map((city: any) => ({ label: city.name || city.city_name, value: city.name || city.city_name }));
+      const unique = Array.from(new Map(mapped.map((item: any) => [item.value, item])).values());
+      setOptions(unique as Option[]);
     } else {
       setOptions([]);
     }
@@ -102,7 +110,9 @@ export function ProjectLocationForm({
     }
 
     if (areasArray.length > 0) {
-      setOptions2(areasArray.map((area: any) => ({ label: area.area_name || area.dld_area_name, value: area.area_name || area.dld_area_name })));
+      const mapped = areasArray.map((area: any) => ({ label: area.area_name || area.dld_area_name, value: area.area_name || area.dld_area_name }));
+      const unique = Array.from(new Map(mapped.map((item: any) => [item.value, item])).values());
+      setOptions2(unique as Option[]);
     } else {
       setOptions2([]);
     }
@@ -247,6 +257,7 @@ export function ProjectLocationForm({
               </Button>
             </div>
             {googleMapsLinkError && <p className="text-sm text-red-600 mt-1">{googleMapsLinkError}</p>}
+            {errors.google_map_link && <p className="text-sm text-red-600 mt-1">{errors.google_map_link.message}</p>}
             {isLoadingLocation && (
               <div className="flex items-center space-x-2 text-sm text-blue-600 mt-2">
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent"></div>
@@ -259,10 +270,12 @@ export function ProjectLocationForm({
             <div>
               <Label htmlFor="latitude">Latitude <span className="text-red-500">*</span></Label>
               <Input id="latitude" type="number" step="any" placeholder="25.2048" className="mt-1" value={locationData.latitude || ""} onChange={handleChange} name="latitude" />
+              {errors.latitude && <p className="text-sm text-red-600 mt-1">{errors.latitude.message}</p>}
             </div>
             <div>
               <Label htmlFor="longitude">Longitude <span className="text-red-500">*</span></Label>
               <Input id="longitude" type="number" step="any" placeholder="55.2708" className="mt-1" value={locationData.longitude || ""} onChange={handleChange} name="longitude" />
+              {errors.longitude && <p className="text-sm text-red-600 mt-1">{errors.longitude.message}</p>}
             </div>
             <div>
               <Label htmlFor="city">City <span className="text-red-500">*</span></Label>
@@ -281,6 +294,7 @@ export function ProjectLocationForm({
                 </SelectContent>
               </Select>
               {!cityFound && <p className="text-sm text-red-500 mt-1">City not found in database</p>}
+              {errors.city_id && <p className="text-sm text-red-600 mt-1">{errors.city_id.message}</p>}
             </div>
             <div ref={areaErrorRef}>
               <Label htmlFor="area">Area <span className="text-red-500">*</span></Label>
@@ -299,6 +313,7 @@ export function ProjectLocationForm({
                 </SelectContent>
               </Select>
               {areaError && <p className="text-sm text-red-500 mt-1">Area is not valid</p>}
+              {errors.area_id && <p className="text-sm text-red-600 mt-1">{errors.area_id.message}</p>}
             </div>
           </div>
         </div>
@@ -307,11 +322,11 @@ export function ProjectLocationForm({
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-6">Directional References</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          <div><Label htmlFor="south-side">South side <span className="text-red-500">*</span></Label><Input id="south-side" className="mt-1" value={locationData.south_side} onChange={handleChange} name="south_side" /></div>
-          <div><Label htmlFor="east-side">East side <span className="text-red-500">*</span></Label><Input id="east-side" className="mt-1" value={locationData.east_side} onChange={handleChange} name="east_side" /></div>
-          <div><Label htmlFor="west-side">West side <span className="text-red-500">*</span></Label><Input id="west-side" className="mt-1" value={locationData.west_side} onChange={handleChange} name="west_side" /></div>
-          <div><Label htmlFor="north-side">North side <span className="text-red-500">*</span></Label><Input id="north-side" className="mt-1" value={locationData.north_side} onChange={handleChange} name="north_side" /></div>
-          <div><Label htmlFor="landmark">Landmark <span className="text-red-500">*</span></Label><Input id="landmark" className="mt-1" value={locationData.landmark} onChange={handleChange} name="landmark" /></div>
+          <div><Label htmlFor="south-side">South side <span className="text-red-500">*</span></Label><Input id="south-side" className="mt-1" value={locationData.south_side} onChange={handleChange} name="south_side" />{errors.south_side && <p className="text-sm text-red-600 mt-1">{errors.south_side.message}</p>}</div>
+          <div><Label htmlFor="east-side">East side <span className="text-red-500">*</span></Label><Input id="east-side" className="mt-1" value={locationData.east_side} onChange={handleChange} name="east_side" />{errors.east_side && <p className="text-sm text-red-600 mt-1">{errors.east_side.message}</p>}</div>
+          <div><Label htmlFor="west-side">West side <span className="text-red-500">*</span></Label><Input id="west-side" className="mt-1" value={locationData.west_side} onChange={handleChange} name="west_side" />{errors.west_side && <p className="text-sm text-red-600 mt-1">{errors.west_side.message}</p>}</div>
+          <div><Label htmlFor="north-side">North side <span className="text-red-500">*</span></Label><Input id="north-side" className="mt-1" value={locationData.north_side} onChange={handleChange} name="north_side" />{errors.north_side && <p className="text-sm text-red-600 mt-1">{errors.north_side.message}</p>}</div>
+          <div><Label htmlFor="landmark">Landmark <span className="text-red-500">*</span></Label><Input id="landmark" className="mt-1" value={locationData.landmark} onChange={handleChange} name="landmark" />{errors.landmark && <p className="text-sm text-red-600 mt-1">{errors.landmark.message}</p>}</div>
         </div>
       </div>
     </>

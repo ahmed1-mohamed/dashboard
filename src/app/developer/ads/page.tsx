@@ -46,9 +46,9 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { fetchAds, fetchAdsTotals, toggleAdStatus } from "@/data/api-client";
-import { AddDeveloperAdModal } from "@/components/modals/add-developer-ads-modal";
+import { CreateAdModal } from "@/components/modals/create-ad-modal";
 import { ViewAdModal } from "@/components/modals/view-ad-modal";
-import { EditDeveloperAdModal } from "@/components/modals/edit-developer-ads-modal";
+import { EditAdModal } from "@/components/modals/edit-ad-modal";
 import { DeleteAdDialog } from "@/components/modals/delete-ad-dialog";
 import { toast } from "sonner";
 
@@ -705,7 +705,7 @@ export default function AdsPage() {
         </div>
       </div>
 
-      <AddDeveloperAdModal
+      <CreateAdModal
         isOpen={createAdModalOpen}
         onClose={() => setCreateAdModalOpen(false)}
         onSuccess={() => {
@@ -759,129 +759,133 @@ export default function AdsPage() {
         }}
       />
 
-      {/* <ViewAdModal
-        ad={selectedAd}
-        isOpen={viewAdModalOpen}
-        onClose={() => {
-          setViewAdModalOpen(false);
-          setSelectedAd(null);
-        }}
-        onEdit={() => {
-          setViewAdModalOpen(false);
-          setEditAdModalOpen(true);
-        }}
-        onDelete={() => {
-          setViewAdModalOpen(false);
-          setDeleteAdDialogOpen(true);
-        }}
-        onSuccess={() => {
-          if (session?.user?.accessToken) {
-            fetchAds(session.user.accessToken, currentPage).then(
-              (response: any) => {
-                if (response?.data) {
-                  setAds(response.data);
+      {selectedAd && (
+        <ViewAdModal
+          ad={selectedAd}
+          isOpen={viewAdModalOpen}
+          onClose={() => {
+            setViewAdModalOpen(false);
+            setSelectedAd(null);
+          }}
+          onEdit={() => {
+            setViewAdModalOpen(false);
+            setEditAdModalOpen(true);
+          }}
+          onDelete={() => {
+            setViewAdModalOpen(false);
+            setDeleteAdDialogOpen(true);
+          }}
+          onSuccess={() => {
+            if (session?.user?.accessToken) {
+              fetchAds(session.user.accessToken, currentPage).then(
+                (response: any) => {
+                  if (response?.data) {
+                    setAds(response.data);
+                  }
+                },
+              );
+              fetchAdsTotals(session.user.accessToken).then((totalsData: any) => {
+                if (totalsData) {
+                  setAdsTotals([
+                    {
+                      title: "Total Ads",
+                      value: totalsData.total_ads?.toString() || "0",
+                      change: "+ 10%",
+                      trend: "up",
+                      icon: Megaphone,
+                      period: "vs last 3 months",
+                    },
+                    {
+                      title: "Active",
+                      value: totalsData.active_ads?.toString() || "0",
+                      change: "↓ 2.4",
+                      trend: "down",
+                      icon: Bell,
+                      period: "vs last 3 months",
+                    },
+                    {
+                      title: "Total Views",
+                      value: totalsData.total_views?.toLocaleString() || "0",
+                      change: "↑ 5.6%",
+                      trend: "up",
+                      icon: Eye,
+                      period: "vs last 3 months",
+                    },
+                    {
+                      title: "Total Clicks",
+                      value: totalsData.total_clicks?.toLocaleString() || "0",
+                      change: "↑ 8%",
+                      trend: "up",
+                      icon: MousePointer2,
+                      period: "vs last 3 months",
+                    },
+                  ]);
                 }
-              },
-            );
-            fetchAdsTotals(session.user.accessToken).then((totalsData: any) => {
-              if (totalsData) {
-                setAdsTotals([
-                  {
-                    title: "Total Ads",
-                    value: totalsData.total_ads?.toString() || "0",
-                    change: "+ 10%",
-                    trend: "up",
-                    icon: Megaphone,
-                    period: "vs last 3 months",
-                  },
-                  {
-                    title: "Active",
-                    value: totalsData.active_ads?.toString() || "0",
-                    change: "↓ 2.4",
-                    trend: "down",
-                    icon: Bell,
-                    period: "vs last 3 months",
-                  },
-                  {
-                    title: "Total Views",
-                    value: totalsData.total_views?.toLocaleString() || "0",
-                    change: "↑ 5.6%",
-                    trend: "up",
-                    icon: Eye,
-                    period: "vs last 3 months",
-                  },
-                  {
-                    title: "Total Clicks",
-                    value: totalsData.total_clicks?.toLocaleString() || "0",
-                    change: "↑ 8%",
-                    trend: "up",
-                    icon: MousePointer2,
-                    period: "vs last 3 months",
-                  },
-                ]);
-              }
-            });
-          }
-        }}
-      /> */}
+              });
+            }
+          }}
+        />
+      )}
 
-      {/* <EditDeveloperAdModal
-        ad={selectedAd}
-        isOpen={editAdModalOpen}
-        onClose={() => {
-          setEditAdModalOpen(false);
-          setSelectedAd(null);
-        }}
-        onSuccess={() => {
-          if (session?.user?.accessToken) {
-            fetchAds(session.user.accessToken, currentPage).then(
-              (response: any) => {
-                if (response?.data) {
-                  setAds(response.data);
+      {selectedAd && (
+        <EditAdModal
+          ad={selectedAd}
+          isOpen={editAdModalOpen}
+          onClose={() => {
+            setEditAdModalOpen(false);
+            setSelectedAd(null);
+          }}
+          onSuccess={() => {
+            if (session?.user?.accessToken) {
+              fetchAds(session.user.accessToken, currentPage).then(
+                (response: any) => {
+                  if (response?.data) {
+                    setAds(response.data);
+                  }
+                },
+              );
+              fetchAdsTotals(session.user.accessToken).then((totalsData: any) => {
+                if (totalsData) {
+                  setAdsTotals([
+                    {
+                      title: "Total Ads",
+                      value: totalsData.total_ads?.toString() || "0",
+                      change: "+ 10%",
+                      trend: "up",
+                      icon: Megaphone,
+                      period: "vs last 3 months",
+                    },
+                    {
+                      title: "Active",
+                      value: totalsData.active_ads?.toString() || "0",
+                      change: "↓ 2.4",
+                      trend: "down",
+                      icon: Bell,
+                      period: "vs last 3 months",
+                    },
+                    {
+                      title: "Total Views",
+                      value: totalsData.total_views?.toLocaleString() || "0",
+                      change: "↑ 5.6%",
+                      trend: "up",
+                      icon: Eye,
+                      period: "vs last 3 months",
+                    },
+                    {
+                      title: "Total Clicks",
+                      value: totalsData.total_clicks?.toLocaleString() || "0",
+                      change: "↑ 8%",
+                      trend: "up",
+                      icon: MousePointer2,
+                      period: "vs last 3 months",
+                    },
+                  ]);
                 }
-              },
-            );
-            fetchAdsTotals(session.user.accessToken).then((totalsData: any) => {
-              if (totalsData) {
-                setAdsTotals([
-                  {
-                    title: "Total Ads",
-                    value: totalsData.total_ads?.toString() || "0",
-                    change: "+ 10%",
-                    trend: "up",
-                    icon: Megaphone,
-                    period: "vs last 3 months",
-                  },
-                  {
-                    title: "Active",
-                    value: totalsData.active_ads?.toString() || "0",
-                    change: "↓ 2.4",
-                    trend: "down",
-                    icon: Bell,
-                    period: "vs last 3 months",
-                  },
-                  {
-                    title: "Total Views",
-                    value: totalsData.total_views?.toLocaleString() || "0",
-                    change: "↑ 5.6%",
-                    trend: "up",
-                    icon: Eye,
-                    period: "vs last 3 months",
-                  },
-                  {
-                    title: "Total Clicks",
-                    value: totalsData.total_clicks?.toLocaleString() || "0",
-                    change: "↑ 8%",
-                    trend: "up",
-                    icon: MousePointer2,
-                    period: "vs last 3 months",
-                  },
-                ]);
-              }
-            });
-          }
-        }}
-      /> */}
+              });
+            }
+          }}
+        />
+      )}
 
       <DeleteAdDialog
         ad={selectedAd}

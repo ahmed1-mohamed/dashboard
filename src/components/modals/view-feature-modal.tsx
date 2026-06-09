@@ -108,9 +108,16 @@ export function ViewFeatureModal({
                   <Star className="w-4 h-4" />
                   <span className="text-xs font-semibold uppercase tracking-wider">Icon</span>
                 </div>
-                <p className="font-semibold text-gray-900 text-base truncate" title={icon || "No icon set"}>
-                  {icon || "No icon set"}
-                </p>
+                {icon ? (
+                  <div className="mt-1 h-12 w-12 rounded-lg border border-gray-200 bg-white p-1 overflow-hidden flex items-center justify-center">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={icon} alt="Icon" className="max-w-full max-h-full object-contain" />
+                  </div>
+                ) : (
+                  <p className="font-semibold text-gray-900 text-base truncate">
+                    No icon set
+                  </p>
+                )}
               </div>
             </div>
           )}

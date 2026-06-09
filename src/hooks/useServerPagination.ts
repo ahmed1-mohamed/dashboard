@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 
 interface UseServerPaginationProps<TFilters = Record<string, any>> {
@@ -20,22 +20,15 @@ export function useServerPagination<TFilters = Record<string, any>>({
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const [page, setPage] = useState(() => {
-    const p = searchParams.get("page");
-    return p ? Number(p) : initialPage;
-  });
+  const page = searchParams.get("page") ? Number(searchParams.get("page")) : initialPage;
+  const perPage = searchParams.get("perPage") ? Number(searchParams.get("perPage")) : initialPerPage;
+  const searchFromUrl = searchParams.get("search") || initialSearch;
 
-  const [perPage, setPerPage] = useState(() => {
-    const p = searchParams.get("perPage");
-    return p ? Number(p) : initialPerPage;
-  });
+  const [searchQuery, setSearchQuery] = useState(searchFromUrl);
+  const [debouncedSearch, setDebouncedSearch] = useState(searchFromUrl);
 
-  const [searchQuery, setSearchQuery] = useState(() => {
-    return searchParams.get("search") || initialSearch;
-  });
-  const [debouncedSearch, setDebouncedSearch] = useState(searchQuery);
-
-  const [filters, setFilters] = useState<TFilters>(() => {
+  const initialFiltersStr = JSON.stringify(initialFilters);
+  const filters = useMemo(() => {
     const parsed = { ...initialFilters } as any;
     for (const key in initialFilters) {
       const val = searchParams.get(key);
@@ -43,81 +36,103 @@ export function useServerPagination<TFilters = Record<string, any>>({
         parsed[key] = val;
       }
     }
-    return parsed;
-  });
-
-  const isInitialMount = useRef(true);
+    return parsed as TFilters;
+  }, [searchParams, initialFiltersStr]);
 
   useEffect(() => {
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      return;
-    }
+    setSearchQuery(searchFromUrl);
+    setDebouncedSearch(searchFromUrl);
+  }, [searchFromUrl]);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      if (debouncedSearch !== searchQuery) {
+        setDebouncedSearch(searchQuery);
+
+        const params = new URLSearchParams(searchParams.toString());
+        if (searchQuery) params.set("search", searchQuery);
+        else params.delete("search");
+
+        params.delete("page");
+
+        const newQuery = params.toString();
+        router.push(`${pathname}${newQuery ? `?${newQuery}` : ""}`, { scroll: false });
+      }
+    }, searchDebounceMs);
+    return () => clearTimeout(handler);
+  }, [searchQuery, debouncedSearch, searchDebounceMs, pathname, router, searchParams]);
+
+  const handlePerPageChange = useCallback((value: string | number) => {
+    const currentVal = searchParams.get("perPage") || initialPerPage.toString();
+    if (currentVal === value.toString()) return;
+
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("perPage", value.toString());
+    params.delete("page");
+    const newQuery = params.toString();
+    router.push(`${pathname}?${newQuery}`, { scroll: false });
+  }, [pathname, router, searchParams, initialPerPage]);
+
+  const handlePageChange = useCallback((newPage: number) => {
+    const currentVal = searchParams.get("page") || initialPage.toString();
+    if (currentVal === newPage.toString()) return;
+
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("page", newPage.toString());
+    const newQuery = params.toString();
+    router.push(`${pathname}?${newQuery}`, { scroll: false });
+  }, [pathname, router, searchParams, initialPage]);
+
+  const handleSetFilters = useCallback((newFiltersOrUpdater: React.SetStateAction<TFilters>) => {
+    const nextFilters = typeof newFiltersOrUpdater === "function"
+      ? (newFiltersOrUpdater as (prev: TFilters) => TFilters)(filters)
+      : newFiltersOrUpdater;
 
     const params = new URLSearchParams(searchParams.toString());
 
-    if (page !== initialPage) params.set("page", page.toString());
-    else params.delete("page");
-
-    if (perPage !== initialPerPage) params.set("perPage", perPage.toString());
-    else params.delete("perPage");
-
-    if (searchQuery) params.set("search", searchQuery);
-    else params.delete("search");
-
-    for (const key in filters) {
-      const val = String(filters[key]);
+    for (const key in nextFilters) {
+      const val = String(nextFilters[key]);
       if (val && val !== "all" && val !== String(initialFilters[key])) {
         params.set(key, val);
       } else {
         params.delete(key);
       }
     }
-
+    params.delete("page");
     const newQuery = params.toString();
-    const currentQuery = searchParams.toString();
-
-    if (newQuery !== currentQuery) {
-      router.replace(`${pathname}?${newQuery}`, { scroll: false });
-    }
-  }, [page, perPage, searchQuery, filters, pathname, router, searchParams]);
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedSearch((prev) => {
-        if (prev !== searchQuery) {
-          setPage(1);
-        }
-        return searchQuery;
-      });
-    }, searchDebounceMs);
-    return () => clearTimeout(handler);
-  }, [searchQuery, searchDebounceMs]);
-
-  const handlePerPageChange = useCallback((value: string) => {
-    setPerPage(Number(value));
-    setPage(1);
-  }, []);
-
-  const handlePageChange = useCallback((newPage: number) => {
-    setPage(newPage);
-  }, []);
-
-  const handleSetFilters = useCallback((value: React.SetStateAction<TFilters>) => {
-    setFilters(value);
-    setPage(1);
-  }, []);
+    router.push(`${pathname}${newQuery ? `?${newQuery}` : ""}`, { scroll: false });
+  }, [pathname, router, searchParams, filters, initialFilters]);
 
   const setFilter = useCallback(<K extends keyof TFilters>(key: K, value: TFilters[K]) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
-    setPage(1);
-  }, []);
+    const params = new URLSearchParams(searchParams.toString());
+    const val = String(value);
+    const currentVal = searchParams.get(key as string);
+
+    const isDefault = !val || val === "all" || val === String(initialFilters[key]);
+
+    // Deduplicate pushes
+    if (isDefault && currentVal === null) return;
+    if (!isDefault && currentVal === val) return;
+
+    if (!isDefault) {
+      params.set(key as string, val);
+    } else {
+      params.delete(key as string);
+    }
+
+    params.delete("page");
+    const newQuery = params.toString();
+    router.push(`${pathname}${newQuery ? `?${newQuery}` : ""}`, { scroll: false });
+  }, [pathname, router, searchParams, initialFilters]);
 
   const resetFilters = useCallback(() => {
-    setFilters(initialFilters);
-    setSearchQuery("");
-    setPage(1);
-  }, [initialFilters]);
+    const params = new URLSearchParams();
+    if (searchParams.has("perPage")) {
+      params.set("perPage", searchParams.get("perPage") as string);
+    }
+    const newQuery = params.toString();
+    router.push(`${pathname}${newQuery ? `?${newQuery}` : ""}`, { scroll: false });
+  }, [pathname, router, searchParams]);
 
   return {
     page,

@@ -65,8 +65,89 @@ export function DevelopersTable({
   }
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white overflow-hidden overflow-x-auto">
-      <Table>
+    <div className="rounded-lg border border-gray-200 bg-white overflow-hidden overflow-x-auto w-full">
+      {/* Mobile Card View */}
+      <div className="block md:hidden">
+        {developers.map((developer) => (
+          <div key={developer.id} className="p-4 border-b border-gray-100 last:border-b-0 space-y-4 hover:bg-gray-50 transition-colors">
+            <div className="flex items-start justify-between">
+              <div className="flex items-start gap-3">
+                <Checkbox
+                  checked={selectedDevelopers.includes(developer.id)}
+                  onCheckedChange={(checked) =>
+                    onSelectDeveloper(developer.id, checked as boolean)
+                  }
+                  className="mt-1"
+                />
+                <div className="flex items-center gap-2">
+                  <div className="h-8 w-8 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0 border border-gray-200">
+                    {developer.logo ? (
+                      <img
+                        src={developer.logo}
+                        alt={developer.name}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-xs font-medium text-gray-500">
+                        {developer.name.substring(0, 2).toUpperCase()}
+                      </span>
+                    )}
+                  </div>
+                  <div>
+                    <button
+                      onClick={() => router.push(`/admin/developers/${developer.id}`)}
+                      className="text-gray-900 text-sm font-semibold hover:text-teal-600 transition-colors text-left focus:outline-none"
+                    >
+                      {developer.name}
+                    </button>
+                    <div className="text-xs text-gray-500 mt-0.5">
+                      {developer.projects} Projects
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <TableActions
+                onView={() => router.push(`/admin/developers/${developer.id}`)}
+                onEdit={() => onEdit(developer.id)}
+                onDelete={() => onDelete(developer.id)}
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-y-2 text-sm pl-7">
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[10px] uppercase text-gray-400 font-semibold tracking-wider">Country</span>
+                <span className="text-gray-700">{developer.countries || "N/A"}</span>
+              </div>
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[10px] uppercase text-gray-400 font-semibold tracking-wider">City</span>
+                <span className="text-gray-700 truncate">{developer.cities || "N/A"}</span>
+              </div>
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[10px] uppercase text-gray-400 font-semibold tracking-wider">Contact</span>
+                <span className="text-gray-900 font-medium">{developer.contact || "N/A"}</span>
+              </div>
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[10px] uppercase text-gray-400 font-semibold tracking-wider">Email</span>
+                <span className="text-gray-700 truncate">{developer.email || "N/A"}</span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pl-7 pt-2 border-t border-gray-50">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-500">Active:</span>
+                <Switch
+                  checked={developer.status}
+                  onCheckedChange={(checked) => onToggleStatus(developer.id, checked)}
+                  className="data-[state=checked]:bg-green-500 scale-75 origin-left"
+                />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop Table View */}
+      <Table className="hidden md:table">
         <TableHeader>
           <TableRow className="bg-gray-50 hover:bg-gray-50">
             <TableHead className="w-[35px] px-2">

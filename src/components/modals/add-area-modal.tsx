@@ -60,7 +60,6 @@ export function AddAreaModal({ isOpen, onClose, onSubmit }: AddAreaModalProps) {
     onClose();
   };
 
-  // URL expansion and coordinate extraction logic
   const expandShortUrl = async (shortUrl: string): Promise<string | null> => {
     try {
       const res = await fetch(
@@ -132,7 +131,6 @@ export function AddAreaModal({ isOpen, onClose, onSubmit }: AddAreaModalProps) {
 
     setIsExtracting(true);
     try {
-      // First try to expand short URL
       let expandedUrl = googleMapLink;
       if (
         googleMapLink.includes("goo.gl") ||
@@ -154,7 +152,7 @@ export function AddAreaModal({ isOpen, onClose, onSubmit }: AddAreaModalProps) {
       setValue("latitude", coordinates.lat);
       setValue("longitude", coordinates.lng);
       toast.success("Coordinates extracted successfully!");
-      
+
     } catch (error) {
       console.error("Error processing Google Maps link:", error);
       toast.error("Error processing the Google Maps link. Please try again.");
@@ -187,7 +185,6 @@ export function AddAreaModal({ isOpen, onClose, onSubmit }: AddAreaModalProps) {
     >
       <div ref={modalContentRef} className="max-h-[70vh] overflow-y-auto pr-2">
         <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-5">
-          {/* Google Maps Link */}
           <div>
             <Label htmlFor="google_map_link">Google Maps Link</Label>
             <div className="flex gap-2 mt-1">
@@ -215,8 +212,6 @@ export function AddAreaModal({ isOpen, onClose, onSubmit }: AddAreaModalProps) {
               </Button>
             </div>
           </div>
-
-          {/* Area Name */}
           <div>
             <Label htmlFor="dld_area_name">
               Area Name <span className="text-red-500">*</span>
@@ -234,7 +229,6 @@ export function AddAreaModal({ isOpen, onClose, onSubmit }: AddAreaModalProps) {
             )}
           </div>
 
-          {/* Latitude and Longitude Row */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="latitude">Latitude</Label>
@@ -259,8 +253,6 @@ export function AddAreaModal({ isOpen, onClose, onSubmit }: AddAreaModalProps) {
               />
             </div>
           </div>
-
-          {/* Description */}
           <div>
             <Label htmlFor="description">Description</Label>
             <Textarea

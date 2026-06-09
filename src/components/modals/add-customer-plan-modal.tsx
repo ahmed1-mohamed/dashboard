@@ -52,16 +52,14 @@ export default function AddCustomerPlanModal({
 
   const featuresResponse = (featuresQuery as any)?.data;
   let availableFeatures: any[] = [];
-  
+
   if (Array.isArray(featuresResponse)) {
     availableFeatures = featuresResponse;
   } else if (featuresResponse && typeof featuresResponse === 'object') {
-    // Find the first array property at the top level
     const topLevelArrays = Object.values(featuresResponse).filter(Array.isArray);
     if (topLevelArrays.length > 0) {
       availableFeatures = topLevelArrays[0] as any[];
     } else if (featuresResponse.data && typeof featuresResponse.data === 'object') {
-      // Find the first array property inside the .data object
       const nestedArrays = Object.values(featuresResponse.data).filter(Array.isArray);
       if (nestedArrays.length > 0) {
         availableFeatures = nestedArrays[0] as any[];

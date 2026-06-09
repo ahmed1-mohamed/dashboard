@@ -87,7 +87,6 @@ export function AddCityModal({ isOpen, onClose, onSubmit }: AddCityModalProps) {
 
   const handleSubmit = () => {
     onSubmit(formData);
-    // Reset form
     setFormData({
       cityName: "",
       countryId: 0,
@@ -100,7 +99,6 @@ export function AddCityModal({ isOpen, onClose, onSubmit }: AddCityModalProps) {
   };
 
   const handleClose = () => {
-    // Reset form on close
     setFormData({
       cityName: "",
       countryId: 0,
@@ -137,7 +135,6 @@ export function AddCityModal({ isOpen, onClose, onSubmit }: AddCityModalProps) {
       }
     >
       <div className="space-y-5">
-        {/* City Name */}
         <div>
           <Label htmlFor="city-name">
             City name <span className="text-red-500">*</span>
@@ -152,8 +149,6 @@ export function AddCityModal({ isOpen, onClose, onSubmit }: AddCityModalProps) {
             className="mt-1"
           />
         </div>
-
-        {/* Country and State Row */}
         <div className="grid grid-cols-2 gap-4">
           <div>
             <Label htmlFor="country">

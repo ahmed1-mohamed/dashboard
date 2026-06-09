@@ -36,7 +36,90 @@ export function AdsTable({
 
   return (
     <div className="overflow-x-auto bg-white rounded-lg shadow-sm border border-gray-200">
-      <Table>
+      {/* Mobile Card View */}
+      <div className="block md:hidden">
+        {ads.map((ad: any) => (
+          <div key={ad.creative_id} className="p-4 border-b border-gray-100 last:border-b-0 space-y-4 hover:bg-gray-50 transition-colors">
+            <div className="flex items-start justify-between">
+              <div className="flex items-start gap-3">
+                <Checkbox
+                  checked={selectedAds.includes(ad.creative_id)}
+                  onCheckedChange={(checked) => handleSelectOne(ad.creative_id, checked as boolean)}
+                  className="mt-1"
+                />
+                <div>
+                  <button
+                    onClick={() => router.push(`/admin/ads/${ad.creative_id}`)}
+                    className="text-gray-900 text-sm font-semibold hover:text-teal-600 transition-colors text-left focus:outline-none"
+                  >
+                    {ad.creative_title}
+                  </button>
+                  <div className="text-xs text-gray-500 mt-0.5">
+                    {ad.type} • {ad.platform}
+                  </div>
+                </div>
+              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-gray-600">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => router.push(`/admin/ads/${ad.creative_id}`)}>
+                    <Eye className="mr-2 h-4 w-4" />
+                    View
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => router.push(`/admin/ads/${ad.creative_id}/edit`)}>
+                    <Edit className="mr-2 h-4 w-4" />
+                    Edit
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onDeleteClick(ad)} className="text-red-600">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-y-2 text-sm pl-7">
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[10px] uppercase text-gray-400 font-semibold tracking-wider">Country</span>
+                <span className="text-gray-700">{ad.country || "N/A"}</span>
+              </div>
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[10px] uppercase text-gray-400 font-semibold tracking-wider">Location</span>
+                <span className="text-gray-700 truncate">{ad.location || "N/A"}</span>
+              </div>
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[10px] uppercase text-gray-400 font-semibold tracking-wider">Views / Clicks</span>
+                <span className="text-gray-900 font-medium">
+                  {ad.views?.toLocaleString() || 0} / {ad.clicks?.toLocaleString() || 0}
+                </span>
+              </div>
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[10px] uppercase text-gray-400 font-semibold tracking-wider">CTR</span>
+                <span className="text-gray-900 font-medium">{ad.ctr || "0%"}</span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pl-7 pt-2 border-t border-gray-50">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-500">Active:</span>
+                <Switch
+                  checked={ad.status === "active"}
+                  onCheckedChange={(checked) => handleStatusToggle(ad.creative_id, checked)}
+                  disabled={updatingAdId === ad.creative_id}
+                  className="data-[state=checked]:bg-green-600 data-[state=unchecked]:bg-gray-300 scale-75 origin-left"
+                />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop Table View */}
+      <Table className="hidden md:table">
         <TableHeader>
           <TableRow className="bg-gray-50/50 hover:bg-gray-50/50">
             <TableHead className="w-12 px-4">

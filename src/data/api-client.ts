@@ -502,7 +502,7 @@ export const fetchProjectsByDeveloper = (
   if (search) {
     params.append("search", search);
   }
-  return fetchData(`/projects?${params.toString()}`, token);
+  return fetchData(`/dashboard/projects?${params.toString()}`, token);
 };
 export const fetchAds = (
   token: string,
@@ -1296,7 +1296,7 @@ export const addProject = (
   data: CreateProjectInput,
   token: string,
 ): Promise<CreateProjectResponse> => {
-  return postData("/projects", data, token).then((res: any) => res.data);
+  return postData("/dashboard/projects", data, token).then((res: any) => res.data);
 };
 export const addReferral = (referralData: CreateProjectInput, token: string) =>
   postData("/referrals", referralData, token);

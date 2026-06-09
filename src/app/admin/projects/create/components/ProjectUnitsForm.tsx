@@ -17,12 +17,12 @@ export function ProjectUnitsForm({ form, dateValidationError }: ProjectUnitsForm
       <div className="space-y-4">
         <div>
           <Label htmlFor="total-units">Total Units <span className="text-red-500">*</span></Label>
-          <Input id="total-units" type="number" placeholder="2555" className="mt-1" {...register("total_units", { valueAsNumber: true })} />
+          <Input id="total-units" type="number" placeholder="2555" className="mt-1" {...register("total_units")} />
           {errors.total_units && <p className="text-sm text-red-500 mt-1">{errors.total_units.message}</p>}
         </div>
         <div>
           <Label htmlFor="available-units">Available Units <span className="text-red-500">*</span></Label>
-          <Input id="available-units" type="number" placeholder="45" className="mt-1" {...register("available_units", { valueAsNumber: true })} />
+          <Input id="available-units" type="number" placeholder="45" className="mt-1" {...register("available_units")} />
           {errors.available_units && <p className="text-sm text-red-500 mt-1">{errors.available_units.message}</p>}
         </div>
         <div>
