@@ -326,28 +326,28 @@ export function AddUserModal({ isOpen, onClose, onSubmit }: AddUserModalProps) {
                       }
                     />
                   </SelectTrigger>
-                   <SelectContent className="max-h-60 overflow-y-auto">
-                     {developersLoading && developers.length === 0 ? (
-                       <div className="p-2 text-sm text-gray-500 text-center">
-                         Loading developers...
-                       </div>
-                     ) : developers.length === 0 ? (
-                       <div className="p-2 text-sm text-gray-500 text-center">
-                         No developers available
-                       </div>
-                     ) : (
-                       developers.map(
-                         (developer) => (
-                           <SelectItem
-                             key={developer.developer_id}
-                             value={developer.developer_id.toString()}
-                           >
-                             {developer.developer_name}
-                           </SelectItem>
-                         ),
-                       )
-                     )}
-                   </SelectContent>
+                  <SelectContent className="max-h-60 overflow-y-auto">
+                    {developersLoading && developers.length === 0 ? (
+                      <div className="p-2 text-sm text-gray-500 text-center">
+                        Loading developers...
+                      </div>
+                    ) : developers.length === 0 ? (
+                      <div className="p-2 text-sm text-gray-500 text-center">
+                        No developers available
+                      </div>
+                    ) : (
+                      developers.map(
+                        (developer) => (
+                          <SelectItem
+                            key={developer.developer_id}
+                            value={developer.developer_id.toString()}
+                          >
+                            {developer.developer_name}
+                          </SelectItem>
+                        ),
+                      )
+                    )}
+                  </SelectContent>
                 </Select>
               )}
             />
