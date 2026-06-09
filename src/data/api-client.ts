@@ -1059,9 +1059,9 @@ export const fetchFeatures = (token: string) => fetchData("/features", token);
 export const fetchMileStones = (token: string) =>
   fetchData("/milestones", token);
 export const fetchPropertyTypes = (token: string) =>
-  fetchPropertiesCreateData("/propertyTypes", token);
+  fetchPropertiesCreateData("/dashboard/propertyTypes", token);
 export const fetchPropertySubtype = (token: string) =>
-  fetchPropertiesCreateData("/propertySubtypes", token);
+  fetchPropertiesCreateData("/dashboard/propertySubtypes", token);
 export const fetchPropertiesByDeveloper = (
   token: string,
   developer_id: number,

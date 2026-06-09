@@ -28,7 +28,7 @@ interface EditPropertyFormValues {
   bedrooms: string;
   bathrooms: string;
   project_id: string;
-  property_type_id: string;
+  id: string;
   availability_status: string;
   construction_status: string;
   furnish_status: string;
@@ -105,7 +105,7 @@ export function EditPropertyModal({
       bedrooms: "",
       bathrooms: "",
       project_id: "",
-      property_type_id: "",
+      id: "",
       availability_status: "available",
       construction_status: "",
       furnish_status: "",
@@ -139,7 +139,7 @@ export function EditPropertyModal({
     select: (data) => (data as { data?: unknown[] }).data ?? [],
   });
 
-  const propertyTypes = propertyTypesRaw as Array<{ property_type_id: number; property_type_name: string }>;
+  const propertyTypes = propertyTypesRaw as Array<{ id: number; property_type_name: string }>;
   const projects = (projectsRaw ?? []) as Array<{ project_id: number; project_name: string }>;
 
   // Populate form when data arrives
@@ -156,7 +156,7 @@ export function EditPropertyModal({
       bedrooms: String(p.bedrooms ?? ""),
       bathrooms: String(p.bathrooms ?? ""),
       project_id: p.project_id ? String(p.project_id) : "",
-      property_type_id: p.property_type_id ? String(p.property_type_id) : "",
+      id: p.id ? String(p.id) : "",
       availability_status: (p.availability_status as string) ?? "available",
       construction_status: (p.construction_status as string) ?? "",
       furnish_status: (p.furnish_status as string) ?? "",
@@ -179,7 +179,7 @@ export function EditPropertyModal({
       await AdminPropertiesService.updateProperty(propertyId, {
         ...formValues,
         project_id: formValues.project_id ? Number(formValues.project_id) : undefined,
-        property_type_id: formValues.property_type_id ? Number(formValues.property_type_id) : undefined,
+        id: formValues.id ? Number(formValues.id) : undefined,
         price: formValues.price ? Number(formValues.price) : undefined,
         size: formValues.size ? Number(formValues.size) : undefined,
         bedrooms: formValues.bedrooms ? Number(formValues.bedrooms) : undefined,
@@ -196,7 +196,7 @@ export function EditPropertyModal({
       setIsSubmitting(false);
     }
   };
-
+  console.log(propertyTypes, "propert types");
   return (
     <Modal
       isOpen={isOpen}
@@ -259,14 +259,17 @@ export function EditPropertyModal({
               <div>
                 <Label htmlFor="ep-type">Property Type</Label>
                 <Controller
-                  name="property_type_id"
+                  name="id"
                   control={control}
                   render={({ field }) => (
                     <Select value={field.value} onValueChange={field.onChange}>
                       <SelectTrigger className="mt-1"><SelectValue placeholder="Select Type" /></SelectTrigger>
                       <SelectContent>
-                        {propertyTypes.map((t) => (
-                          <SelectItem key={t.property_type_id} value={String(t.property_type_id)}>
+                        {propertyTypes.map((t, index) => (
+                          <SelectItem
+                            key={`type-${t.id}-${index}`}
+                            value={String(t.id)}
+                          >
                             {t.property_type_name}
                           </SelectItem>
                         ))}

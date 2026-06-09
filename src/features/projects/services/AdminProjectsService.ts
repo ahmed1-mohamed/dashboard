@@ -147,7 +147,7 @@ export const AdminProjectsService = {
   },
 
   updateProject: async (projectId: number, data: Record<string, unknown>) => {
-    const response = await apiClient.post(`/dashboard/projects/${projectId}`, { ...data, _method: "PUT" });
+    const response = await apiClient.post(`/dashboard/projects/${projectId}`, { ...data });
     return response.data;
   },
 
@@ -157,7 +157,6 @@ export const AdminProjectsService = {
   },
 
   toggleActive: async (projectId: number, isActive: boolean) => {
-    // Fetch project data to satisfy full validation
     const projectResponse = await AdminProjectsService.getProject(projectId);
     const raw = (projectResponse as any).data ?? projectResponse;
 
@@ -203,7 +202,7 @@ export const AdminProjectsService = {
       google_map_link: raw.location?.google_map_link || "",
     };
 
-    const response = await apiClient.post(`/dashboard/projects/${projectId}`, payload);
+    const response = await apiClient.put(`/dashboard/projects/${projectId}/visibility`, payload);
     return response.data;
   },
 
