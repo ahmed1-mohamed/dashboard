@@ -36,7 +36,7 @@ export const AdminDevelopersService = {
   },
 
   updateDeveloper: (developerId: number, data: FormData) => {
-    return apiClient.put(`/dashboard/developers/${developerId}`, data);
+    return apiClient.post(`/dashboard/developers/${developerId}`, data);
   },
 
   deleteDeveloper: (developerId: number) => {
