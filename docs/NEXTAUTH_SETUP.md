@@ -351,8 +351,8 @@ npm run dev
 
 ### 2. Test the authentication endpoints:
 
-- Sign in: `http://localhost:3000/api/auth/signin`
-- Sign out: `http://localhost:3000/api/auth/signout`
+- Sign in: `https://dashboard.p-adviser.com/api/auth/signin`
+- Sign out: `https://dashboard.p-adviser.com//api/auth/signout`
 
 ### 3. Check session data:
 
