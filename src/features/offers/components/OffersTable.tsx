@@ -1,163 +1,138 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import {
   Table,
   TableBody,
-  TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Switch } from "@/components/ui/switch";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Eye, Edit, Trash2 } from "lucide-react";
+import { Tag } from "lucide-react";
+import { OfferTableRow } from "@/features/offers/components/OfferTableRow";
+import type { Offer } from "@/features/offers/types";
+
+export interface OffersTableProps {
+  offers: Offer[];
+  selectedOffers: string[];
+  updatingOfferId: string | null;
+  isColVisible: (col: string) => boolean;
+  handleSelectAll: (checked: boolean) => void;
+  handleSelectOne: (id: string, checked: boolean) => void;
+  handleStatusToggle: (offer: Offer, checked: boolean) => void;
+  onDeleteClick: (offer: Offer) => void;
+  onViewClick: (offer: Offer) => void;
+  onEditClick: (offer: Offer) => void;
+}
 
 export function OffersTable({
   offers,
   selectedOffers,
+  updatingOfferId,
+  isColVisible,
   handleSelectAll,
   handleSelectOne,
-  isColVisible,
-  updatingOfferId,
   handleStatusToggle,
   onDeleteClick,
   onViewClick,
-}: any) {
-  const router = useRouter();
+  onEditClick,
+}: OffersTableProps) {
+  const allSelected = offers.length > 0 && selectedOffers.length === offers.length;
+
+  if (offers.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+        <Tag className="h-10 w-10 mb-3 opacity-30" />
+        <p className="text-sm font-medium">No offers found</p>
+        <p className="text-xs mt-1">Try adjusting your filters</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="w-full bg-white rounded-lg shadow-sm border border-gray-200">      <Table className="table-fixed w-full">
-      <TableHeader>
-        <TableRow className="bg-gray-50/50 hover:bg-gray-50/50">
-          <TableHead className="w-12 px-4">
-            <Checkbox
-              checked={offers.length > 0 && selectedOffers.length === offers.length}
-              onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
-            />
-          </TableHead>
-          <TableHead className="min-w-[150px]">Offer Details</TableHead>
-          {isColVisible("linked_to") && <TableHead>Linked To</TableHead>}
-          {isColVisible("type") && <TableHead>Type</TableHead>}
-          {isColVisible("discount") && <TableHead>Discount</TableHead>}
-          {isColVisible("validity") && <TableHead>Validity Period</TableHead>}
-          {isColVisible("clicks") && <TableHead>Clicks</TableHead>}
-          {isColVisible("views") && <TableHead>Views</TableHead>}
-          {isColVisible("priority") && <TableHead>Priority</TableHead>}
-          {isColVisible("status") && <TableHead>Status</TableHead>}
-          <TableHead className="w-20">actions</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {offers.length === 0 ? (
-          <TableRow>
-            <TableCell colSpan={11} className="text-center py-8 text-gray-500">
-              No offers found.
-            </TableCell>
+    <div className="w-full overflow-x-auto">
+      <Table className="w-full table-fixed">
+        <colgroup>
+          <col className="w-10" />
+          <col className="w-[22%] min-w-[150px]" />
+          {isColVisible("linked_to") && <col className="w-[18%] min-w-[130px]" />}
+          {isColVisible("type") && <col className="w-[12%] min-w-[100px]" />}
+          {isColVisible("discount") && <col className="w-[10%] min-w-[80px]" />}
+          {isColVisible("validity") && <col className="w-[14%] min-w-[110px]" />}
+          {isColVisible("clicks") && <col className="w-[7%] min-w-[60px]" />}
+          {isColVisible("views") && <col className="w-[7%] min-w-[60px]" />}
+          {isColVisible("status") && <col className="w-[8%] min-w-[70px]" />}
+          <col className="w-12" />
+        </colgroup>
+
+        <TableHeader>
+          <TableRow className="bg-gray-50/70 hover:bg-gray-50/70 border-b border-gray-200">
+            <TableHead className="px-3">
+              <Checkbox
+                checked={allSelected}
+                onCheckedChange={(v) => handleSelectAll(v as boolean)}
+              />
+            </TableHead>
+            <TableHead className="font-semibold text-gray-700 text-xs uppercase tracking-wide truncate">
+              Offer Details
+            </TableHead>
+            {isColVisible("linked_to") && (
+              <TableHead className="font-semibold text-gray-700 text-xs uppercase tracking-wide truncate">
+                Linked To
+              </TableHead>
+            )}
+            {isColVisible("type") && (
+              <TableHead className="font-semibold text-gray-700 text-xs uppercase tracking-wide truncate">
+                Type
+              </TableHead>
+            )}
+            {isColVisible("discount") && (
+              <TableHead className="font-semibold text-gray-700 text-xs uppercase tracking-wide truncate">
+                Discount
+              </TableHead>
+            )}
+            {isColVisible("validity") && (
+              <TableHead className="font-semibold text-gray-700 text-xs uppercase tracking-wide truncate">
+                Validity
+              </TableHead>
+            )}
+            {isColVisible("clicks") && (
+              <TableHead className="font-semibold text-gray-700 text-xs uppercase tracking-wide text-right truncate">
+                Clicks
+              </TableHead>
+            )}
+            {isColVisible("views") && (
+              <TableHead className="font-semibold text-gray-700 text-xs uppercase tracking-wide text-right truncate">
+                Views
+              </TableHead>
+            )}
+            {isColVisible("status") && (
+              <TableHead className="font-semibold text-gray-700 text-xs uppercase tracking-wide truncate">
+                Status
+              </TableHead>
+            )}
+            <TableHead className="sticky right-0 bg-gray-50/70 border-l border-gray-100" />
           </TableRow>
-        ) : (
-          offers.map((offer: any, index: number) => (
-            <TableRow key={offer.offer_id || index} className="hover:bg-gray-50">
-              <TableCell className="px-4">
-                <Checkbox
-                  checked={selectedOffers.includes(offer.offer_id)}
-                  onCheckedChange={(checked) => handleSelectOne(offer.offer_id, checked as boolean)}
-                />
-              </TableCell>
-              <TableCell>
-                <div className="flex flex-col gap-1" title={offer.description}>
-                  <span
-                    className="font-medium text-gray-900 text-sm hover:text-teal-600 cursor-pointer line-clamp-1"
-                    onClick={() => onViewClick(offer)}
-                  >
-                    {offer.offer_details || "Unnamed Offer"}
-                  </span>
-                  {offer.description && (
-                    <span className="text-xs text-gray-500 line-clamp-1">{offer.description}</span>
-                  )}
-                </div>
-              </TableCell>
-              {isColVisible("linked_to") && (
-                <TableCell className="text-gray-600">
-                  <div className="flex flex-col">
-                    <span className="text-xs text-gray-400 capitalize">{offer.linked_type || "Project"}</span>
-                    <span className="text-sm line-clamp-1">{offer.linked_name || "Marina Pearl"}</span>
-                  </div>
-                </TableCell>
-              )}
-              {isColVisible("type") && <TableCell className="text-gray-600">{offer.discount_type || "Percentage"}</TableCell>}
-              {isColVisible("discount") && <TableCell className="text-gray-600">{offer.discount || "20% OFF"}</TableCell>}
-              {isColVisible("validity") && (
-                <TableCell className="text-gray-600 text-xs">
-                  <div className="flex flex-col">
-                    <span>From: {offer.valid_from ? new Date(offer.valid_from).toLocaleDateString() : '6/1/2024'}</span>
-                    <span>To: {offer.valid_to ? new Date(offer.valid_to).toLocaleDateString() : '6/30/2024'}</span>
-                  </div>
-                </TableCell>
-              )}
-              {isColVisible("clicks") && (
-                <TableCell className="hidden lg:table-cell">
-                  {offer.clicks || 0}
-                </TableCell>
-              )}
+        </TableHeader>
 
-              {isColVisible("views") && (
-                <TableCell className="hidden lg:table-cell">
-                  {offer.views || 0}
-                </TableCell>
-              )}
-
-              {isColVisible("priority") && (
-                <TableCell className="hidden xl:table-cell">
-                  #{offer.priority || index + 1}
-                </TableCell>
-              )}                {isColVisible("status") && (
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <Switch
-                      checked={offer.is_active === true}
-                      onCheckedChange={(checked) => handleStatusToggle(offer, checked)}
-                      disabled={updatingOfferId === offer.offer_id}
-                      className="data-[state=checked]:bg-[#9d4edd] data-[state=unchecked]:bg-gray-300"
-                    />
-                  </div>
-                </TableCell>
-              )}
-              <TableCell>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-gray-600">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => onViewClick(offer)}>
-                      <Eye className="mr-2 h-4 w-4" />
-                      View
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => router.push(`/admin/offers/${offer.offer_id}/edit`)}>
-                      <Edit className="mr-2 h-4 w-4" />
-                      Edit
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onDeleteClick(offer)} className="text-red-600">
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </TableCell>
-            </TableRow>
-          ))
-        )}
-      </TableBody>
-    </Table>
+        <TableBody>
+          {offers.map((offer, index) => (
+            <OfferTableRow
+              key={offer.offer_id ?? index}
+              offer={offer}
+              index={index}
+              isSelected={selectedOffers.includes(String(offer.offer_id ?? offer.id))}
+              isUpdating={updatingOfferId === String(offer.offer_id)}
+              isColVisible={isColVisible}
+              onSelect={handleSelectOne}
+              onStatusToggle={handleStatusToggle}
+              onView={onViewClick}
+              onEdit={onEditClick}
+              onDelete={onDeleteClick}
+            />
+          ))}
+        </TableBody>
+      </Table>
     </div>
   );
 }

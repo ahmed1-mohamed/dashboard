@@ -1,9 +1,14 @@
 "use client";
 
-import React from "react";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface OffersFiltersProps {
   searchQuery: string;
@@ -19,31 +24,27 @@ export function OffersFilters({
   onStatusChange,
 }: OffersFiltersProps) {
   return (
-    <div className="flex flex-wrap items-center gap-4 flex-1">
-      <div className="relative flex-1 min-w-[300px]">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full">
+      <div className="relative flex-1">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
         <Input
-          placeholder="Search offers by title or description..."
+          placeholder="Search offers..."
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="pl-10 border-gray-200 focus-visible:ring-teal-500 w-full bg-white shadow-sm"
+          className="pl-9 border-gray-200 focus-visible:ring-teal-500 bg-white w-full h-9"
         />
       </div>
 
-      <div className="flex items-center gap-3">
-        <Select value={statusFilter} onValueChange={onStatusChange}>
-          <SelectTrigger className="w-[140px] border-gray-200 bg-white shadow-sm">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="paused">Paused</SelectItem>
-            <SelectItem value="draft">Draft</SelectItem>
-            <SelectItem value="ended">Ended</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+      <Select value={statusFilter} onValueChange={onStatusChange}>
+        <SelectTrigger className="w-full sm:w-[150px] border-gray-200 bg-white h-9 text-sm">
+          <SelectValue placeholder="Status" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Status</SelectItem>
+          <SelectItem value="active">Active</SelectItem>
+          <SelectItem value="inactive">Inactive</SelectItem>
+        </SelectContent>
+      </Select>
     </div>
   );
 }

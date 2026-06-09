@@ -1,17 +1,47 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
 import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useSession } from "next-auth/react";
 import { Modal } from "@/components/ui/modal";
 import { Button, Input } from "@/components/ui";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { AdminOffersService } from "@/services/AdminOffersService";
 import { DashboardAdminService } from "@/services/DashboardAdminService";
+
+const offerSchema = z.object({
+  name: z.string().min(1, "Offer title is required").max(128, "Max 128 characters"),
+  entity_type: z.enum(["DEVELOPERS", "PROJECTS", "PROPERTIES"], {
+    required_error: "Please select what to link this offer to",
+  }),
+  entity_id: z.string().min(1, "Please select a target entity"),
+  discount_type: z.enum(
+    ["percentage", "fixed_amount", "special_deal", "join_offers", "discount_events"],
+    { required_error: "Discount type is required" },
+  ),
+  discount_pct: z
+    .string()
+    .optional()
+    .refine(
+      (val) => !val || (parseFloat(val) >= 0 && parseFloat(val) <= 100),
+      "Discount must be between 0 and 100",
+    ),
+  description: z.string().optional(),
+  starts_at: z.string().min(1, "Valid From date is required"),
+  ends_at: z.string().optional(),
+});
+
+type OfferFormValues = z.infer<typeof offerSchema>;
 
 interface AddOfferModalProps {
   open: boolean;
@@ -25,8 +55,6 @@ export default function AddOfferModal({
   onSuccess,
 }: AddOfferModalProps) {
   const queryClient = useQueryClient();
-  const { data: session } = useSession();
-  const token = session?.user?.accessToken;
 
   const {
     register,
@@ -35,7 +63,8 @@ export default function AddOfferModal({
     watch,
     reset,
     formState: { errors },
-  } = useForm({
+  } = useForm<OfferFormValues>({
+    resolver: zodResolver(offerSchema),
     defaultValues: {
       name: "",
       entity_type: "PROPERTIES",
@@ -61,13 +90,25 @@ export default function AddOfferModal({
     enabled: open,
   });
 
-  const availableEntities = Array.isArray((entitiesData as any)?.data)
+  const availableEntities: any[] = Array.isArray((entitiesData as any)?.data)
     ? (entitiesData as any).data
     : Array.isArray(entitiesData)
-      ? entitiesData
+      ? (entitiesData as any[])
       : [];
+
   const mutation = useMutation({
-    mutationFn: (data: any) => AdminOffersService.createOffer(data, token as string),
+    mutationFn: (data: OfferFormValues) =>
+      AdminOffersService.createOffer({
+        name: data.name,
+        entity_type: data.entity_type,
+        entity_id: parseInt(data.entity_id),
+        discount_type: data.discount_type,
+        is_active: true,
+        ...(data.description && { description: data.description }),
+        ...(data.discount_pct && { discount_pct: parseFloat(data.discount_pct) }),
+        ...(data.starts_at && { starts_at: data.starts_at }),
+        ...(data.ends_at && { ends_at: data.ends_at }),
+      }),
     onSuccess: () => {
       toast.success("Offer created successfully!");
       queryClient.invalidateQueries({ queryKey: ["offers"] });
@@ -76,7 +117,12 @@ export default function AddOfferModal({
       handleClose();
     },
     onError: (error: any) => {
-      toast.error(error?.response?.data?.message || error?.message || "Failed to create offer");
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data?.errors?.[0] ||
+        error?.message ||
+        "Failed to create offer";
+      toast.error(message);
     },
   });
 
@@ -85,46 +131,43 @@ export default function AddOfferModal({
     onClose();
   };
 
-  const onSubmit = (formData: any) => {
-    const payload: any = {
-      name: formData.name,
-      entity_type: formData.entity_type,
-      entity_id: parseInt(formData.entity_id),
-      discount_type: formData.discount_type,
-      is_active: true, // Default to active upon creation
-    };
-
-    if (formData.description) payload.description = formData.description;
-    if (formData.discount_pct) payload.discount_pct = parseFloat(formData.discount_pct);
-    if (formData.starts_at) payload.starts_at = formData.starts_at; // Format depends on what server expects, assuming YYYY-MM-DD works
-    if (formData.ends_at) payload.ends_at = formData.ends_at;
-
-    mutation.mutate(payload);
+  const onSubmit = (formData: OfferFormValues) => {
+    mutation.mutate(formData);
   };
 
   return (
-    <Modal
-      isOpen={open}
-      onClose={handleClose}
-      title="Create New Offer"
-      size="md"
-    >
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 max-h-[75vh] overflow-y-auto px-1 pb-2">
+    <Modal isOpen={open} onClose={handleClose} title="Create New Offer" size="md">
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        className="space-y-4 max-h-[75vh] overflow-y-auto px-1 pb-2"
+      >
+        {/* Offer Title */}
         <div className="space-y-1.5">
-          <Label>Offer Title <span className="text-red-500">*</span></Label>
-          <Input placeholder="e.g., Summer Flash Sale - 20% Off" {...register("name", { required: true })} />
+          <Label>
+            Offer Title <span className="text-red-500">*</span>
+          </Label>
+          <Input
+            placeholder="e.g., Summer Flash Sale - 20% Off"
+            {...register("name")}
+            className={errors.name ? "border-red-500" : ""}
+          />
+          {errors.name && (
+            <p className="text-xs text-red-500">{errors.name.message}</p>
+          )}
         </div>
 
+        {/* Link To + Entity */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <Label>Link To <span className="text-red-500">*</span></Label>
+            <Label>
+              Link To <span className="text-red-500">*</span>
+            </Label>
             <Controller
               name="entity_type"
               control={control}
-              rules={{ required: true }}
               render={({ field }) => (
                 <Select onValueChange={field.onChange} value={field.value}>
-                  <SelectTrigger className="bg-white">
+                  <SelectTrigger className={`bg-white ${errors.entity_type ? "border-red-500" : ""}`}>
                     <SelectValue placeholder="Select Type" />
                   </SelectTrigger>
                   <SelectContent>
@@ -135,25 +178,49 @@ export default function AddOfferModal({
                 </Select>
               )}
             />
+            {errors.entity_type && (
+              <p className="text-xs text-red-500">{errors.entity_type.message}</p>
+            )}
           </div>
 
           <div className="space-y-1.5">
-            <Label>Select {selectedEntityType.charAt(0) + selectedEntityType.slice(1).toLowerCase()} <span className="text-red-500">*</span></Label>
+            <Label>
+              Select{" "}
+              {selectedEntityType.charAt(0) + selectedEntityType.slice(1).toLowerCase()}{" "}
+              <span className="text-red-500">*</span>
+            </Label>
             <Controller
               name="entity_id"
               control={control}
-              rules={{ required: true }}
               render={({ field }) => (
-                <Select onValueChange={field.onChange} value={field.value} disabled={loadingEntities}>
-                  <SelectTrigger className="bg-white">
-                    <SelectValue placeholder={loadingEntities ? "Loading..." : "Select Target"} />
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value}
+                  disabled={loadingEntities}
+                >
+                  <SelectTrigger className={`bg-white ${errors.entity_id ? "border-red-500" : ""}`}>
+                    <SelectValue
+                      placeholder={loadingEntities ? "Loading..." : "Select Target"}
+                    />
                   </SelectTrigger>
                   <SelectContent>
                     {availableEntities.map((entity: any, index: number) => {
-                      const entityId = entity.id || entity.project_id || entity.developer_id || entity.property_id || entity.offer_id || String(index);
+                      const entityId =
+                        entity.id ||
+                        entity.project_id ||
+                        entity.developer_id ||
+                        entity.property_id ||
+                        String(index);
+                      const entityName =
+                        entity.name ||
+                        entity.title ||
+                        entity.developer_name ||
+                        entity.project_name ||
+                        entity.property_name ||
+                        `Item ${entityId}`;
                       return (
                         <SelectItem key={entityId} value={entityId.toString()}>
-                          {entity.name || entity.title || entity.developer_name || entity.project_name || entity.property_name || `Item ${entityId}`}
+                          {entityName}
                         </SelectItem>
                       );
                     })}
@@ -161,18 +228,23 @@ export default function AddOfferModal({
                 </Select>
               )}
             />
+            {errors.entity_id && (
+              <p className="text-xs text-red-500">{errors.entity_id.message}</p>
+            )}
           </div>
         </div>
 
+        {/* Discount Type */}
         <div className="space-y-1.5">
-          <Label>Discount type <span className="text-red-500">*</span></Label>
+          <Label>
+            Discount Type <span className="text-red-500">*</span>
+          </Label>
           <Controller
             name="discount_type"
             control={control}
-            rules={{ required: true }}
             render={({ field }) => (
               <Select onValueChange={field.onChange} value={field.value}>
-                <SelectTrigger className="bg-white">
+                <SelectTrigger className={`bg-white ${errors.discount_type ? "border-red-500" : ""}`}>
                   <SelectValue placeholder="Select Discount Type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -185,23 +257,51 @@ export default function AddOfferModal({
               </Select>
             )}
           />
+          {errors.discount_type && (
+            <p className="text-xs text-red-500">{errors.discount_type.message}</p>
+          )}
         </div>
 
+        {/* Discount Percentage */}
         <div className="space-y-1.5">
-          <Label>Discount Percentage</Label>
-          <Input type="number" placeholder="e.g 20" {...register("discount_pct")} />
+          <Label>Discount Percentage (0 – 100)</Label>
+          <Input
+            type="number"
+            min={0}
+            max={100}
+            step="0.01"
+            placeholder="e.g. 20"
+            {...register("discount_pct")}
+            className={errors.discount_pct ? "border-red-500" : ""}
+          />
+          {errors.discount_pct && (
+            <p className="text-xs text-red-500">{errors.discount_pct.message}</p>
+          )}
         </div>
 
+        {/* Description */}
         <div className="space-y-1.5">
-          <Label>Discount Display Text</Label>
-          <Input placeholder="e.g., 20% OFF or AED 500,000 OFF" {...register("description")} />
-          <p className="text-xs text-gray-500">This text will be displayed on the offer badge</p>
+          <Label>Description</Label>
+          <Input
+            placeholder="e.g., 20% OFF or AED 500,000 OFF"
+            {...register("description")}
+          />
         </div>
 
+        {/* Dates */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <Label>Valid From <span className="text-red-500">*</span></Label>
-            <Input type="date" {...register("starts_at", { required: true })} />
+            <Label>
+              Valid From <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              type="date"
+              {...register("starts_at")}
+              className={errors.starts_at ? "border-red-500" : ""}
+            />
+            {errors.starts_at && (
+              <p className="text-xs text-red-500">{errors.starts_at.message}</p>
+            )}
           </div>
           <div className="space-y-1.5">
             <Label>Valid Until (Optional)</Label>
@@ -209,11 +309,21 @@ export default function AddOfferModal({
           </div>
         </div>
 
+        {/* Actions */}
         <div className="flex gap-2 justify-end pt-4 sticky bottom-0 bg-white border-t mt-4 py-2">
-          <Button type="button" variant="outline" onClick={handleClose} disabled={mutation.isPending}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleClose}
+            disabled={mutation.isPending}
+          >
             Close
           </Button>
-          <Button type="submit" disabled={mutation.isPending} className="bg-teal-600 hover:bg-teal-700 text-white">
+          <Button
+            type="submit"
+            disabled={mutation.isPending}
+            className="bg-teal-600 hover:bg-teal-700 text-white"
+          >
             {mutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Create Offer
           </Button>
